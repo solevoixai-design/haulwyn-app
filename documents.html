@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Your Move Documents</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --navy:#0a1f44; --red:#b22234; --ink:#0b1230; --steel:#5b6478; --off:#f6f5f1; --line:rgba(11,18,48,.12);}
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',sans-serif; background:var(--off); color:var(--ink); font-size:13.5px;}
+  .bar{background:var(--navy); color:#fff; padding:14px 20px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between;}
+  .bar a.back{color:rgba(255,255,255,.8); font-size:12.5px; text-decoration:none;}
+  .tabs{display:flex; gap:6px; flex-wrap:wrap;}
+  .tabs button{background:transparent; color:#fff; border:1px solid rgba(255,255,255,.35); border-radius:6px; padding:7px 12px; font-size:12.5px; font-weight:600; cursor:pointer; font-family:inherit;}
+  .tabs button.on{background:#fff; color:var(--navy);}
+  .print{background:#c9a227; color:var(--ink); border:none; border-radius:6px; padding:8px 14px; font-weight:700; cursor:pointer; font-family:inherit;}
+  .page{max-width:816px; margin:20px auto; background:#fff; padding:44px 48px; border:1px solid var(--line); min-height:400px;}
+  .head{display:flex; justify-content:space-between; gap:20px; border-bottom:2px solid var(--navy); padding-bottom:14px; margin-bottom:18px; flex-wrap:wrap;}
+  .brand{font-family:'Oswald',sans-serif; font-size:20px; color:var(--navy); text-transform:uppercase; letter-spacing:.03em;}
+  .meta{font-size:11.5px; color:var(--steel); line-height:1.6;}
+  h1{font-family:'Oswald',sans-serif; font-size:22px; color:var(--navy); text-transform:uppercase; letter-spacing:.03em; text-align:right;}
+  h2{font-family:'Oswald',sans-serif; font-size:13px; color:var(--navy); text-transform:uppercase; letter-spacing:.04em; margin:20px 0 8px;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  table{width:100%; border-collapse:collapse;}
+  th{text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:var(--steel); border-bottom:1px solid var(--line); padding:6px 4px;}
+  td{padding:7px 4px; border-bottom:1px solid rgba(11,18,48,.06); vertical-align:top;}
+  td.r, th.r{text-align:right; white-space:nowrap;}
+  tr.tot td{font-weight:700; color:var(--navy); border-bottom:none;}
+  .sig{max-height:70px; max-width:260px; display:block; margin-top:6px;}
+  .note{font-size:11.5px; color:var(--steel); margin-top:16px; line-height:1.55;}
+  .gate{max-width:440px; margin:80px auto; text-align:center; color:var(--steel);}
+  .empty{color:var(--steel);}
+  @media (max-width:640px){ .page{padding:24px 18px; margin:0;} .grid2{grid-template-columns:1fr;} h1{text-align:left;} }
+  @media print{
+    body{background:#fff;} .bar{display:none;} .page{margin:0; border:none; padding:0; max-width:none;}
+    @page{size:letter; margin:0.6in;}
+    thead{display:table-header-group;} tr{page-break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<div class="bar">
+  <a class="back" id="backLink" href="#">&larr; Back to your move</a>
+  <div class="tabs" id="tabs" role="tablist"></div>
+  <button class="print" onclick="window.print()">Print / Save PDF</button>
+</div>
+<div id="out"><div class="gate">Loading your documents&hellip;</div></div>
+
+<script>
+  const SUPABASE_URL = 'https://izafyooegkvstynejaxh.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6YWZ5b29lZ2t2c3R5bmVqYXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1MzQwNzcsImV4cCI6MjEwNDExMDA3N30.nKaTP_t5TrzJE0xbFb7SUX_QLRKIEGIiYTnbb8QcwYY';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const esc = s => (s ?? '').toString().replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const money = c => '$' + ((Number(c)||0)/100).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+  const day = d => d ? new Date(String(d).length === 10 ? d + 'T12:00:00' : d).toLocaleDateString(undefined,{year:'numeric', month:'short', day:'numeric'}) : '';
+  const SLOT = { morning:'Morning arrival', afternoon:'Afternoon arrival', evening:'Evening arrival' };
+  const PTYPE = { deposit:'Deposit', balance:'Balance', tip:'Tip', refund:'Refund', other:'Payment' };
+  const METHOD = { card_stripe:'Card (online)', refund_stripe:'Card refund', cash:'Cash', check:'Check', card:'Card', zelle:'Zelle', venmo:'Venmo', ach:'Bank transfer' };
+
+  const p = new URLSearchParams(location.search);
+  const jobId = p.get('job'), token = p.get('token');
+  document.getElementById('backLink').href = jobId && token ? `portal.html?job=${encodeURIComponent(jobId)}&token=${encodeURIComponent(token)}` : 'portal.html';
+
+  let D = null;
+  const invNo = () => 'INV-' + String(D.job.id).slice(0,8).toUpperCase();
+
+  function header(title, sub){
+    const c = D.company;
+    const reg = [c.dot_number && 'USDOT ' + c.dot_number, c.nysdot_number && 'NYSDOT ' + c.nysdot_number, c.mc_number && 'MC ' + c.mc_number].filter(Boolean).join(' &middot; ');
+    const contact = [c.support_phone, c.support_email, c.website].filter(Boolean).map(esc).join(' &middot; ');
+    return `<div class="head"><div><div class="brand">${esc(c.brand_name)}</div>
+      <div class="meta">${c.legal_name && c.legal_name !== c.brand_name ? esc(c.legal_name) + '<br>' : ''}${contact}${reg ? '<br>' + reg : ''}</div></div>
+      <div><h1>${esc(title)}</h1><div class="meta" style="text-align:right;">${sub}</div></div></div>`;
+  }
+
+  function parties(){
+    const j = D.job, cu = D.customer;
+    return `<div class="grid2">
+      <div><h2>Customer</h2><div>${esc(cu.full_name)}</div><div class="meta">${esc(cu.email || '')}${cu.phone ? '<br>' + esc(cu.phone) : ''}</div></div>
+      <div><h2>Move</h2><div>${esc(day(j.scheduled_date)) || 'Date to be confirmed'}${j.time_slot ? ' &middot; ' + esc(SLOT[j.time_slot] || j.time_slot) : ''}</div>
+        <div class="meta">From: ${esc(j.origin_address || '')}<br>To: ${esc(j.destination_address || '')}</div></div>
+    </div>`;
+  }
+
+  function linesTable(lines, extraRows){
+    const body = (lines || []).map(l => `<tr><td>${esc(l.description)}</td><td class="r">${l.quantity != null && Number(l.quantity) !== 1 ? esc(l.quantity) : ''}</td><td class="r">${money(l.amount_cents)}</td></tr>`).join('');
+    return `<table><thead><tr><th>Description</th><th class="r">Qty</th><th class="r">Amount</th></tr></thead><tbody>${body}${extraRows || ''}</tbody></table>`;
+  }
+
+  function payments(){ return (D.payments || []); }
+  function paidNonTip(){ return payments().filter(x => x.payment_type !== 'tip').reduce((s, x) => s + x.amount_cents, 0); }
+
+  const DOCS = {
+    estimate(){
+      const e = (D.estimates || []).find(x => x.status === 'accepted') || (D.estimates || [])[0];
+      if(!e) return '<div class="empty">No estimate has been issued for this move yet.</div>';
+      const rows = (Number(e.tax_cents) ? `<tr><td colspan="2">${esc(e.tax_label || 'Tax')}${e.tax_rate_pct ? ' (' + esc(e.tax_rate_pct) + '%)' : ''}</td><td class="r">${money(e.tax_cents)}</td></tr>` : '')
+        + `<tr class="tot"><td colspan="2">Total</td><td class="r">${money(e.total_cents)}</td></tr>`
+        + (Number(e.deposit_cents) ? `<tr><td colspan="2">Deposit due to confirm</td><td class="r">${money(e.deposit_cents)}</td></tr>` : '');
+      const sig = e.status === 'accepted'
+        ? `<h2>Acceptance</h2><div>Signed by ${esc(e.customer_signed_name)} on ${esc(day(e.customer_signed_at))}</div>${e.signature_image && /^data:image\/png;base64,/.test(e.signature_image) ? `<img class="sig" alt="Customer signature" src="${esc(e.signature_image)}">` : ''}`
+        : `<div class="note">Status: ${esc(e.status)}${e.valid_until ? ' &middot; valid until ' + esc(day(e.valid_until)) : ''}</div>`;
+      return header('Estimate', `${invNo()}<br>Issued ${esc(day(e.sent_at || e.created_at))}`) + parties()
+        + `<h2>Services</h2>` + linesTable(e.lines, rows)
+        + (e.notes ? `<div class="note" style="white-space:pre-wrap;">${esc(e.notes)}</div>` : '') + sig + policyNote();
+    },
+    invoice(){
+      const j = D.job;
+      const charges = (D.charge_lines || []).map(l => ({ description: l.description + (l.is_change_order ? ' (change order)' : ''), amount_cents: l.amount_cents }));
+      const lines = [{ description: 'Moving services as quoted', amount_cents: j.quoted_price_cents || 0 }].concat(charges);
+      const total = lines.reduce((s, l) => s + (Number(l.amount_cents) || 0), 0);
+      const paid = paidNonTip();
+      const rows = `<tr class="tot"><td colspan="2">Total</td><td class="r">${money(total)}</td></tr>`
+        + `<tr><td colspan="2">Paid to date</td><td class="r">-${money(paid)}</td></tr>`
+        + `<tr class="tot"><td colspan="2">Balance due</td><td class="r">${money(Math.max(total - paid, 0))}</td></tr>`;
+      const note = (D.charge_lines || []).length ? '<div class="note">Additional charges are listed as recorded by your move team. Tax on charges, where applicable, is included in each charge amount.</div>' : '';
+      return header('Invoice', `${invNo()}<br>Date ${esc(day(D.generated_at))}`) + parties() + `<h2>Charges</h2>` + linesTable(lines, rows) + note + paymentsTable() + policyNote();
+    },
+    receipts(){
+      const list = payments();
+      if(!list.length) return header('Receipts', invNo()) + '<div class="empty">No payments have been recorded yet.</div>';
+      return header('Receipts', invNo()) + parties() + paymentsTable(true);
+    },
+    bol(){
+      const j = D.job, inv = D.inventory || [], sigs = D.signatures || [];
+      const items = inv.length ? `<table><thead><tr><th>Item</th><th>From room</th><th>To room</th><th>Status</th></tr></thead><tbody>${inv.map(i => `<tr><td>${esc(i.description)}${i.is_high_value ? ' <b>(high value)</b>' : ''}</td><td>${esc(i.origin_room || '')}</td><td>${esc(i.destination_room || '')}</td><td>${esc(String(i.status || '').replace(/_/g,' '))}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No itemized inventory recorded.</div>';
+      const cov = j.coverage_type ? `${esc(String(j.coverage_type).replace(/_/g,' '))}${j.declared_value_cents ? ' &middot; declared value ' + money(j.declared_value_cents) : ''}` : 'Not recorded';
+      const sigRows = sigs.length ? sigs.map(s => `<div>${esc(s.kind === 'pickup_signature' ? 'Pickup' : 'Delivery')} signed ${esc(new Date(s.signed_at).toLocaleString())}${s.note ? ': ' + esc(s.note) : ''}</div>`).join('') : '<div class="empty">Not yet signed.</div>';
+      return header('Bill of Lading', `${invNo()}<br>${esc(day(j.scheduled_date))}`) + parties()
+        + `<div class="grid2"><div><h2>Carrier</h2><div>${esc(D.company.brand_name)}</div><div class="meta">Crew: ${esc(j.crew_name || 'To be assigned')}${j.crew_lead_name ? ' (lead ' + esc(j.crew_lead_name) + ')' : ''}<br>Truck: ${esc(j.truck_label || 'To be assigned')}</div></div>
+           <div><h2>Valuation</h2><div>${cov}</div><div class="meta">Boxes: ${esc(D.boxes.delivered)} of ${esc(D.boxes.total)} delivered</div></div></div>
+           <h2>Inventory</h2>${items}<h2>Signatures</h2>${sigRows}`
+        + `<div class="note">This record is generated from the live move file. Agreed price: ${money(j.quoted_price_cents)}.${D.company.dot_number ? '' : ' Carrier registration numbers will appear here once on file.'}</div>`;
+    }
+  };
+
+  function paymentsTable(withHead){
+    const list = payments();
+    if(!list.length) return '';
+    const rows = list.map(x => `<tr><td>${esc(day(x.recorded_at))}</td><td>${esc(PTYPE[x.payment_type] || x.payment_type)}${x.refund_of_payment_id ? ' (refund)' : ''}</td><td>${esc(METHOD[x.method] || x.method || '')}</td><td>RCPT-${esc(String(x.id).slice(0,8).toUpperCase())}</td><td class="r">${money(x.amount_cents)}</td></tr>`).join('');
+    return `<h2>${withHead ? 'Payments received' : 'Payments'}</h2><table><thead><tr><th>Date</th><th>Type</th><th>Method</th><th>Receipt</th><th class="r">Amount</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  function policyNote(){
+    const c = D.company;
+    if(c.cancellation_notice_hours == null || c.cancellation_fee_pct == null) return '';
+    return `<div class="note">Cancellation policy: cancellations within ${esc(c.cancellation_notice_hours)} hours of the move date may incur a ${esc(c.cancellation_fee_pct)}% fee.</div>`;
+  }
+
+  const TABS = [['estimate','Estimate'],['invoice','Invoice'],['receipts','Receipts'],['bol','Bill of Lading']];
+  function show(key){
+    document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.k === key));
+    document.getElementById('out').innerHTML = `<div class="page">${DOCS[key]()}</div>`;
+    const q = new URLSearchParams(location.search); q.set('doc', key); history.replaceState(null, '', '?' + q.toString());
+  }
+
+  async function init(){
+    const out = document.getElementById('out');
+    if(!jobId || !token){ out.innerHTML = '<div class="gate">Open this page from the private link to your move.</div>'; return; }
+    const { data, error } = await sb.rpc('get_job_document_data', { p_job_id: jobId, p_token: token });
+    if(error || !data){ out.innerHTML = `<div class="gate">${error && error.message === 'Invalid link' ? 'This link is invalid or has expired.' : 'We couldn’t load your documents right now. Please try again.'}</div>`; return; }
+    D = data;
+    document.title = D.company.brand_name + ' | Move Documents';
+    document.getElementById('tabs').innerHTML = TABS.map(([k, l]) => `<button role="tab" data-k="${k}">${l}</button>`).join('');
+    document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => show(b.dataset.k)));
+    const want = p.get('doc');
+    show(DOCS[want] ? want : 'estimate');
+  }
+  init();
+</script>
+</body>
+</html>

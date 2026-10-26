@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Haulwyn OS | Staff Directory</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{ --navy:#0a1f44; --red:#b22234; --gold:#c9a227; --steel:#5b6478; --off:#f6f5f1;}
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',sans-serif; background:var(--navy); color:#fff; min-height:100vh; display:flex; align-items:center; justify-content:center;}
+  .wrap{max-width:900px; padding:40px; text-align:center;}
+  h1{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:.04em; font-size:28px; margin-bottom:8px;}
+  p{color:rgba(255,255,255,.7); margin-bottom:40px; font-size:15px;}
+  .grid{display:grid; grid-template-columns:repeat(2,1fr); gap:20px;}
+  a.card{display:block; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.15); border-radius:12px; padding:30px 20px; color:#fff; text-decoration:none; transition:transform .15s ease, background .15s ease;}
+  a.card:hover{transform:translateY(-4px); background:rgba(255,255,255,.1);}
+  a.card .tag{display:block; font-family:'Oswald',sans-serif; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--gold); margin-bottom:10px;}
+  a.card .name{font-family:'Oswald',sans-serif; font-size:17px; text-transform:uppercase; margin-bottom:8px;}
+  a.card .desc{font-size:13px; color:rgba(255,255,255,.65); line-height:1.5;}
+  @media (max-width:700px){ .grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Haulwyn OS</h1>
+  <p>Staff &amp; partner tool directory &middot; each tool below requires its own sign-in or access code</p>
+  <div class="grid">
+    <a class='card' href='/ops'>
+      <span class="tag">Internal</span>
+      <div class="name">Ops Command Center</div>
+      <div class="desc">Live dispatch board, truck fleet, KPIs, dynamic pricing, competitor watch &amp; automated pricing alerts.</div>
+    </a>
+    <a class='card' href='/crew'>
+      <span class="tag">Field</span>
+      <div class="name">Crew Field App</div>
+      <div class="desc">QR scan chain-of-custody, destination-room routing, exception logging.</div>
+    </a>
+    <a class='card' href='/portal'>
+      <span class="tag">Client</span>
+      <div class="name">Client Portal</div>
+      <div class="desc">Live move timeline, photographed inventory, relocation director contact.</div>
+    </a>
+    <a class='card' href='/quote'>
+      <span class="tag">Customer-Facing</span>
+      <div class="name">Instant Quote Calculator</div>
+      <div class="desc">Live tier pricing with demand-based adjustment; submits straight into the lead pipeline.</div>
+    </a>
+    <a class='card' href='/broker'>
+      <span class="tag">Partner</span>
+      <div class="name">Broker &amp; Referral Portal</div>
+      <div class="desc">Partners submit clients and track conversion; commission calculates automatically when a move closes.</div>
+    </a>
+    <a class='card' href='/vault'>
+      <span class="tag">Internal</span>
+      <div class="name">Estate Vaulting</div>
+      <div class="desc">Concierge tracking for Tier III high-value &amp; irreplaceable items, insured value, condition &amp; climate control.</div>
+    </a>
+  </div>
+</div>
+</body>
+</html>

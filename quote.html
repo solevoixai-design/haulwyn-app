@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blue Provenance Transport | Instant Quote</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --navy:#0a1f44; --red:#b22234; --gold:#c9a227; --ink:#0b1230; --steel:#5b6478; --off:#f6f5f1; --green:#1fb26b;}
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',sans-serif; background:var(--off); color:var(--ink);}
+  header{background:var(--navy); color:#fff; padding:22px 28px; text-align:center;}
+  header h1{font-family:'Oswald',sans-serif; font-size:19px; text-transform:uppercase; letter-spacing:.03em;}
+  header .sub{font-size:12.5px; color:rgba(255,255,255,.65); margin-top:2px;}
+  main{max-width:640px; margin:0 auto; padding:28px;}
+  .card{background:#fff; border-radius:12px; padding:26px; border:1px solid rgba(11,18,48,.08); margin-bottom:20px;}
+  .card h2{font-family:'Oswald',sans-serif; font-size:13.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--navy); margin-bottom:16px;}
+  label{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--steel); display:block; margin-bottom:6px; margin-top:14px;}
+  label:first-of-type{margin-top:0;}
+  select, input{width:100%; padding:13px 14px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14.5px; font-family:'Inter',sans-serif; background:#fff;}
+  .tiles{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+  .tile{border:1.5px solid rgba(11,18,48,.15); border-radius:10px; padding:14px 10px; text-align:center; cursor:pointer; font-size:13px; font-weight:600;}
+  .tile.active{border-color:var(--red); background:#fbe9ea; color:var(--red);}
+  .estimate{background:var(--navy); color:#fff; border-radius:12px; padding:26px; text-align:center; margin-bottom:20px;}
+  .estimate .amt{font-family:'Playfair Display',serif; font-size:38px; font-weight:700;}
+  .estimate .note{font-size:12.5px; color:rgba(255,255,255,.65); margin-top:8px;}
+  .breakdown{font-size:12.5px; color:rgba(255,255,255,.75); margin-top:14px; text-align:left; display:inline-block;}
+  .breakdown div{padding:3px 0;}
+  button{width:100%; padding:15px; border-radius:8px; border:none; background:var(--red); color:#fff; font-weight:700; text-transform:uppercase; letter-spacing:.03em; font-family:'Oswald',sans-serif; cursor:pointer; font-size:14px;}
+  button:hover{background:#8f1c2a;}
+  button:disabled{background:#c8ccd6; cursor:default;}
+  .success{background:#e3f7ec; color:var(--green); border-radius:10px; padding:16px; text-align:center; font-weight:600; font-size:14px; margin-top:16px; display:none;}
+  .error{background:#fbe9ea; color:var(--red); border-radius:10px; padding:16px; text-align:center; font-weight:600; font-size:14px; margin-top:16px; display:none;}
+  .success.show{display:block;}
+  .error.show{display:block;}
+  .disclaimer{font-size:11.5px; color:var(--steel); margin-top:10px; text-align:center;}
+  .price-cal{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-top:8px;}
+  .price-cal .pc-day{border:1.5px solid rgba(11,18,48,.12); border-radius:7px; padding:6px 2px; text-align:center; cursor:pointer; font-size:11px; line-height:1.3;}
+  .price-cal .pc-day .pc-date{font-weight:700; font-family:'Oswald',sans-serif; font-size:13px;}
+  .price-cal .pc-day .pc-tag{font-size:8.5px; text-transform:uppercase; letter-spacing:.02em; font-weight:700; margin-top:2px;}
+  .price-cal .pc-day.pc-save{background:#e3f7ec; border-color:var(--green); color:#146c43;}
+  .price-cal .pc-day.pc-surge{background:#fbe9ea; border-color:var(--red); color:var(--red);}
+  .price-cal .pc-day.pc-selected{outline:2px solid var(--navy); outline-offset:1px;}
+  .cal-legend{display:flex; gap:14px; font-size:11px; color:var(--steel); margin-top:8px; flex-wrap:wrap;}
+  .cal-legend span{display:inline-flex; align-items:center; gap:5px;}
+  .cal-legend i{width:10px; height:10px; border-radius:3px; display:inline-block;}
+  .slot-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:6px; max-height:300px; overflow-y:auto; padding:2px;}
+  .slot{border:1.5px solid rgba(11,18,48,.15); border-radius:8px; padding:8px 4px; text-align:center; font-size:11.5px; cursor:pointer; background:#fff; line-height:1.35;}
+  .slot b{display:block; font-family:'Oswald',sans-serif; font-size:13px;}
+  .slot.full{opacity:.35; cursor:not-allowed; text-decoration:line-through;}
+  .slot.sel{border-color:var(--navy); background:var(--navy); color:#fff;}
+  .slot .adj{font-size:9.5px; font-weight:700;}
+  .slot .adj.save{color:#146c43;} .slot .adj.up{color:var(--red);}
+  .slot.sel .adj{color:#fff;}
+  a.btnlink{display:block; text-align:center; margin-top:12px; padding:14px; border-radius:8px; background:var(--navy); color:#fff; text-decoration:none; font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:.03em; font-size:14px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Blue Provenance Transport</h1>
+  <div class="sub">Instant Quote &middot; Live Pricing</div>
+</header>
+
+<main>
+  <div class="card">
+    <h2>1. Choose Your Service Tier</h2>
+    <div class="tiles" id="tierTiles"><div style="grid-column:1/-1; color:var(--steel); font-size:13px;">Loading live pricing&hellip;</div></div>
+
+    <label for="moveDate">Preferred Move Date</label>
+    <input type="date" id="moveDate">
+
+    <label style="margin-top:18px;">Or Pick a Cheaper Day — Real Pricing, 5 Weeks Out</label>
+    <div style="font-size:11px; color:var(--steel); margin-top:-4px; margin-bottom:2px;">Our pricing isn't a mystery — every day's rate is published here in advance. Green days are genuinely discounted because trucks are usually idle then; move on one and you'll see the savings reflected instantly below.</div>
+    <div class="price-cal" id="priceCal"></div>
+    <div class="cal-legend">
+      <span><i style="background:#e3f7ec; border:1px solid var(--green);"></i>Discount day</span>
+      <span><i style="background:#fff; border:1px solid rgba(11,18,48,.12);"></i>Standard rate</span>
+      <span><i style="background:#fbe9ea; border:1px solid var(--red);"></i>Peak demand</span>
+    </div>
+
+    <label for="fromZip">Origin ZIP</label>
+    <input id="fromZip" placeholder="e.g. 10021">
+
+    <label for="toZip">Destination ZIP</label>
+    <input id="toZip" placeholder="e.g. 07030">
+
+    <label for="homeSize" style="margin-top:18px;">Approximate Home Size (optional)</label>
+    <select id="homeSize">
+      <option value="">Not sure yet</option>
+      <option value="studio_1br">Studio / 1 Bedroom</option>
+      <option value="2br">2 Bedroom</option>
+      <option value="3br">3 Bedroom</option>
+      <option value="4br_plus">4+ Bedroom / House</option>
+    </select>
+    <div id="weightEstimate" style="font-size:12px; color:var(--steel); margin-top:6px;"></div>
+  </div>
+
+  <div class="card" id="suppliesCard" style="display:none;">
+    <h2>Not Sure What Packing Supplies You'll Need?</h2>
+    <div style="font-size:12.5px; color:var(--steel); margin-bottom:10px;">Not knowing how many boxes to buy is one of the most common sources of last-minute moving stress. Here's an industry-typical starting point for your home size — buy a little extra small/medium, since those fill up faster than people expect.</div>
+    <div id="suppliesGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:8px 16px; font-size:13px;"></div>
+    <div style="font-size:11px; color:var(--steel); margin-top:10px;">A rough starting point, not a guarantee — actual needs vary with how much you own and how much you're keeping vs. donating. Our crew brings its own professional wrapping and padding for furniture and fragile items on move day; this list is just for what you pack yourself beforehand.</div>
+  </div>
+
+  <div class="estimate">
+    <div class="note">YOUR LIVE ESTIMATE</div>
+    <div class="amt" id="estimateAmt">Select a tier</div>
+    <div class="breakdown" id="estimateBreakdown"></div>
+    <div id="cancellationPolicyNote" style="font-size:11px; color:var(--steel); margin-top:10px; padding-top:8px; border-top:1px solid rgba(11,18,48,.08);"></div>
+  </div>
+
+  <div class="card">
+    <h2>2. Get This Quote Sent to You</h2>
+    <label for="fullName">Full Name</label>
+    <input id="fullName" placeholder="Jane Doe">
+    <label for="email">Email</label>
+    <input id="email" type="email" placeholder="jane@example.com">
+    <label for="phone">Phone</label>
+    <input id="phone" placeholder="(555) 555-5555">
+    <label style="margin-top:14px; display:flex; align-items:flex-start; gap:8px; font-weight:400;">
+      <input type="checkbox" id="flexibleDates" style="width:auto; margin-top:3px;">
+      <span>I'm flexible on my exact move date (within a few days) for a possible discount if a cheaper slot opens up.</span>
+    </label>
+    <div style="margin-top:18px;">
+      <button id="submitBtn">Request This Quote</button>
+    </div>
+    <div class="success" id="successMsg">Request received. A relocation director will confirm your quote shortly.</div>
+    <div class="error" id="errorMsg">Something went wrong submitting your request. Please try again.</div>
+    <div class="disclaimer">By submitting, you agree to receive email and text messages about your move, including request acknowledgments and a post-move review request. Msg &amp; data rates may apply. Reply STOP to opt out. See our <a href='/privacy' style='color:var(--navy);'>Privacy Policy</a> and <a href='/terms' style='color:var(--navy);'>Terms</a>.</div>
+    <div class="disclaimer">This is a live, automatically-updated estimate based on current tier pricing and demand. Final pricing is confirmed by a relocation director.</div>
+  </div>
+
+  <!-- 3. Online booking (shown after a quote is submitted). Backend: get_booking_availability,
+       book_move_from_quote. Price and deposit are always computed server-side; nothing here is trusted. -->
+  <div class="card" id="bookCard" style="display:none;">
+    <h2>3. Book Your Move Online</h2>
+    <div id="bookIntro" style="font-size:13px; color:var(--steel); margin-bottom:12px;">Reserve your date now. You'll review and e-sign your estimate, then pay a deposit to lock it in.</div>
+    <div id="bookConsult" style="display:none; font-size:13.5px; padding:12px; background:rgba(11,18,48,.04); border-radius:8px;">This service is quoted individually after a walkthrough. A relocation director will contact you to schedule it.</div>
+    <div id="bookForm">
+      <label>Choose a Date and Arrival Window</label>
+      <div id="slotGrid" class="slot-grid"><div style="color:var(--steel); font-size:13px;">Loading availability&hellip;</div></div>
+      <div id="slotPicked" style="font-size:12.5px; color:var(--navy); font-weight:600; margin-top:8px;"></div>
+      <label for="bkOrigin">Pickup Address</label>
+      <input id="bkOrigin" maxlength="500" placeholder="Street, apt, city, ZIP">
+      <label for="bkDest">Destination Address</label>
+      <input id="bkDest" maxlength="500" placeholder="Street, apt, city, ZIP">
+      <label for="bkNotes">Anything We Should Know? (optional)</label>
+      <input id="bkNotes" maxlength="4000" placeholder="Elevator, stairs, parking, special items">
+      <label style="margin-top:14px; display:flex; align-items:flex-start; gap:8px; font-weight:400; text-transform:none; letter-spacing:0; font-size:12.5px;">
+        <input type="checkbox" id="bkAgree" style="width:auto; margin-top:3px;">
+        <span>I agree to the <a href="/terms" style="color:var(--navy);">Terms</a> and the cancellation policy shown above.</span>
+      </label>
+      <div style="margin-top:18px;"><button id="bookBtn">Reserve My Date</button></div>
+      <div class="error" id="bookError"></div>
+    </div>
+    <div class="success" id="bookDone"></div>
+  </div>
+</main>
+
+<script>
+  const SUPABASE_URL = 'https://izafyooegkvstynejaxh.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6YWZ5b29lZ2t2c3R5bmVqYXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1MzQwNzcsImV4cCI6MjEwNDExMDA3N30.nKaTP_t5TrzJE0xbFb7SUX_QLRKIEGIiYTnbb8QcwYY';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const dollars = c => '$' + (c/100).toLocaleString(undefined,{maximumFractionDigits:0});
+
+  let tiers = [];
+  let rules = [];
+  let selectedTier = null;
+
+  // Priority, highest first: an exact specific_date match (e.g. a named holiday like Memorial
+  // Day or July 4th — dates a moving company actually sees demand spikes on, which don't follow
+  // any day-of-week or month-end pattern) > a date_range match (multi-day windows like "Memorial
+  // Day weekend" or "the week of Labor Day") > day-of-week > the explicit month_end_only flag
+  // (replaces the old fragile "name must contain the word month" convention) > standard rate.
+  // Exactly one rule wins per date rather than stacking, same as the original day-of-week-only
+  // logic — keeps the published calendar unambiguous for a customer reading it.
+  function activeMultiplierForDate(dateStr){
+    if(!dateStr || !rules.length) return { mult: 1, label: 'Standard rate' };
+    const d = new Date(dateStr + 'T12:00:00');
+    const dow = d.getDay();
+    const isMonthEnd = d.getDate() >= 27;
+
+    const dateRule = rules.find(r => r.specific_date === dateStr);
+    if(dateRule) return { mult: parseFloat(dateRule.demand_multiplier), label: dateRule.rule_name };
+
+    const rangeRule = rules.find(r => r.date_range_start && r.date_range_end && dateStr >= r.date_range_start && dateStr <= r.date_range_end);
+    if(rangeRule) return { mult: parseFloat(rangeRule.demand_multiplier), label: rangeRule.rule_name };
+
+    const dowRule = rules.find(r => r.day_of_week === dow && !r.specific_date && !r.date_range_start);
+    if(dowRule) return { mult: parseFloat(dowRule.demand_multiplier), label: dowRule.rule_name };
+
+    if(isMonthEnd){
+      const meRule = rules.find(r => r.month_end_only);
+      if(meRule) return { mult: parseFloat(meRule.demand_multiplier), label: meRule.rule_name };
+    }
+    return { mult: 1, label: 'Standard rate' };
+  }
+
+  function renderEstimate(){
+    const amtEl = document.getElementById('estimateAmt');
+    const bdEl = document.getElementById('estimateBreakdown');
+    if(!selectedTier){ amtEl.textContent = 'Select a tier'; bdEl.innerHTML=''; return; }
+    if(selectedTier.price_type === 'consultation'){
+      amtEl.textContent = 'By Consultation';
+      bdEl.innerHTML = '<div>Estate Vaulting is quoted individually based on scope.</div>';
+      return;
+    }
+    if(selectedTier.price_type === 'hourly'){
+      const minCents = Math.round(selectedTier.hourly_rate_cents * selectedTier.minimum_hours);
+      amtEl.textContent = dollars(selectedTier.hourly_rate_cents) + '/hr';
+      bdEl.innerHTML = `
+        <div>Hourly rate (${esc(selectedTier.label)}): ${dollars(selectedTier.hourly_rate_cents)}/hr</div>
+        <div>${selectedTier.minimum_hours}-hour minimum</div>
+        <div style="border-top:1px solid rgba(255,255,255,.2); margin-top:6px; padding-top:8px; font-weight:700;">Minimum charge: ${dollars(minCents)} &mdash; final total is based on actual hours worked, not a flat quote.</div>`;
+      return;
+    }
+    const dateStr = document.getElementById('moveDate').value;
+    const { mult, label } = activeMultiplierForDate(dateStr);
+    const finalCents = Math.round(selectedTier.base_price_cents * mult);
+    amtEl.textContent = dollars(finalCents) + '+';
+    bdEl.innerHTML = `
+      <div>Base rate (${esc(selectedTier.label)}): ${dollars(selectedTier.base_price_cents)}</div>
+      <div>Demand adjustment: ${mult}&times; (${esc(label)})</div>
+      <div style="border-top:1px solid rgba(255,255,255,.2); margin-top:6px; padding-top:8px; font-weight:700;">Live estimate: ${dollars(finalCents)}+</div>`;
+  }
+  const esc = s => (s ?? '').toString().replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+  // Weight/truck-size estimate — a real, competitor-documented gap (Elromco's own published
+  // reviews specifically call out "no weight-based local-move estimation"). Deliberately kept
+  // separate from the tier-based price above rather than driving it: this platform has no real
+  // cubic-footage/inventory-photo estimator yet, so pretending a bedroom count sets an exact
+  // price would overpromise. Instead this gives the customer (and, via the lead record, staff)
+  // an honest expectation of scope and crew/truck planning ahead of the real in-person or video
+  // walkthrough that sets the final price. Ranges sourced from published moving-industry
+  // estimators (Safe Ship Moving, Alliance Moving & Storage) rather than invented — labeled as
+  // industry-typical, not a guarantee, since actual weight varies by furnishing density.
+  const HOME_SIZE_ESTIMATES = {
+    studio_1br: { label: 'Studio / 1 Bedroom', weight: '2,000–4,000 lbs', truck: '16-ft truck', crew: 2 },
+    '2br': { label: '2 Bedroom', weight: '5,000–7,500 lbs', truck: '20-ft truck', crew: 3 },
+    '3br': { label: '3 Bedroom', weight: '9,000–12,000 lbs', truck: '26-ft truck', crew: 4 },
+    '4br_plus': { label: '4+ Bedroom / House', weight: '12,000–15,000+ lbs', truck: '26-ft truck (or two trucks)', crew: 4 }
+  };
+  function renderWeightEstimate(){
+    const el = document.getElementById('weightEstimate');
+    const key = document.getElementById('homeSize').value;
+    const est = HOME_SIZE_ESTIMATES[key];
+    el.innerHTML = est
+      ? `Typical for ${esc(est.label)}: <strong>${esc(est.weight)}</strong>, usually a ${esc(est.truck)} with a ${est.crew}-person crew. Industry-typical range — your relocation director confirms the real scope from your actual inventory.`
+      : '';
+  }
+  // Packing Supplies Calculator — not knowing how many boxes to buy is one of the most-cited
+  // sources of pre-move anxiety in the industry research (customers either wildly over-buy or,
+  // more commonly, run out mid-pack and have to make an emergency store run). Purely client-side,
+  // no new backend needed — reuses the same home-size categories already collected for the weight
+  // estimate above rather than asking a second question. Counts are industry-typical starting
+  // points sourced the same way as the weight/truck table (published moving-industry packing
+  // calculators — U-Haul, Public Storage — not invented), explicitly labeled as a starting point
+  // rather than a guarantee since actual needs vary with how much a household actually owns.
+  const PACKING_SUPPLY_ESTIMATES = {
+    studio_1br: { small: 10, medium: 15, large: 10, wardrobe: 2, tapeRolls: 6, paperReams: 3, bubbleWrapRolls: 1 },
+    '2br': { small: 15, medium: 25, large: 15, wardrobe: 3, tapeRolls: 10, paperReams: 5, bubbleWrapRolls: 2 },
+    '3br': { small: 20, medium: 35, large: 20, wardrobe: 4, tapeRolls: 14, paperReams: 7, bubbleWrapRolls: 3 },
+    '4br_plus': { small: 25, medium: 45, large: 25, wardrobe: 5, tapeRolls: 18, paperReams: 9, bubbleWrapRolls: 4 }
+  };
+  const SUPPLY_LABELS = { small: 'Small Boxes', medium: 'Medium Boxes', large: 'Large Boxes', wardrobe: 'Wardrobe Boxes', tapeRolls: 'Rolls of Packing Tape', paperReams: 'Reams of Packing Paper', bubbleWrapRolls: 'Rolls of Bubble Wrap' };
+  function renderSuppliesEstimate(){
+    const card = document.getElementById('suppliesCard');
+    const key = document.getElementById('homeSize').value;
+    const est = PACKING_SUPPLY_ESTIMATES[key];
+    if(!est){ card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    document.getElementById('suppliesGrid').innerHTML = Object.keys(SUPPLY_LABELS).map(k => `
+      <div style="display:flex; justify-content:space-between; padding:6px 10px; background:var(--off); border-radius:6px;">
+        <span style="color:var(--steel);">${esc(SUPPLY_LABELS[k])}</span>
+        <strong>${est[k]}</strong>
+      </div>`).join('');
+  }
+  document.getElementById('homeSize').addEventListener('change', () => { renderWeightEstimate(); renderSuppliesEstimate(); });
+  // None of this platform's forms outside index.html use a real <form> element, so the
+  // browser's own type="email" validation never runs (it only fires on a native form
+  // submit). A simple manual check closes that gap — without it, a typo'd email saves
+  // silently and the real GHL acknowledgment email just fails with no one told why.
+  const isValidEmail = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s||'').trim());
+  // Phone is optional everywhere it appears on this platform (SMS automation isn't
+  // live yet, so nothing downstream fails silently the way GHL email does on a bad
+  // address) but a garbage value still degrades real customer data and would need
+  // fixing later once SMS goes live. Permissive on purpose: accepts any real format
+  // (dashes, parens, spaces, a leading +1) by just counting digits, 7-15 of them.
+  const isValidPhone = s => { const trimmed = (s||'').trim(); if(!trimmed) return true; const digits = trimmed.replace(/\D/g,''); return digits.length >= 7 && digits.length <= 15; };
+
+  async function loadTiers(){
+    const { data } = await sb.from('tier_pricing').select('*').order('tier');
+    tiers = data || [];
+    const wrap = document.getElementById('tierTiles');
+    if(!tiers.length){ wrap.innerHTML = '<div style="grid-column:1/-1;">Pricing unavailable right now.</div>'; return; }
+    wrap.innerHTML = tiers.map((t,i) => {
+      let sub = '';
+      if(t.price_type === 'hourly') sub = dollars(t.hourly_rate_cents) + '/hr, ' + t.minimum_hours + '-hr min';
+      else if(t.price_type !== 'consultation') sub = 'from ' + dollars(t.base_price_cents);
+      return `<div class="tile" data-i="${i}">${esc(t.label)}${sub ? '<br><span style="font-size:11px; color:var(--steel);">'+sub+'</span>' : ''}</div>`;
+    }).join('');
+    wrap.querySelectorAll('.tile').forEach(el => el.addEventListener('click', () => {
+      wrap.querySelectorAll('.tile').forEach(x=>x.classList.remove('active'));
+      el.classList.add('active');
+      selectedTier = tiers[parseInt(el.dataset.i)];
+      renderEstimate();
+    }));
+  }
+
+  async function loadRules(){
+    const { data } = await sb.from('pricing_rules').select('*').eq('active', true);
+    rules = data || [];
+    renderPriceCalendar();
+  }
+
+  // Published cancellation policy — a real, cited competitor complaint (MoveitPro, per Capterra)
+  // is disputed cancellation billing that felt arbitrary to customers. Publishing the actual
+  // notice window and fee percentage here, before anyone books, is the honest fix: no surprise,
+  // no dispute about whether the policy existed. Reads through a small anon-callable RPC since
+  // `companies` itself is staff-only — this exposes nothing but the two fields meant to be public.
+  async function loadCancellationPolicyNote(){
+    const noteEl = document.getElementById('cancellationPolicyNote');
+    const { data, error } = await sb.rpc('get_cancellation_policy');
+    const policy = Array.isArray(data) ? data[0] : data;
+    if(error || !policy || policy.cancellation_notice_hours == null || policy.cancellation_fee_pct == null){
+      noteEl.textContent = '';
+      return;
+    }
+    const days = policy.cancellation_notice_hours % 24 === 0 ? (policy.cancellation_notice_hours / 24) + '-day' : policy.cancellation_notice_hours + '-hour';
+    noteEl.textContent = `Cancellation policy: cancellations within ${days} notice of your move date may incur a ${policy.cancellation_fee_pct}% cancellation fee.`;
+  }
+
+  // Transparent, rules-based dynamic pricing — the calendar makes the published surcharge/
+  // discount schedule visible up front (not just after picking a date), the same way a
+  // published surge-pricing calendar works, so a flexible customer can self-select a cheaper
+  // day. No competitor platform researched shows this before a date is already chosen.
+  function fmtPct(mult){
+    const pct = Math.round(Math.abs(mult - 1) * 100);
+    return mult < 1 ? `Save ${pct}%` : (mult > 1 ? `+${pct}%` : 'Standard');
+  }
+  function renderPriceCalendar(){
+    const wrap = document.getElementById('priceCal');
+    const days = [];
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    for(let i = 0; i < 35; i++){
+      const d = new Date(today);
+      d.setDate(d.getDate() + i);
+      const dateStr = d.toISOString().slice(0,10);
+      const { mult, label } = activeMultiplierForDate(dateStr);
+      days.push({ dateStr, day: d.getDate(), dow: d.toLocaleDateString(undefined,{weekday:'short'}), mult, label });
+    }
+    wrap.innerHTML = days.map(d => {
+      const cls = d.mult < 1 ? 'pc-save' : (d.mult > 1 ? 'pc-surge' : '');
+      const selected = document.getElementById('moveDate').value === d.dateStr ? ' pc-selected' : '';
+      return `<div class="pc-day ${cls}${selected}" data-date="${d.dateStr}" title="${esc(d.label)}">
+        <div style="font-size:9px; text-transform:uppercase; color:var(--steel);">${esc(d.dow)}</div>
+        <div class="pc-date">${d.day}</div>
+        <div class="pc-tag">${esc(fmtPct(d.mult))}</div>
+      </div>`;
+    }).join('');
+    wrap.querySelectorAll('.pc-day').forEach(el => el.addEventListener('click', () => {
+      document.getElementById('moveDate').value = el.dataset.date;
+      renderEstimate();
+      renderPriceCalendar();
+    }));
+  }
+
+  document.getElementById('moveDate').addEventListener('change', () => { renderEstimate(); renderPriceCalendar(); });
+
+  function currentMoveSizeSummary(){
+    const homeSizeKey = document.getElementById('homeSize').value;
+    const homeSizeEst = HOME_SIZE_ESTIMATES[homeSizeKey];
+    return selectedTier ? `${selectedTier.label} | ${document.getElementById('fromZip').value || '?'}→${document.getElementById('toZip').value || '?'} | ${document.getElementById('moveDate').value || 'no date'} | Est ${document.getElementById('estimateAmt').textContent}${homeSizeEst ? ` | ${homeSizeEst.label} (~${homeSizeEst.weight}, ${homeSizeEst.truck})` : ''}` : null;
+  }
+
+  // Abandoned-quote recovery: most home-services sites lose a real lead the moment someone
+  // fills in their name and contact info, sees a price, then closes the tab without hitting
+  // submit — no competitor platform researched captures that. Once name + a valid contact method
+  // have sat filled for a few seconds with no submission, this quietly saves a real lead row
+  // (marked distinctly so staff know it's a warm, self-identified, unconfirmed inquiry, not a
+  // completed request) so a relocation director can still reach out. If they go on to actually
+  // submit, that same row is updated in place rather than creating a duplicate lead.
+  let partialLeadId = null;
+  let partialLeadTimer = null;
+  let formSubmitted = false;
+
+  // Direct-customer referral program — distinct from the B2B Broker Portal, this closes a gap
+  // named directly in this project's own moving-company case-study research ("a referral
+  // program... marketing from day one"). A past customer's shareable link carries their own
+  // short referral_code as ?ref=; captured here once at page load and sent along only on final
+  // submission (never on the 8-second partial-abandon capture) so a referral only ever attaches
+  // to a lead that actually completed the form.
+  const referralCodeFromUrl = new URLSearchParams(window.location.search).get('ref') || null;
+  if(referralCodeFromUrl){
+    const note = document.createElement('div');
+    note.style.cssText = 'font-size:12px; color:var(--steel); margin-bottom:14px; padding:8px 10px; background:rgba(11,18,48,.03); border-radius:6px;';
+    note.textContent = "You were referred by a friend — thank you! We'll make sure they're credited once your move is complete.";
+    document.querySelector('.card')?.parentNode.insertBefore(note, document.querySelector('.card'));
+  }
+
+  function partiallyFilled(){
+    const full_name = document.getElementById('fullName').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    if(!full_name) return null;
+    if(email && isValidEmail(email)) return { full_name, email, phone: phone || null };
+    if(phone && isValidPhone(phone) && phone.replace(/\D/g,'').length >= 7) return { full_name, email: email || null, phone };
+    return null;
+  }
+
+  async function captureOrUpdatePartialLead(){
+    if(formSubmitted) return;
+    const info = partiallyFilled();
+    if(!info) return;
+    // Routed through the capture_quote_lead() RPC rather than a plain table insert/update:
+    // anon has no UPDATE policy on leads (updates are staff-only), so a direct .update() call
+    // would silently affect zero rows instead of converting anything. The RPC is a narrow
+    // SECURITY DEFINER bridge that only ever touches a row it can prove is still an unclaimed
+    // 'quote_form_abandoned' capture (or creates a fresh one), so it can't be used to edit an
+    // arbitrary existing lead.
+    const { data, error } = await sb.rpc('capture_quote_lead', {
+      p_lead_id: partialLeadId,
+      p_full_name: info.full_name,
+      p_email: info.email,
+      p_phone: info.phone,
+      p_flexible_dates: document.getElementById('flexibleDates').checked,
+      p_move_size: currentMoveSizeSummary(),
+      p_final: false
+    });
+    if(!error && data) partialLeadId = data;
+  }
+
+  function schedulePartialCapture(){
+    if(formSubmitted) return;
+    clearTimeout(partialLeadTimer);
+    // 8 seconds of sitting filled-in-but-unsubmitted — long enough that a normal fast
+    // fill-and-submit flow never triggers it, short enough to still catch a real abandon.
+    partialLeadTimer = setTimeout(captureOrUpdatePartialLead, 8000);
+  }
+  ['fullName','email','phone'].forEach(id => {
+    document.getElementById(id).addEventListener('input', schedulePartialCapture);
+  });
+  // Last-chance capture if they leave before the 8-second timer ever fires — fire-and-forget,
+  // since a page unload won't reliably wait for the request to finish either way.
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState === 'hidden' && !formSubmitted) captureOrUpdatePartialLead();
+  });
+
+  document.getElementById('submitBtn').addEventListener('click', async () => {
+    const full_name = document.getElementById('fullName').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const btn = document.getElementById('submitBtn');
+    const successEl = document.getElementById('successMsg');
+    const errorEl = document.getElementById('errorMsg');
+    successEl.classList.remove('show');
+    errorEl.classList.remove('show');
+    // Inline error messaging (not a native alert()) so a form-filling agent driving this
+    // page can read the failure state straight off the DOM instead of getting stuck on a
+    // blocking browser dialog it can't see or dismiss.
+    if(!full_name || !email){ errorEl.textContent = 'Please enter your name and email.'; errorEl.classList.add('show'); return; }
+    if(!isValidEmail(email)){ errorEl.textContent = 'Please enter a valid email address.'; errorEl.classList.add('show'); return; }
+    if(!isValidPhone(phone)){ errorEl.textContent = 'Please enter a valid phone number.'; errorEl.classList.add('show'); return; }
+    errorEl.textContent = 'Something went wrong submitting your request. Please try again.';
+    btn.disabled = true; btn.textContent = 'Submitting...';
+    formSubmitted = true;
+    clearTimeout(partialLeadTimer);
+    // Same capture_quote_lead() RPC, p_final: true — if an abandoned-quote row already exists
+    // for this session it's finished in place instead of inserting a second lead, so a customer
+    // who comes back and completes the form ends up as exactly one lead record, not two.
+    const { data: finalLeadId, error } = await sb.rpc('capture_quote_lead', {
+      p_lead_id: partialLeadId,
+      p_full_name: full_name,
+      p_email: email,
+      p_phone: phone,
+      p_flexible_dates: document.getElementById('flexibleDates').checked,
+      p_move_size: currentMoveSizeSummary(),
+      p_final: true,
+      p_referral_code: referralCodeFromUrl
+    });
+    if(error){
+      errorEl.classList.add('show');
+      btn.disabled = false;
+      btn.textContent = 'Request This Quote';
+      formSubmitted = false;
+    } else {
+      successEl.classList.add('show');
+      btn.textContent = 'Request Sent';
+      showBooking(finalLeadId, email, full_name, phone);
+    }
+  });
+
+  // ---- Online booking --------------------------------------------------------------------
+  // Everything money-related is decided server-side by book_move_from_quote (price, deposit,
+  // capacity re-check under an advisory lock, idempotent per lead). This only collects input.
+  const SLOT_LABEL = { morning: 'Morning', afternoon: 'Afternoon' };
+  let booking = null;   // { leadId, email, fullName, phone }
+  let pickedSlot = null; // { date, slot }
+
+  function fmtDay(iso){
+    const d = new Date(iso + 'T12:00:00');
+    return d.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
+  }
+
+  async function showBooking(leadId, email, fullName, phone){
+    const card = document.getElementById('bookCard');
+    if(!leadId || !selectedTier){ return; }
+    booking = { leadId, email, fullName, phone };
+    card.style.display = 'block';
+    if(selectedTier.price_type === 'consultation'){
+      document.getElementById('bookForm').style.display = 'none';
+      document.getElementById('bookIntro').style.display = 'none';
+      document.getElementById('bookConsult').style.display = 'block';
+      card.scrollIntoView({ behavior:'smooth', block:'start' });
+      return;
+    }
+    card.scrollIntoView({ behavior:'smooth', block:'start' });
+    const grid = document.getElementById('slotGrid');
+    const { data, error } = await sb.rpc('get_booking_availability', { p_from: null, p_days: 45 });
+    if(error || !Array.isArray(data) || !data.length){
+      grid.innerHTML = '<div style="color:var(--steel); font-size:13px;">Online booking is unavailable right now. A relocation director will contact you to confirm your date.</div>';
+      document.getElementById('bookBtn').disabled = true;
+      return;
+    }
+    const wanted = document.getElementById('moveDate').value;
+    grid.innerHTML = data.map((s, i) => {
+      const adj = Number(s.price_adjustment_pct) || 0;
+      const adjHtml = adj < 0 ? `<span class="adj save">Save ${Math.abs(adj)}%</span>` : adj > 0 ? `<span class="adj up">+${adj}%</span>` : '<span class="adj">Standard</span>';
+      return `<div class="slot${s.available ? '' : ' full'}" data-i="${i}" role="button" tabindex="${s.available ? 0 : -1}" aria-disabled="${!s.available}">
+        <b>${esc(fmtDay(s.date))}</b>${esc(SLOT_LABEL[s.slot] || s.slot)}<br>${s.available ? adjHtml : 'Full'}</div>`;
+    }).join('');
+    grid.querySelectorAll('.slot').forEach(el => {
+      const s = data[Number(el.dataset.i)];
+      if(!s.available) return;
+      const pick = () => {
+        grid.querySelectorAll('.slot').forEach(x => x.classList.remove('sel'));
+        el.classList.add('sel');
+        pickedSlot = { date: s.date, slot: s.slot };
+        document.getElementById('slotPicked').textContent = `Selected: ${fmtDay(s.date)}, ${SLOT_LABEL[s.slot] || s.slot} arrival`;
+      };
+      el.addEventListener('click', pick);
+      el.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); pick(); } });
+      // Preselect the first open slot on the date they already picked above, if any.
+      if(!pickedSlot && wanted && s.date === wanted) pick();
+    });
+  }
+
+  document.getElementById('bookBtn').addEventListener('click', async () => {
+    const errEl = document.getElementById('bookError');
+    const btn = document.getElementById('bookBtn');
+    errEl.classList.remove('show');
+    const showErr = msg => { errEl.textContent = msg; errEl.classList.add('show'); };
+    const origin = document.getElementById('bkOrigin').value.trim();
+    const dest = document.getElementById('bkDest').value.trim();
+    if(!booking) return showErr('Please submit your quote above first.');
+    if(!pickedSlot) return showErr('Please choose a date and arrival window.');
+    if(origin.length < 5) return showErr('Please enter your full pickup address.');
+    if(dest.length < 5) return showErr('Please enter your full destination address.');
+    if(!document.getElementById('bkAgree').checked) return showErr('Please agree to the terms to reserve your date.');
+    btn.disabled = true; btn.textContent = 'Reserving...';
+    const { data, error } = await sb.rpc('book_move_from_quote', {
+      p_lead_id: booking.leadId,
+      p_email: booking.email,
+      p_full_name: booking.fullName,
+      p_phone: booking.phone || null,
+      p_move_date: pickedSlot.date,
+      p_time_slot: pickedSlot.slot,
+      p_origin_address: origin,
+      p_destination_address: dest,
+      p_tier: selectedTier.tier,
+      p_home_size: document.getElementById('homeSize').value || null,
+      p_notes: document.getElementById('bkNotes').value.trim() || null,
+      p_agree_terms: true
+    });
+    if(error || !data || !data.portal_url_path){
+      // P0001 messages from the RPC are written for customers; anything else gets a generic line.
+      showErr(error && error.code === 'P0001' && error.message ? error.message : 'Something went wrong reserving your date. Please try again or call us.');
+      btn.disabled = false; btn.textContent = 'Reserve My Date';
+      return;
+    }
+    document.getElementById('bookForm').style.display = 'none';
+    const done = document.getElementById('bookDone');
+    const dep = Number(data.deposit_cents) || 0;
+    done.innerHTML = `${data.existing ? 'You already reserved a move.' : 'Your date is reserved.'} Next: review and sign your estimate${dep ? `, then pay the ${dollars(dep)} deposit to confirm` : ''}.
+      <a class="btnlink" href="${esc(data.portal_url_path)}">Open My Move Portal</a>
+      <div style="font-size:11.5px; color:var(--steel); font-weight:400; margin-top:8px;">Bookmark that page. It's your private link for estimates, payments and move-day updates.</div>`;
+    done.classList.add('show');
+  });
+
+  loadTiers();
+  loadRules();
+  loadCancellationPolicyNote();
+</script>
+</body>
+</html>

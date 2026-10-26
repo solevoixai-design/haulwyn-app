@@ -1,0 +1,2842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Haulwyn OS | Crew Field App</title>
+<link rel="manifest" href="/manifest-crew.json">
+<meta name="theme-color" content="#0a1f44">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EB Crew">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --navy:#0a1f44; --red:#b22234; --gold:#c9a227; --ink:#0b1230; --steel:#5b6478; --off:#f6f5f1; --green:#1fb26b; --danger:#d9481f;}
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',sans-serif; background:var(--off); color:var(--ink); max-width:520px; margin:0 auto; min-height:100vh;}
+  header{background:var(--navy); color:#fff; padding:18px 20px;}
+  header h1{font-family:'Oswald',sans-serif; font-size:17px; text-transform:uppercase; letter-spacing:.03em;}
+  header .sub{font-size:12px; color:rgba(255,255,255,.65); margin-top:2px;}
+  main{padding:18px;}
+  select, input, button{width:100%; padding:13px 14px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14.5px; font-family:'Inter',sans-serif; margin-bottom:12px;}
+  label{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--steel); display:block; margin-bottom:6px;}
+  button{background:var(--red); color:#fff; border:none; font-weight:700; text-transform:uppercase; letter-spacing:.03em; font-family:'Oswald',sans-serif; cursor:pointer;}
+  button:hover{background:#8f1c2a;}
+  button.secondary{background:var(--navy);}
+  .card{background:#fff; border-radius:10px; padding:16px; border:1px solid rgba(11,18,48,.08); margin-bottom:14px;}
+  .item-row{display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid rgba(11,18,48,.06);}
+  .item-row:last-child{border-bottom:none;}
+  .item-desc{font-size:14px; font-weight:600;}
+  .item-meta{font-size:11.5px; color:var(--steel); margin-top:2px;}
+  .pill{display:inline-block; padding:3px 9px; border-radius:20px; font-size:10.5px; font-weight:700; text-transform:uppercase;}
+  .pill-pending{background:#eef0f4; color:var(--steel);}
+  .pill-scanned_origin{background:#fff4d9; color:#b8860b;}
+  .pill-on_truck{background:#e9eefb; color:var(--navy);}
+  .pill-scanned_destination{background:#e3f7ec; color:var(--green);}
+  .pill-exception{background:#fbe1e1; color:var(--danger);}
+  .pill-in_storage{background:#f3e8d0; color:#8a6d1f;}
+  .pill-packed{background:#eef0f4; color:var(--steel);}
+  .pill-customer-packed{background:#fdf0d5; color:#8a6d1f; margin-left:6px;}
+  .hv{color:var(--gold); font-weight:700; font-size:11px; margin-left:6px;}
+  .toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--navy); color:#fff; padding:12px 20px; border-radius:8px; font-size:13.5px; opacity:0; transition:opacity .3s; pointer-events:none;}
+  .toast.show{opacity:1;}
+  .summary{display:flex; gap:10px; margin-bottom:14px;}
+  .summary div{flex:1; background:#fff; border-radius:8px; padding:12px; text-align:center; border:1px solid rgba(11,18,48,.08);}
+  .summary .num{font-family:'Oswald',sans-serif; font-weight:700; font-size:20px; color:var(--navy);}
+  .summary .lbl{font-size:10px; color:var(--steel); text-transform:uppercase; margin-top:2px;}
+  #staffLoginGate{position:fixed; inset:0; background:var(--off); z-index:999; display:flex; align-items:center; justify-content:center; padding:20px;}
+  .login-card{background:#fff; border-radius:10px; padding:24px; border:1px solid rgba(11,18,48,.08); width:100%; max-width:360px;}
+  .login-card h2{font-family:'Oswald',sans-serif; font-size:15px; text-transform:uppercase; letter-spacing:.03em; color:var(--navy); margin-bottom:6px;}
+  .login-card p{font-size:12.5px; color:var(--steel); margin-bottom:16px; line-height:1.5;}
+  .login-card .err{color:var(--danger); font-size:12.5px; margin-top:4px; display:none;}
+  .err.show{display:block !important;}
+  .logout-btn{background:none; border:1px solid rgba(255,255,255,.3); color:#fff; font-size:11px; padding:5px 10px; border-radius:6px; cursor:pointer; font-family:'Inter',sans-serif; width:auto; margin:0;}
+  .btn-row{display:flex; gap:8px;}
+  .btn-row button{margin-bottom:0;}
+  .check-row{display:flex; align-items:center; gap:8px; text-transform:none; font-weight:500; font-size:13px; color:var(--ink); margin-bottom:12px;}
+  .check-row input{width:auto; margin:0; padding:0;}
+  #labelPreview{display:none; text-align:center; margin-top:6px; padding:16px; border:1.5px dashed rgba(11,18,48,.25); border-radius:8px;}
+  #labelPreview canvas{max-width:100%;}
+  #labelCode{font-family:'Oswald',sans-serif; font-weight:700; letter-spacing:.05em; margin-top:8px; font-size:15px;}
+  #labelDesc{font-size:12px; color:var(--steel); margin-top:2px;}
+  #scanModal{display:none; position:fixed; inset:0; background:rgba(10,15,30,.94); z-index:1000; align-items:center; justify-content:center; flex-direction:column; padding:24px;}
+  #scanModal video{width:100%; max-width:420px; border-radius:12px; background:#000;}
+  #scanModalLabel{color:#fff; font-size:13.5px; margin-top:16px; text-align:center;}
+  #scanModal button{max-width:220px; margin-top:16px;}
+</style>
+</head>
+<body>
+
+<div id="staffLoginGate">
+  <div class="login-card">
+    <h2>Crew Sign-In Required</h2>
+    <p>The Field App shows customer inventory and job details and is restricted to authenticated Blue Provenance crew.</p>
+    <label for="loginEmail">Email</label>
+    <input id="loginEmail" type="email" placeholder="you@haulwynos.com" autocomplete="username">
+    <label for="loginPassword">Password</label>
+    <input id="loginPassword" type="password" autocomplete="current-password">
+    <button id="loginBtn">Sign In</button>
+    <div class="err" id="loginErr">Incorrect email or password.</div>
+  </div>
+</div>
+
+<header style="display:flex; align-items:center; justify-content:space-between;">
+  <div>
+    <h1>Haulwyn OS &middot; Crew Field App</h1>
+    <div class="sub">Chain of custody &amp; destination-room routing</div>
+  </div>
+  <button class="logout-btn" id="logoutBtn">Sign Out</button>
+</header>
+
+<main>
+  <div class="card">
+    <label for="jobSelect">Active Job</label>
+    <select id="jobSelect"></select>
+  </div>
+
+  <div class="card" id="shiftCard">
+    <label>Shift <span id="shiftCrewLabel"></span></label>
+    <div id="shiftStatus" style="font-size:13px; color:var(--steel); margin-bottom:10px;">Loading…</div>
+    <div id="fatigueStreakNote" style="display:none; font-size:12px; font-weight:700; color:var(--red); margin:-4px 0 10px;"></div>
+    <button id="clockInBtn">Clock In</button>
+    <button id="clockOutBtn" class="secondary" style="display:none;">Clock Out</button>
+    <div id="breakRow" style="display:none; margin-top:10px; padding-top:10px; border-top:1px solid rgba(11,18,48,.08);">
+      <div id="breakStatus" style="font-size:12.5px; color:var(--steel); margin-bottom:8px;"></div>
+      <button id="startBreakBtn" class="secondary" style="display:none;">Start Break</button>
+      <button id="endBreakBtn" style="display:none;">End Break</button>
+    </div>
+  </div>
+
+  <div class="card" id="crewRecentJobsCard" style="display:none;">
+    <label>How Your Last Jobs Went</label>
+    <div class="item-meta" style="margin-bottom:10px;">Ratings and tips from your crew's most recently delivered jobs — so you can see how customers felt about the move, not just whether it got done. A tip's payout status shows whether the office has actually paid it out to the crew yet.</div>
+    <div id="crewRecentJobsList"></div>
+  </div>
+
+  <div class="card" id="safetyIncidentCard">
+    <label>Report a Safety Incident</label>
+    <div class="item-meta" style="margin-bottom:8px;">An injury, a near miss, property damage, or a vehicle accident — report it here so Ops knows right away. This is separate from a customer damage claim.</div>
+    <label for="safetyIncidentType" style="margin-top:0;">Type</label>
+    <select id="safetyIncidentType">
+      <option value="injury">Injury</option>
+      <option value="near_miss">Near Miss</option>
+      <option value="property_damage">Property Damage (not customer's items)</option>
+      <option value="vehicle_accident">Vehicle Accident</option>
+      <option value="other">Other</option>
+    </select>
+    <label for="safetyIncidentSeverity">Severity (if applicable)</label>
+    <select id="safetyIncidentSeverity">
+      <option value="">Not applicable</option>
+      <option value="minor">Minor</option>
+      <option value="moderate">Moderate</option>
+      <option value="severe">Severe</option>
+    </select>
+    <label for="safetyIncidentDesc">What happened?</label>
+    <textarea id="safetyIncidentDesc" rows="3" placeholder="Describe what happened, where, and anyone involved."></textarea>
+    <label for="safetyIncidentReporter">Your Name</label>
+    <input id="safetyIncidentReporter" placeholder="Who is filing this report">
+    <button id="safetyIncidentSubmitBtn">Submit Report</button>
+    <div class="item-meta" id="safetyIncidentStatus"></div>
+    <div id="crewSafetyIncidentList" style="margin-top:10px;"></div>
+  </div>
+
+  <div class="card" id="fuelLogCard" style="display:none;">
+    <label>Log Fuel Fill-Up <span id="fuelLogTruckLabel"></span></label>
+    <label for="fuelLogOdometer" style="margin-top:0;">Odometer (miles)</label>
+    <input type="number" id="fuelLogOdometer" inputmode="numeric" placeholder="e.g. 84210">
+    <label for="fuelLogGallons">Gallons (optional)</label>
+    <input type="number" id="fuelLogGallons" step="0.01" placeholder="e.g. 22.4">
+    <label for="fuelLogCost">Total Cost $ (optional)</label>
+    <input type="number" id="fuelLogCost" step="0.01" placeholder="e.g. 95.60">
+    <button id="fuelLogSubmitBtn">Log Fill-Up</button>
+    <div class="item-meta" id="fuelLogStatus"></div>
+  </div>
+
+  <div class="card" id="vehicleInspectionCard" style="display:none;">
+    <label>Vehicle Inspection <span id="inspectionTruckLabel"></span></label>
+    <div class="item-meta" id="inspectionLastStatus" style="margin-bottom:10px;"></div>
+    <div class="item-meta" style="margin-bottom:10px;">Required before driving and again after the job — flag anything that needs attention rather than hoping it holds up. A defect stays visible to dispatch on this truck until it's cleared.</div>
+    <label for="inspectionType" style="margin-top:0;">Inspection Type</label>
+    <select id="inspectionType">
+      <option value="pre_trip">Pre-Trip (before driving)</option>
+      <option value="post_trip">Post-Trip (after the job)</option>
+    </select>
+    <div id="inspectionChecklist" style="margin:10px 0; display:flex; flex-direction:column; gap:6px;"></div>
+    <label for="inspectionOdometer">Odometer (miles, optional)</label>
+    <input type="number" id="inspectionOdometer" inputmode="numeric" placeholder="e.g. 84210">
+    <label for="inspectionDefectNotes">Defect Notes (required if anything above is flagged)</label>
+    <textarea id="inspectionDefectNotes" rows="2" placeholder="Describe what's wrong"></textarea>
+    <label for="inspectionDriverName">Your Name</label>
+    <input id="inspectionDriverName" placeholder="Who is performing this inspection">
+    <button id="inspectionSubmitBtn">Submit Inspection</button>
+    <div class="item-meta" id="inspectionStatus"></div>
+  </div>
+
+  <div class="card" id="equipmentCheckCard" style="display:none;">
+    <label>Equipment Check <span id="equipmentCheckTruckLabel"></span></label>
+    <div class="item-meta" id="equipmentCheckLastStatus" style="margin-bottom:10px;"></div>
+    <div class="item-meta" style="margin-bottom:10px;">This is separate from the Vehicle Inspection above — that one's about the truck itself (brakes, tires, lights); this one's about whether the truck is actually loaded with what a move needs. Do this before you leave the yard, not after you're at the customer's door and short a dolly.</div>
+    <div id="equipmentChecklist" style="margin:10px 0; display:flex; flex-direction:column; gap:6px;"></div>
+    <label for="equipmentCheckNotes">What's missing (required if anything above is flagged)</label>
+    <textarea id="equipmentCheckNotes" rows="2" placeholder="e.g. only 4 blankets, no shrink wrap left"></textarea>
+    <label for="equipmentCheckName">Your Name</label>
+    <input id="equipmentCheckName" placeholder="Who is performing this check">
+    <button id="equipmentCheckSubmitBtn">Submit Equipment Check</button>
+    <div class="item-meta" id="equipmentCheckStatus"></div>
+  </div>
+
+  <div class="card" id="supplyRequestCard">
+    <label>Request Supplies</label>
+    <div class="item-meta" style="margin-bottom:10px;">Running low on tape, blankets, dollies, boxes, or anything else on the truck? Flag it here so dispatch can restock before your next job instead of finding out mid-move.</div>
+    <div id="supplyRequestList" style="margin-bottom:10px;"></div>
+    <label for="supplyRequestItems" style="margin-top:0;">What do you need?</label>
+    <textarea id="supplyRequestItems" rows="3" placeholder="e.g. 2 more rolls of shrink wrap, a dozen medium boxes"></textarea>
+    <label for="supplyRequestUrgency">Urgency</label>
+    <select id="supplyRequestUrgency">
+      <option value="routine">Routine — before the next job is fine</option>
+      <option value="urgent">Urgent — needed today</option>
+    </select>
+    <button id="supplyRequestSubmitBtn">Submit Request</button>
+    <div class="item-meta" id="supplyRequestStatus"></div>
+  </div>
+
+  <div class="card" id="dispatchNotesCard">
+    <label>Dispatch Notes</label>
+    <div class="item-meta" style="margin-bottom:10px;">A private line to dispatch for this job only — never seen by the customer. Use it to flag something now instead of calling: running late, an access problem, need another set of hands. Dispatch can post back here too.</div>
+    <div id="dispatchNotesList" style="margin-bottom:10px;"></div>
+    <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+      <button type="button" class="btn-secondary dispatch-quick-btn" data-text="Running late — will update with an ETA.">Running Late</button>
+      <button type="button" class="btn-secondary dispatch-quick-btn" data-text="Access issue at this address — need a callback.">Access Issue</button>
+      <button type="button" class="btn-secondary dispatch-quick-btn" data-text="Need another set of hands on this job.">Need Backup</button>
+      <button type="button" class="btn-secondary dispatch-quick-btn" data-text="Arrived on site, all good.">Arrived OK</button>
+    </div>
+    <label for="dispatchNoteInput" style="margin-top:0;">Message</label>
+    <textarea id="dispatchNoteInput" rows="2" placeholder="Type your own note, or tap a button above to fill it in"></textarea>
+    <label for="dispatchNoteName">Your Name</label>
+    <input id="dispatchNoteName" placeholder="So dispatch knows who sent it">
+    <button id="dispatchNoteSendBtn">Send to Dispatch</button>
+    <div class="item-meta" id="dispatchNoteStatus"></div>
+  </div>
+
+  <div class="card" id="timeOffCard">
+    <label>Request Time Off</label>
+    <div class="item-meta" style="margin-bottom:10px;">Need a day (or a few) off? Send it to dispatch here instead of calling — once approved, your crew won't get booked on those dates.</div>
+    <div id="timeOffList" style="margin-bottom:10px;"></div>
+    <label for="timeOffStart" style="margin-top:0;">First day off</label>
+    <input type="date" id="timeOffStart">
+    <label for="timeOffEnd">Last day off</label>
+    <input type="date" id="timeOffEnd">
+    <label for="timeOffReason">Reason (optional)</label>
+    <textarea id="timeOffReason" rows="2" placeholder="e.g. family event, doctor's appointment"></textarea>
+    <button id="timeOffSubmitBtn">Submit Request</button>
+    <div class="item-meta" id="timeOffStatus"></div>
+  </div>
+
+  <div class="summary" id="summary"></div>
+
+  <div id="offlineBadge" style="display:none; background:#fff4d9; color:#8a6d1f; border:1px solid rgba(184,134,11,.3); border-radius:8px; padding:10px 14px; font-size:12.5px; font-weight:600; margin-bottom:14px;"></div>
+
+  <div class="card">
+    <label>SOP Checklist for This Job</label>
+    <div class="item-meta" id="checklistProgress" style="margin-bottom:8px;">Select a job above.</div>
+    <div id="checklistList"></div>
+  </div>
+
+  <div class="card" id="customerContactCard" style="display:none;">
+    <label>Customer Contact</label>
+    <div id="customerContactInfo"></div>
+  </div>
+
+  <div class="card" id="buildingReqCard" style="display:none;">
+    <label>Building Requirements</label>
+    <div id="buildingReqInfo"></div>
+  </div>
+
+  <div class="card" id="buildingIntelCard" style="display:none;">
+    <label>Building Intel</label>
+    <div class="item-meta" style="margin-bottom:10px;">Tribal knowledge tied to this building's address — service elevator hours, dock codes, building quirks — left by any crew that's worked here before, and yours to leave for the next crew after you.</div>
+    <div id="buildingIntelList" style="margin-bottom:10px;"></div>
+    <label for="biCategory" style="margin-top:0;">Category</label>
+    <select id="biCategory">
+      <option value="access">Access</option>
+      <option value="parking">Parking</option>
+      <option value="elevator">Elevator</option>
+      <option value="building_rules">Building Rules</option>
+      <option value="hazard">Hazard</option>
+      <option value="other">Other</option>
+    </select>
+    <label for="biNote">Note</label>
+    <textarea id="biNote" rows="2" placeholder="e.g. No service elevator before 9am, dock code 4471"></textarea>
+    <label for="biReporterName">Your Name</label>
+    <input id="biReporterName" placeholder="Who is leaving this note">
+    <button id="biSubmitBtn">Save Building Intel</button>
+    <div class="item-meta" id="biStatus"></div>
+  </div>
+
+  <div class="card" id="itemHandlingSummaryCard" style="display:none;">
+    <label>Item Handling Summary</label>
+    <div class="item-meta" style="margin-bottom:8px;">A one-glance readout of every special-handling flag logged on this job's items so far &mdash; special equipment, disassembly, and climate control &mdash; instead of having to scroll the full item list below to find them one row at a time.</div>
+    <div id="itemHandlingSummaryBody"></div>
+  </div>
+
+  <div class="card" id="arrivalCard" style="display:none;">
+    <label>Crew Arrived at Origin</label>
+    <div class="item-meta" style="margin-bottom:10px;">A one-tap confirmation that you're physically at the pickup address &mdash; separate from the job status dropdown dispatch sets from the office. This is a real timestamp, shown to the customer on their portal and used by dispatch as an honest on-time check, not a guess.</div>
+    <div class="item-meta" id="arrivalStatus" style="margin-bottom:8px;"></div>
+    <button id="arrivalConfirmBtn">&#128205; Confirm We've Arrived</button>
+  </div>
+
+  <div class="card" id="noShowCard">
+    <label>Report No-Show / Can't Access</label>
+    <div class="item-meta" style="margin-bottom:10px;">You're at the address (or the correct location per the customer) and can't proceed &mdash; nobody's there, nobody answers, or you can't get in. This is separate from a Dispatch Note (which is for anything else) and from a customer damage claim &mdash; use this specifically for a wasted-trip situation dispatch needs to resolve, possibly with a fee.</div>
+    <div id="noShowLastStatus" class="item-meta" style="margin-bottom:10px;"></div>
+    <label for="noShowWaitMinutes" style="margin-top:0;">How long did you wait? (minutes, optional)</label>
+    <input type="number" id="noShowWaitMinutes" min="0" max="240" placeholder="e.g. 20">
+    <label class="check-row"><input type="checkbox" id="noShowContactAttempted"> Tried calling/texting the customer</label>
+    <input id="noShowContactNotes" placeholder="What happened when you tried to reach them (optional)" style="display:none;">
+    <label for="noShowNotes">What happened?</label>
+    <textarea id="noShowNotes" rows="2" placeholder="e.g. No one answered the door after 20 minutes and 2 calls; building super wouldn't let us in without the customer"></textarea>
+    <label for="noShowReportedBy">Your Name</label>
+    <input id="noShowReportedBy" placeholder="Who is filing this report">
+    <button id="noShowSubmitBtn">Submit Report</button>
+    <div class="item-meta" id="noShowStatus"></div>
+  </div>
+
+  <div class="card" id="delayNoticeCard">
+    <label>Report Running Behind</label>
+    <div class="item-meta" style="margin-bottom:10px;">You're going to be late to this job &mdash; the previous job ran long, traffic, a staffing gap, a mechanical issue. This puts a plain heads-up on the customer's own portal right away, the same as when you confirm arrival, so they hear it from us instead of wondering where you are. Distinct from a Weather Advisory (dispatch's own days-ahead call about the scheduled date) and a Dispatch Note (staff-only, never shown to the customer).</div>
+    <div id="delayNoticeLastStatus" class="item-meta" style="margin-bottom:10px;"></div>
+    <label for="delayNoticeReason" style="margin-top:0;">Reason</label>
+    <select id="delayNoticeReason">
+      <option value="previous_job_overran">Previous Job Ran Long</option>
+      <option value="traffic">Traffic</option>
+      <option value="staffing_or_crew_issue">Staffing / Crew Issue</option>
+      <option value="mechanical_issue">Mechanical Issue</option>
+      <option value="other">Other</option>
+    </select>
+    <label for="delayNoticeNotes">What's happening?</label>
+    <textarea id="delayNoticeNotes" rows="2" placeholder="e.g. Still unloading the previous job, running about an hour behind"></textarea>
+    <label for="delayNoticeEtaNote">Revised arrival note (optional)</label>
+    <input id="delayNoticeEtaNote" placeholder="e.g. New arrival window roughly 1-2pm instead of 12pm">
+    <label for="delayNoticeReportedBy">Your Name</label>
+    <input id="delayNoticeReportedBy" placeholder="Who is filing this report">
+    <button id="delayNoticeSubmitBtn">Submit Delay Notice</button>
+    <div class="item-meta" id="delayNoticeStatus"></div>
+  </div>
+
+  <div class="card">
+    <label>Chain of Custody Scanning</label>
+    <div class="item-meta" style="margin-bottom:10px;">Attaching a condition photo below before you scan ties a timestamped picture of the item's actual state directly to it — the single best protection either side has if a damage dispute comes up later. Optional, but worth the extra few seconds on anything fragile or high-value.</div>
+    <div class="item-meta" style="margin-bottom:10px;">Works for box codes too (B-codes, including ones a customer generated themselves while packing) — scanning or entering a box code below logs it against the Boxes card instead, and a destination scan will show the room it's headed to right on screen.</div>
+    <label for="conditionPhotoInput" style="margin-top:0;">Condition Photo (optional, attaches to the next scan)</label>
+    <input type="file" id="conditionPhotoInput" accept="image/*" capture="environment">
+    <div class="item-meta" id="conditionPhotoStatus" style="margin-bottom:10px;"></div>
+    <div class="btn-row">
+      <button id="scanOriginBtn">&#128247; Scan at Origin</button>
+      <button id="scanDestBtn" class="secondary">&#128247; Scan at Destination</button>
+    </div>
+    <label for="qrInput" style="margin-top:14px;">Or Enter Code Manually</label>
+    <input id="qrInput" placeholder="e.g. EB-4F2A9C, or a box code like B510179" autocomplete="off">
+    <div class="btn-row">
+      <button id="manualOriginBtn" class="secondary">Log at Origin</button>
+      <button id="manualDestBtn" class="secondary">Log at Destination</button>
+    </div>
+  </div>
+
+  <div class="card" id="walkthroughCard">
+    <label>Final Walkthrough &mdash; Before You Leave the Origin</label>
+    <div class="item-meta" style="margin-bottom:10px;">This is separate from the item scanning above &mdash; that only catches things already assigned a QR code. This is the walk through every room, closet, and drawer that catches the stuff nobody logged in the first place (a curtain rod, something left in a cabinet). Do this right before the truck pulls away, not after.</div>
+    <div class="item-meta" id="walkthroughLastStatus" style="margin-bottom:10px;"></div>
+    <label class="check-row"><input type="checkbox" id="walkthroughConfirmed" checked> We walked every room, closet, and drawer at the origin &mdash; nothing was left behind</label>
+    <label for="walkthroughNotes">If something WAS found, describe it (uncheck the box above first)</label>
+    <textarea id="walkthroughNotes" rows="2" placeholder="e.g. Found a lamp still in the hall closet, brought it out and loaded it"></textarea>
+    <label for="walkthroughName">Your Name</label>
+    <input id="walkthroughName" placeholder="Who performed this walkthrough">
+    <button id="walkthroughSubmitBtn">Submit Walkthrough</button>
+    <div class="item-meta" id="walkthroughStatus"></div>
+  </div>
+
+  <div class="card" id="deliveryWalkthroughCard">
+    <label>Final Walkthrough &mdash; Before You Leave the Delivery</label>
+    <div class="item-meta" style="margin-bottom:10px;">The mirror image of the origin walkthrough above, but for the truck instead of the house: check every corner of the cargo area &mdash; behind wheel wells, under moving pads, the cab &mdash; before you pull away from the delivery address. This catches "you left something in the truck" complaints the item scanning above can't, since it only catches things already assigned a QR code.</div>
+    <div class="item-meta" id="deliveryWalkthroughLastStatus" style="margin-bottom:10px;"></div>
+    <label class="check-row"><input type="checkbox" id="deliveryWalkthroughConfirmed" checked> We checked the cargo area &mdash; the truck is empty</label>
+    <label for="deliveryWalkthroughNotes">If something WAS found still on the truck, describe it (uncheck the box above first)</label>
+    <textarea id="deliveryWalkthroughNotes" rows="2" placeholder="e.g. Found a lamp wedged behind the wheel well, brought it in and gave it to the customer"></textarea>
+    <label for="deliveryWalkthroughName">Your Name</label>
+    <input id="deliveryWalkthroughName" placeholder="Who performed this walkthrough">
+    <button id="deliveryWalkthroughSubmitBtn">Submit Walkthrough</button>
+    <div class="item-meta" id="deliveryWalkthroughStatus"></div>
+  </div>
+
+  <div class="card" id="donationCard">
+    <label>Log Donation Item</label>
+    <div class="item-meta" style="margin-bottom:10px;">Customer decided not to move something and wants it donated instead — log it here so dispatch can arrange pickup/drop-off, and the customer gets a printable record for their own taxes. Separate from Lost &amp; Found below (this is intentional, not misplaced) and from the item inventory above (this is something NOT being moved).</div>
+    <label for="donationDesc" style="margin-top:0;">What's being donated?</label>
+    <input id="donationDesc" placeholder="e.g. Queen mattress and box spring, good condition">
+    <label for="donationValue">Estimated Value $ (optional, good-faith estimate for the customer's tax records)</label>
+    <input id="donationValue" type="number" min="0" step="1" placeholder="e.g. 150">
+    <label for="donationCharity">Charity / Organization (optional, if known)</label>
+    <input id="donationCharity" placeholder="e.g. Housing Works, Salvation Army">
+    <label for="donationLoggedBy">Your Name</label>
+    <input id="donationLoggedBy" placeholder="Who is logging this">
+    <button id="donationSubmitBtn">Log Donation</button>
+    <div class="item-meta" id="donationStatus"></div>
+    <div id="donationList" style="margin-top:10px;"></div>
+  </div>
+
+  <div class="card" id="lostFoundCard">
+    <label>Lost &amp; Found</label>
+    <div class="item-meta" style="margin-bottom:10px;">For something that turns up <em>after</em> the fact &mdash; a truck sweep, cleaning out the warehouse, or a job site after the crew already left. Different from the Final Walkthroughs above (those are the pre-departure checks meant to catch most of this before it ever happens) and from Chain of Custody Scanning (that's for items already on the manifest). This is the catch-all for the rest.</div>
+    <label for="lfLocation" style="margin-top:0;">Where Was It Found?</label>
+    <select id="lfLocation">
+      <option value="truck">On the Truck</option>
+      <option value="warehouse">At the Warehouse</option>
+      <option value="job_site">At a Job Site</option>
+      <option value="other">Other</option>
+    </select>
+    <label for="lfDescription">Describe the Item</label>
+    <textarea id="lfDescription" rows="2" placeholder="e.g. Small jewelry box, dark wood, found under the truck bench seat"></textarea>
+    <label class="check-row"><input type="checkbox" id="lfLinkJob" checked> Tie this to the currently selected job above</label>
+    <div class="item-meta" id="lfNoJobNote" style="display:none; margin-bottom:6px; color:var(--danger);">No job is currently selected &mdash; this will be logged with no job link, so dispatch will have to figure out whose it is.</div>
+    <label for="lfPhoto">Photo (optional, helps dispatch identify it)</label>
+    <input type="file" id="lfPhoto" accept="image/*" capture="environment">
+    <label for="lfFoundBy">Your Name</label>
+    <input id="lfFoundBy" placeholder="Who found this">
+    <button id="lfSubmitBtn">Log Found Item</button>
+    <div class="item-meta" id="lfStatus"></div>
+    <div class="item-meta" id="lfRecentLabel" style="margin-top:10px; margin-bottom:4px; font-weight:700;"></div>
+    <div id="lfRecentList" style="display:flex; flex-direction:column; gap:6px;"></div>
+  </div>
+
+  <div class="card">
+    <label>Cargo Checkpoint Photos</label>
+    <div class="item-meta" style="margin-bottom:10px;">A photo OR a short video of the truck's actual cargo area at each of the two moments that matter &mdash; fully loaded and about to leave, and arrived at the new place before anything comes off. A quick walkthrough-pan video is real footage of the customer's things "in movement," even though it's not a live feed. Not a live camera in the truck (a sealed steel box has no signal and no power run back there anyway) &mdash; just proof, on the record, of what the cargo area looked like right before and right after the drive. Shows up on the customer's portal timeline and in Ops automatically. Required, same as a change-order photo &mdash; either format satisfies it, since the point is proof, not a specific format. Keep a video clip short &mdash; a quick pan is plenty; anything over 75MB won't be accepted here to protect a poor cellular connection at a customer's house.</div>
+    <label for="cargoLoadedPhoto" style="margin-top:0;">Cargo Area Photo or Video &mdash; Fully Loaded</label>
+    <input type="file" id="cargoLoadedPhoto" accept="image/*,video/*" capture="environment">
+    <button id="cargoLoadedBtn">Confirm Loaded &amp; Departing</button>
+    <div class="item-meta" id="cargoLoadedStatus" style="margin-bottom:10px;"></div>
+    <label for="cargoArrivedPhoto">Cargo Area Photo or Video &mdash; Arrived at Destination</label>
+    <input type="file" id="cargoArrivedPhoto" accept="image/*,video/*" capture="environment">
+    <button id="cargoArrivedBtn" class="secondary">Confirm Arrived &mdash; Before Unloading</button>
+    <div class="item-meta" id="cargoArrivedStatus"></div>
+  </div>
+
+  <div class="card">
+    <label>Proof of Pickup &mdash; Customer Signature</label>
+    <div class="item-meta" style="margin-bottom:10px;">Optional, but recommended right after loading is complete &mdash; confirms the customer reviewed the inventory count before the truck departs.</div>
+    <label for="signerNamePickup" style="margin-top:0;">Customer Name</label>
+    <input id="signerNamePickup" placeholder="Full name of person signing">
+    <label style="margin-top:0;">Signature</label>
+    <div style="border:1.5px solid rgba(11,18,48,.15); border-radius:8px; overflow:hidden; margin-bottom:8px;">
+      <canvas id="sigPadPickup" width="480" height="160" style="width:100%; height:160px; touch-action:none; display:block; background:#fff;"></canvas>
+    </div>
+    <div class="btn-row">
+      <button id="sigClearBtnPickup" class="secondary">Clear Signature</button>
+      <button id="confirmPickupBtn">Confirm Pickup</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Add New Item &amp; Print QR Label</label>
+    <input id="newItemDesc" aria-label="Item description" placeholder="Item description (e.g. Dining table, leaf)">
+    <input id="newItemRoom" aria-label="Origin room (optional)" placeholder="Origin room (optional)">
+    <input id="newItemDestRoom" aria-label="Destination room (optional)" placeholder="Destination room, if known (e.g. Primary Bedroom)">
+    <div class="item-meta" style="margin-top:-6px; margin-bottom:10px;">Set this now if the client already knows where it's going in the new place — the crew unloading at delivery will see it the instant they scan the item, instead of guessing or calling to ask.</div>
+    <label class="check-row"><input type="checkbox" id="newItemHV"> High value item</label>
+    <label class="check-row"><input type="checkbox" id="newItemNeedsDisassembly"> Needs disassembly (bed frame, sectional, etc.)</label>
+    <input id="newItemDisassemblyNotes" aria-label="Disassembly notes (optional)" placeholder="What needs disassembly/reassembly (optional)" style="display:none;">
+    <label class="check-row"><input type="checkbox" id="newItemSpecialEquipment"> Needs special equipment or extra hands (piano, safe, hot tub, etc.)</label>
+    <input id="newItemSpecialEquipmentNotes" aria-label="Special equipment notes (optional)" placeholder="What's needed, e.g. piano board + 2 extra hands (optional)" style="display:none;">
+    <label class="check-row"><input type="checkbox" id="newItemClimate"> Needs climate-controlled storage if it ends up in storage (electronics, wine, artwork, wood furniture)</label>
+    <input id="newItemClimateNotes" aria-label="Climate storage notes (optional)" placeholder="What needs climate control and why, e.g. wine collection, keep 55-65F (optional)" style="display:none;">
+    <button id="generateLabelBtn">Generate QR Label</button>
+    <div id="labelPreview">
+      <canvas id="labelCanvas"></canvas>
+      <div id="labelCode"></div>
+      <div id="labelDesc"></div>
+      <button id="printLabelBtn" class="secondary">Print Label</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Report Extra Item / Price Change &mdash; Change Order</label>
+    <div class="item-meta" style="margin-bottom:10px;">Found something not on the original inventory, or need to add a charge on-site? Photograph it and have the customer sign off right here — this is what protects both sides if the final bill is ever questioned later. A change order can't be added without both a photo and a signature.</div>
+    <input id="coDesc" aria-label="Change order description" placeholder="What's being added (e.g. Extra dresser found in garage)">
+    <input id="coAmount" type="number" min="0" step="0.01" aria-label="Additional amount in dollars" placeholder="Additional amount ($)">
+    <label for="coPhoto" style="margin-top:0;">Photo of the Item / Reason</label>
+    <input type="file" id="coPhoto" accept="image/*" capture="environment">
+    <label style="margin-top:10px;">Customer Signature Confirming This Charge</label>
+    <div style="border:1.5px solid rgba(11,18,48,.15); border-radius:8px; overflow:hidden; margin-bottom:8px;">
+      <canvas id="sigPadChangeOrder" width="480" height="160" style="width:100%; height:160px; touch-action:none; display:block; background:#fff;"></canvas>
+    </div>
+    <div class="btn-row">
+      <button id="sigClearBtnChangeOrder" class="secondary">Clear Signature</button>
+      <button id="submitChangeOrderBtn">Submit Change Order</button>
+    </div>
+    <div id="changeOrderStatus" class="item-meta"></div>
+  </div>
+
+  <div class="card" id="roomManifestCard" style="display:none;">
+    <label>Room Routing Manifest</label>
+    <div class="item-meta" style="margin-bottom:10px;">Every item and box bound for each room at the new place, and how many have actually been carried in — use this to plan unload order and to know at a glance which room still needs a trip back to the truck.</div>
+    <div id="roomManifestList"></div>
+  </div>
+
+  <div class="card">
+    <label>Pre-Print Blank QR Labels</label>
+    <div class="item-meta" style="margin-bottom:10px;">Print a sheet of unique QR labels ahead of the move — attach one to each box as you pack, no lookup needed until you scan it.</div>
+    <label for="bulkQty" style="margin-top:0;">Quantity (max 50)</label>
+    <input id="bulkQty" type="number" min="1" max="50" value="10">
+    <button id="bulkGenerateBtn">Generate &amp; Print Sheet</button>
+  </div>
+
+  <div class="card">
+    <label>Inventory for This Job</label>
+    <div id="itemList"><div class="item-meta">Select a job above.</div></div>
+  </div>
+
+  <div class="card" id="boxesCard">
+    <label>Boxes &mdash; What's In This Box</label>
+    <div class="item-meta" style="margin-bottom:10px;">For a box you're not logging item-by-item &mdash; name it, note where it's headed, and snap a photo of what's inside before you seal it. Write the code below on the box's label; anyone with this job (including the customer, from their portal) can pull up the photo later without unpacking. A box tagged "Customer-Packed" was labeled by the customer themselves before move day through their portal &mdash; you never opened it, so trust their label rather than the photo gallery (there isn't one).</div>
+    <label for="boxLabel" style="margin-top:0;">Box Name / Contents Summary</label>
+    <input id="boxLabel" placeholder="e.g. Kitchen — fragile">
+    <label for="boxLocation">Location (optional)</label>
+    <input id="boxLocation" placeholder="e.g. Truck 2, or Attic">
+    <label for="boxNotes">Notes (optional)</label>
+    <textarea id="boxNotes" rows="2" placeholder="Anything worth flagging about this box"></textarea>
+    <label for="boxPhotos" style="margin-top:0;">Contents Photo(s)</label>
+    <input type="file" id="boxPhotos" accept="image/*" capture="environment" multiple>
+    <button id="createBoxBtn">Save Box</button>
+    <div class="item-meta" id="boxStatus"></div>
+    <div id="boxList" style="margin-top:12px;"><div class="item-meta">Select a job above.</div></div>
+  </div>
+
+  <div class="card">
+    <label>Proof of Delivery &mdash; Customer Signature</label>
+    <div class="item-meta" style="margin-bottom:10px;">Required to mark the job delivered. Confirms the customer received their items and reviewed the inventory.</div>
+    <label for="signerName" style="margin-top:0;">Customer Name</label>
+    <input id="signerName" placeholder="Full name of person signing">
+    <label style="margin-top:0;">Signature</label>
+    <div style="border:1.5px solid rgba(11,18,48,.15); border-radius:8px; overflow:hidden; margin-bottom:8px;">
+      <canvas id="sigPad" width="480" height="160" style="width:100%; height:160px; touch-action:none; display:block; background:#fff;"></canvas>
+    </div>
+    <button id="sigClearBtn" class="secondary" style="margin-bottom:0;">Clear Signature</button>
+  </div>
+
+  <div class="card">
+    <label for="exceptionNote">Log Exception</label>
+    <input id="exceptionNote" placeholder="e.g. Item not found at pickup">
+    <label for="exceptionPhoto">Photo Evidence (optional)</label>
+    <input type="file" id="exceptionPhoto" accept="image/*" capture="environment">
+    <button id="closeJobBtn" class="secondary">Mark Job Delivered</button>
+    <div id="uploadStatus" class="item-meta"></div>
+  </div>
+
+  <div class="card" id="jobDebriefCard" style="display:none;">
+    <label>Job Debrief &mdash; How Did It Actually Go?</label>
+    <div class="item-meta" style="margin-bottom:10px;">A quick, honest check-in right after you mark a job delivered — this is separate from the customer's own rating and from the departure walkthrough. It's the one place dispatch hears from you about whether the job was actually sized right, so future jobs like this one get scheduled better.</div>
+    <div id="jobDebriefDone" style="display:none; font-size:13px; color:var(--green); font-weight:700; margin-bottom:6px;">Thanks — debrief submitted for this job.</div>
+    <div id="jobDebriefForm">
+      <label style="margin-top:0;">How difficult was this job? (1 = easy, 5 = brutal)</label>
+      <div id="difficultyStars" style="font-size:28px; letter-spacing:4px; color:#d8dce6; cursor:pointer; margin-bottom:6px;">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+      <label style="display:flex; align-items:center; gap:8px; font-weight:400; margin-top:6px;"><input type="checkbox" id="debriefUnderstaffed" style="width:auto;"> Needed more hands than were scheduled</label>
+      <label style="display:flex; align-items:center; gap:8px; font-weight:400; margin-top:6px;"><input type="checkbox" id="debriefRanLong" style="width:auto;"> Took noticeably longer than the estimate</label>
+      <label for="debriefNotes">Anything dispatch should know? (optional)</label>
+      <textarea id="debriefNotes" rows="2" placeholder="e.g. No elevator, had to carry everything up 3 flights"></textarea>
+      <label for="debriefSubmittedBy" style="margin-top:0;">Your Name</label>
+      <input id="debriefSubmittedBy" placeholder="Your name">
+      <button id="debriefSubmitBtn">Submit Debrief</button>
+      <button id="debriefSkipBtn" class="secondary">Not Now</button>
+      <div class="item-meta" id="debriefStatus"></div>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<div id="routeBanner" style="display:none; position:fixed; left:12px; right:12px; bottom:80px; z-index:60; background:var(--navy,#0a1f44); color:#fff; border-radius:12px; padding:16px 18px; box-shadow:0 6px 24px rgba(0,0,0,.35); text-align:center;">
+  <div style="font-size:11px; text-transform:uppercase; letter-spacing:.06em; opacity:.75; margin-bottom:4px;">Carry this to</div>
+  <div id="routeBannerRoom" style="font-family:'Oswald',sans-serif; font-size:26px; font-weight:700; text-transform:uppercase; letter-spacing:.02em;">&mdash;</div>
+  <div id="routeBannerItem" style="font-size:12.5px; opacity:.85; margin-top:4px;"></div>
+</div>
+
+<div id="scanModal">
+  <video id="scanVideo" playsinline autoplay muted></video>
+  <div id="scanModalLabel">Point the camera at a QR code&hellip;</div>
+  <button id="scanCancelBtn" class="secondary">Cancel</button>
+</div>
+<canvas id="scanCanvas" style="display:none;"></canvas>
+
+<script>
+  const SUPABASE_URL = 'https://izafyooegkvstynejaxh.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6YWZ5b29lZ2t2c3R5bmVqYXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1MzQwNzcsImV4cCI6MjEwNDExMDA3N30.nKaTP_t5TrzJE0xbFb7SUX_QLRKIEGIiYTnbb8QcwYY';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  let currentJobId = null;
+  let jobsCache = [];
+  let currentJobCrewId = null, currentJobCrewName = null;
+  let currentJobTruckId = null, currentJobTruckLabel = null;
+  let currentJobOriginAddress = null;
+
+  function toast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2200);
+  }
+  const esc = s => (s ?? '').toString().replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+  async function loadJobs(){
+    const { data } = await sb.from('jobs').select('id, status, scheduled_date, crew_id, truck_id, origin_address, customers(full_name), crews(name), trucks(label)').not('status', 'in', '(delivered,closed,cancelled)').order('scheduled_date', {ascending:true});
+    jobsCache = data || [];
+    const sel = document.getElementById('jobSelect');
+    sel.innerHTML = (data||[]).map(j => `<option value="${j.id}">${esc(j.customers?.full_name || 'Job')} &middot; ${j.status}${j.scheduled_date ? ' &middot; ' + new Date(j.scheduled_date+'T00:00:00').toLocaleDateString() : ''}</option>`).join('');
+    if(data && data.length){
+      currentJobId = data[0].id;
+      currentJobCrewId = data[0].crew_id;
+      currentJobCrewName = data[0].crews?.name || null;
+      currentJobTruckId = data[0].truck_id;
+      currentJobTruckLabel = data[0].trucks?.label || null;
+      currentJobOriginAddress = data[0].origin_address || null;
+      loadItems(); loadChecklist(); loadBuildingRequirements(); loadBuildingIntel(); loadCustomerContact(); loadShiftStatus(); loadFuelLogStatus(); loadInspectionStatus(); loadEquipmentCheckStatus(); loadCrewRecentJobs(); loadSupplyRequests(); loadTimeOff(); loadCrewSafetyIncidents(); loadBoxes(currentJobId); loadDispatchNotes(); loadWalkthroughStatus(); loadDeliveryWalkthroughStatus(); loadLostFoundStatus(); loadArrivalStatus(); loadNoShowStatus(); loadDelayNoticeStatus(); loadDonationItems();
+    }
+  }
+
+  let boxesCache = [];
+  const BOX_STATUS_LABELS = { packed: 'Packed', scanned_origin: 'On Truck', scanned_destination: 'Delivered' };
+  async function loadBoxes(jobId){
+    const listEl = document.getElementById('boxList');
+    if(!jobId){ listEl.innerHTML = '<div class="item-meta">Select a job above.</div>'; return; }
+    const { data, error } = await sb.from('boxes')
+      .select('id, box_code, label, location, notes, destination_room, status, packed_by, created_at, box_photos(photo_path, photo_source)')
+      .eq('job_id', jobId).order('created_at', {ascending:false});
+    if(error){ listEl.innerHTML = '<div class="item-meta">Could not load boxes.</div>'; return; }
+    boxesCache = data || [];
+    renderBoxes();
+    renderRoomManifest();
+  }
+
+  function renderBoxes(){
+    const listEl = document.getElementById('boxList');
+    if(!boxesCache.length){ listEl.innerHTML = '<div class="item-meta">No boxes logged yet for this job.</div>'; return; }
+    listEl.innerHTML = boxesCache.map(b => {
+      const thumbs = (b.box_photos || []).map(p => `
+        <span style="display:inline-block; position:relative; margin:0 4px 4px 0;">
+          <img src="${sb.storage.from('box-photos').getPublicUrl(p.photo_path).data.publicUrl}" style="width:52px; height:52px; object-fit:cover; border-radius:6px; border:1px solid rgba(11,18,48,.15); display:block;">
+          ${p.photo_source === 'customer' ? '<span style="position:absolute; bottom:-2px; left:-2px; right:-2px; background:#fdf0d5; color:#8a6d1f; font-size:8.5px; font-weight:700; text-align:center; border-radius:0 0 6px 6px; line-height:1.4;">Customer Photo</span>' : ''}
+        </span>`
+      ).join('');
+      const statusPill = `<span class="pill pill-${b.status === 'packed' ? 'packed' : b.status}">${BOX_STATUS_LABELS[b.status] || b.status}</span>`;
+      const customerTag = b.packed_by === 'customer' ? '<span class="pill pill-customer-packed">Customer-Packed &middot; Not Opened</span>' : '';
+      const roomLine = b.destination_room
+        ? `<div class="item-meta" style="margin:2px 0;">&rarr; ${esc(b.destination_room)}</div>`
+        : `<div class="item-meta" style="margin:2px 0; color:var(--danger);">No destination room set${b.packed_by === 'customer' ? ' — ask the customer' : ''}</div>`;
+      return `<div style="padding:8px 0; border-bottom:1px solid rgba(11,18,48,.06);">
+        <strong style="font-size:12.5px;">${esc(b.box_code)}${b.label ? ' &mdash; ' + esc(b.label) : ''}</strong>
+        ${statusPill}${customerTag}
+        ${roomLine}
+        ${b.location ? `<div class="item-meta" style="margin:2px 0;">${esc(b.location)}</div>` : ''}
+        ${b.notes ? `<div class="item-meta" style="margin:2px 0;">${esc(b.notes)}</div>` : ''}
+        <div style="display:flex; flex-wrap:wrap; margin-top:6px;">${thumbs || '<span class="item-meta">No photo yet</span>'}</div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('createBoxBtn').addEventListener('click', async () => {
+    if(!currentJobId) return toast('Select a job first.');
+    const statusEl = document.getElementById('boxStatus');
+    const label = document.getElementById('boxLabel').value.trim() || null;
+    const location = document.getElementById('boxLocation').value.trim() || null;
+    const notes = document.getElementById('boxNotes').value.trim() || null;
+    const files = Array.from(document.getElementById('boxPhotos').files || []);
+    const btn = document.getElementById('createBoxBtn');
+    btn.disabled = true;
+    statusEl.textContent = 'Saving box...';
+    try{
+      const nextNum = boxesCache.length ? Math.max(...boxesCache.map(b => parseInt((b.box_code || 'B000').replace(/\D/g,''), 10) || 0)) + 1 : 1;
+      const boxCode = 'B' + String(nextNum).padStart(3, '0');
+      const { data: box, error: boxErr } = await sb.from('boxes').insert({
+        job_id: currentJobId, box_code: boxCode, label, location, notes
+      }).select('id').single();
+      if(boxErr) throw boxErr;
+      if(files.length){
+        statusEl.textContent = 'Uploading photo(s)...';
+        for(const file of files){
+          const path = `${currentJobId}/${box.id}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+          const { error: upErr } = await sb.storage.from('box-photos').upload(path, file, { upsert: true });
+          if(upErr) throw upErr;
+          const { error: phErr } = await sb.from('box_photos').insert({ box_id: box.id, photo_path: path });
+          if(phErr) throw phErr;
+        }
+      }
+      statusEl.textContent = `Box ${boxCode} saved — write this code on the label.`;
+      document.getElementById('boxLabel').value = '';
+      document.getElementById('boxLocation').value = '';
+      document.getElementById('boxNotes').value = '';
+      document.getElementById('boxPhotos').value = '';
+      toast(`Box ${boxCode} saved.`);
+      loadBoxes(currentJobId);
+    }catch(e){
+      statusEl.textContent = 'Could not save box: ' + (e.message || 'unknown error');
+    }finally{
+      btn.disabled = false;
+    }
+  });
+
+  async function loadCrewRecentJobs(){
+    const card = document.getElementById('crewRecentJobsCard');
+    if(!currentJobCrewId){ card.style.display = 'none'; return; }
+    const { data: jobs, error } = await sb.from('jobs')
+      .select('id, scheduled_date, customers(full_name)')
+      .eq('crew_id', currentJobCrewId)
+      .eq('status', 'delivered')
+      .order('scheduled_date', { ascending: false })
+      .limit(5);
+    if(error || !jobs || !jobs.length){ card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    const jobIds = jobs.map(j => j.id);
+    const [{ data: feedback }, { data: tips }, { data: payouts }] = await Promise.all([
+      sb.from('post_move_feedback').select('job_id, rating, comment').in('job_id', jobIds),
+      sb.from('payments').select('job_id, amount_cents').eq('payment_type', 'tip').in('job_id', jobIds),
+      sb.from('tip_payouts').select('job_id, amount_cents').in('job_id', jobIds)
+    ]);
+    const fbByJob = {};
+    (feedback || []).forEach(f => { fbByJob[f.job_id] = f; });
+    const tipCentsByJob = {};
+    (tips || []).forEach(t => { tipCentsByJob[t.job_id] = (tipCentsByJob[t.job_id] || 0) + (t.amount_cents || 0); });
+    const payoutCentsByJob = {};
+    (payouts || []).forEach(p => { payoutCentsByJob[p.job_id] = (payoutCentsByJob[p.job_id] || 0) + (p.amount_cents || 0); });
+    document.getElementById('crewRecentJobsList').innerHTML = jobs.map(j => {
+      const fb = fbByJob[j.id];
+      const tipCents = tipCentsByJob[j.id] || 0;
+      const paidCents = payoutCentsByJob[j.id] || 0;
+      const owedCents = Math.max(0, tipCents - paidCents);
+      const stars = fb ? ('&#9733;'.repeat(fb.rating) + '&#9734;'.repeat(5 - fb.rating)) : null;
+      let payoutLine = '';
+      if(tipCents){
+        payoutLine = owedCents === 0
+          ? `<div class="item-meta" style="color:var(--green); font-weight:700; margin-top:1px;">Paid out</div>`
+          : `<div class="item-meta" style="color:#b45309; font-weight:700; margin-top:1px;">$${(owedCents/100).toFixed(2)} not yet paid out</div>`;
+      }
+      return `<div class="item-row">
+        <div>
+          <div class="item-desc">${esc(j.customers?.full_name || 'Customer')}</div>
+          <div class="item-meta">${j.scheduled_date ? new Date(j.scheduled_date + 'T00:00:00').toLocaleDateString() : ''}</div>
+          ${fb && fb.comment ? `<div class="item-meta" style="margin-top:3px; font-style:italic;">&ldquo;${esc(fb.comment)}&rdquo;</div>` : ''}
+        </div>
+        <div style="text-align:right;">
+          ${stars ? `<div style="color:#f0b429; font-size:15px;">${stars}</div>` : '<div class="item-meta">No rating yet</div>'}
+          ${tipCents ? `<div style="font-weight:700; color:var(--green); margin-top:2px;">+$${(tipCents/100).toFixed(2)} tip</div>` : ''}
+          ${payoutLine}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  let openShiftEntry = null;
+
+  function getGeolocation(){
+    return new Promise(resolve => {
+      if(!navigator.geolocation){ resolve(null); return; }
+      navigator.geolocation.getCurrentPosition(
+        pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => resolve(null),
+        { timeout: 8000 }
+      );
+    });
+  }
+
+  async function loadShiftStatus(){
+    const statusEl = document.getElementById('shiftStatus');
+    const inBtn = document.getElementById('clockInBtn');
+    const outBtn = document.getElementById('clockOutBtn');
+    document.getElementById('shiftCrewLabel').textContent = currentJobCrewName ? `· ${currentJobCrewName}` : '';
+    if(!currentJobCrewId){
+      statusEl.textContent = 'Assign a crew to this job in Ops before clocking in.';
+      inBtn.style.display = 'none';
+      outBtn.style.display = 'none';
+      openShiftEntry = null;
+      loadBreakStatus();
+      return;
+    }
+    const { data, error } = await sb.from('crew_time_entries')
+      .select('id, job_id, clock_in_at, jobs(customers(full_name))')
+      .eq('crew_id', currentJobCrewId)
+      .is('clock_out_at', null)
+      .order('clock_in_at', { ascending: false })
+      .limit(1);
+    if(error){
+      statusEl.textContent = "Couldn't load shift status — try refreshing.";
+      inBtn.style.display = 'none';
+      outBtn.style.display = 'none';
+      loadBreakStatus();
+      return;
+    }
+    openShiftEntry = (data && data[0]) || null;
+    if(openShiftEntry){
+      const since = new Date(openShiftEntry.clock_in_at).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+      const onJob = openShiftEntry.jobs?.customers?.full_name;
+      statusEl.textContent = `Clocked in since ${since}${onJob ? ' — ' + onJob : ''}`;
+      inBtn.style.display = 'none';
+      outBtn.style.display = 'block';
+    } else {
+      statusEl.textContent = 'Not clocked in.';
+      inBtn.style.display = 'block';
+      outBtn.style.display = 'none';
+    }
+    loadBreakStatus();
+    loadFatigueStreak();
+  }
+
+  async function loadFatigueStreak(){
+    const note = document.getElementById('fatigueStreakNote');
+    if(!currentJobCrewId){ note.style.display = 'none'; return; }
+    const sinceIso = new Date(Date.now() - 13*86400000).toISOString().slice(0,10) + 'T00:00:00';
+    const { data, error } = await sb.from('crew_time_entries').select('clock_in_at').eq('crew_id', currentJobCrewId).gte('clock_in_at', sinceIso);
+    if(error || !data){ note.style.display = 'none'; return; }
+    const dates = new Set(data.map(e => e.clock_in_at.slice(0,10)));
+    const todayStr = new Date().toISOString().slice(0,10);
+    const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0,10);
+    let anchor = dates.has(todayStr) ? todayStr : (dates.has(yesterdayStr) ? yesterdayStr : null);
+    let streak = 0;
+    if(anchor){
+      let cursor = new Date(anchor + 'T00:00:00');
+      while(dates.has(cursor.toISOString().slice(0,10))){ streak++; cursor = new Date(cursor.getTime() - 86400000); }
+    }
+    if(streak >= 6){
+      note.textContent = `You've worked ${streak} days in a row — flag dispatch if you need a day off.`;
+      note.style.display = 'block';
+    } else {
+      note.style.display = 'none';
+    }
+  }
+
+  document.getElementById('clockInBtn').addEventListener('click', async () => {
+    if(!currentJobCrewId || !currentJobId) return;
+    const btn = document.getElementById('clockInBtn');
+    btn.disabled = true; btn.textContent = 'Clocking In…';
+    const pos = await getGeolocation();
+    const { error } = await sb.from('crew_time_entries').insert({
+      crew_id: currentJobCrewId,
+      job_id: currentJobId,
+      clock_in_lat: pos?.lat ?? null,
+      clock_in_lng: pos?.lng ?? null
+    });
+    btn.disabled = false; btn.textContent = 'Clock In';
+    if(error){ toast('Could not clock in: ' + error.message); return; }
+    toast(pos ? 'Clocked in.' : 'Clocked in (location unavailable).');
+    loadShiftStatus();
+  });
+
+  document.getElementById('clockOutBtn').addEventListener('click', async () => {
+    if(!openShiftEntry) return;
+    const btn = document.getElementById('clockOutBtn');
+    btn.disabled = true; btn.textContent = 'Clocking Out…';
+    const pos = await getGeolocation();
+    const { error } = await sb.from('crew_time_entries').update({
+      clock_out_at: new Date().toISOString(),
+      clock_out_lat: pos?.lat ?? null,
+      clock_out_lng: pos?.lng ?? null
+    }).eq('id', openShiftEntry.id);
+    btn.disabled = false; btn.textContent = 'Clock Out';
+    if(error){ toast('Could not clock out: ' + error.message); return; }
+    toast(pos ? 'Clocked out.' : 'Clocked out (location unavailable).');
+    loadShiftStatus();
+  });
+
+  let openBreakEntry = null;
+
+  async function loadBreakStatus(){
+    const row = document.getElementById('breakRow');
+    const statusEl = document.getElementById('breakStatus');
+    const startBtn = document.getElementById('startBreakBtn');
+    const endBtn = document.getElementById('endBreakBtn');
+    if(!openShiftEntry || !currentJobCrewId){
+      row.style.display = 'none';
+      openBreakEntry = null;
+      return;
+    }
+    row.style.display = 'block';
+    const { data, error } = await sb.from('crew_break_entries')
+      .select('id, break_start_at')
+      .eq('crew_id', currentJobCrewId)
+      .is('break_end_at', null)
+      .order('break_start_at', { ascending: false })
+      .limit(1);
+    if(error){
+      statusEl.textContent = "Couldn't load break status.";
+      startBtn.style.display = 'none';
+      endBtn.style.display = 'none';
+      return;
+    }
+    openBreakEntry = (data && data[0]) || null;
+    if(openBreakEntry){
+      const since = new Date(openBreakEntry.break_start_at).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+      statusEl.textContent = `On break since ${since}`;
+      startBtn.style.display = 'none';
+      endBtn.style.display = 'block';
+    } else {
+      statusEl.textContent = 'Not on break.';
+      startBtn.style.display = 'block';
+      endBtn.style.display = 'none';
+    }
+  }
+
+  document.getElementById('startBreakBtn').addEventListener('click', async () => {
+    if(!currentJobCrewId || !currentJobId) return;
+    const btn = document.getElementById('startBreakBtn');
+    btn.disabled = true; btn.textContent = 'Starting…';
+    const { error } = await sb.from('crew_break_entries').insert({
+      crew_id: currentJobCrewId,
+      job_id: currentJobId
+    });
+    btn.disabled = false; btn.textContent = 'Start Break';
+    if(error){ toast('Could not start break: ' + error.message); return; }
+    toast('Break started.');
+    loadBreakStatus();
+  });
+
+  document.getElementById('endBreakBtn').addEventListener('click', async () => {
+    if(!openBreakEntry) return;
+    const btn = document.getElementById('endBreakBtn');
+    btn.disabled = true; btn.textContent = 'Ending…';
+    const { error } = await sb.from('crew_break_entries').update({
+      break_end_at: new Date().toISOString()
+    }).eq('id', openBreakEntry.id);
+    btn.disabled = false; btn.textContent = 'End Break';
+    if(error){ toast('Could not end break: ' + error.message); return; }
+    toast('Break ended.');
+    loadBreakStatus();
+  });
+
+  async function loadChecklist(){
+    if(!currentJobId) return;
+    const progEl = document.getElementById('checklistProgress');
+    const listEl = document.getElementById('checklistList');
+    progEl.textContent = 'Loading…';
+    const { data, error } = await sb.from('job_checklist_items').select('id, category, label, sort_order, completed_at').eq('job_id', currentJobId).order('sort_order');
+    if(error){
+      progEl.textContent = "Couldn't load the checklist — try refreshing.";
+      progEl.style.color = 'var(--red)';
+      listEl.innerHTML = '';
+      return;
+    }
+    progEl.style.color = '';
+    if(!data || !data.length){
+      progEl.textContent = 'No checklist for this job yet.';
+      listEl.innerHTML = '';
+      return;
+    }
+    const done = data.filter(i => i.completed_at).length;
+    progEl.textContent = `${done} of ${data.length} steps complete`;
+    listEl.innerHTML = data.map(i => `
+      <label class="check-row">
+        <input type="checkbox" class="crew-checklist-toggle" data-id="${esc(i.id)}" ${i.completed_at ? 'checked' : ''}>
+        <span>${esc(i.category)}: ${esc(i.label)}</span>
+      </label>`).join('');
+    listEl.querySelectorAll('.crew-checklist-toggle').forEach(cb => cb.addEventListener('change', async () => {
+      const checking = cb.checked;
+      cb.disabled = true;
+      const { error: updErr } = await sb.from('job_checklist_items').update({
+        completed_at: checking ? new Date().toISOString() : null,
+        completed_by: checking ? 'crew' : null
+      }).eq('id', cb.dataset.id);
+      if(updErr){ toast('Could not update checklist item: ' + updErr.message); cb.checked = !checking; cb.disabled = false; return; }
+      loadChecklist();
+    }));
+  }
+
+  async function getIncompleteChecklistLabels(jobId){
+    const { data, error } = await sb.from('job_checklist_items').select('label, completed_at').eq('job_id', jobId);
+    if(error || !data) return [];
+    return data.filter(i => !i.completed_at).map(i => i.label);
+  }
+  let deliveryChecklistConfirmed = false;
+
+  async function getUnreconciledItems(jobId){
+    const { data, error } = await sb.from('inventory_items').select('description, qr_code, status').eq('job_id', jobId).in('status', ['scanned_origin','on_truck']);
+    if(error || !data) return [];
+    return data;
+  }
+  let deliveryReconciliationConfirmed = false;
+
+  async function loadCustomerContact(){
+    if(!currentJobId) return;
+    const card = document.getElementById('customerContactCard');
+    const infoEl = document.getElementById('customerContactInfo');
+    const { data: job, error } = await sb.from('jobs').select('customers(full_name, phone, secondary_contact_name, secondary_contact_phone, secondary_contact_relationship, needs_accommodation, accommodation_notes)').eq('id', currentJobId).maybeSingle();
+    if(error || !job || !job.customers){ card.style.display = 'none'; return; }
+    const c = job.customers;
+    const lines = [];
+    if(c.needs_accommodation){
+      lines.push(`<div style="font-weight:700; color:#8a1f1f; background:#fdeceb; border:1px solid rgba(217,72,31,.3); border-radius:6px; padding:8px 10px; margin-bottom:8px;">♿ ACCOMMODATION: ${c.accommodation_notes ? esc(c.accommodation_notes) : 'Customer flagged a need — see office for details.'}</div>`);
+    }
+    lines.push(`<div style="margin-bottom:6px;">${esc(c.full_name || 'Customer')}${c.phone ? ` &middot; <a href="tel:${esc(c.phone)}" style="font-weight:700;">${esc(c.phone)}</a>` : ' — no phone on file'}</div>`);
+    if(c.secondary_contact_name || c.secondary_contact_phone){
+      lines.push(`<div class="item-meta">Backup contact${c.secondary_contact_relationship ? ' (' + esc(c.secondary_contact_relationship) + ')' : ''}: ${esc(c.secondary_contact_name || '—')}${c.secondary_contact_phone ? ` &middot; <a href="tel:${esc(c.secondary_contact_phone)}" style="font-weight:700;">${esc(c.secondary_contact_phone)}</a>` : ''}</div>`);
+    }
+    infoEl.innerHTML = lines.join('');
+    card.style.display = '';
+  }
+
+  async function loadBuildingRequirements(){
+    if(!currentJobId) return;
+    const card = document.getElementById('buildingReqCard');
+    const infoEl = document.getElementById('buildingReqInfo');
+    const { data: req, error } = await sb.from('job_building_requirements').select('*').eq('job_id', currentJobId).maybeSingle();
+    const hasStairsOrCarry = req && ((req.flights_of_stairs_origin || 0) > 0 || (req.flights_of_stairs_destination || 0) > 0 || req.long_carry_origin || req.long_carry_destination);
+    const hasSafetyNote = req && (req.has_pets || req.site_hazard_notes);
+    if(error || !req || (!req.requires_coi && !req.elevator_reservation_required && !req.parking_permit_required && !hasStairsOrCarry && !hasSafetyNote)){
+      card.style.display = 'none';
+      return;
+    }
+    card.style.display = '';
+    const lines = [];
+    if(hasSafetyNote){
+      const bits = [];
+      if(req.has_pets) bits.push(`Pets on site${req.pet_notes ? ' — ' + esc(req.pet_notes) : ''}`);
+      if(req.site_hazard_notes) bits.push(`Hazard — ${esc(req.site_hazard_notes)}`);
+      lines.push(`<div style="font-weight:700; color:#8a1f1f; background:#fdeceb; border:1px solid rgba(217,72,31,.3); border-radius:6px; padding:8px 10px; margin-bottom:8px;">🐾 SAFETY: ${bits.join(' &middot; ')}</div>`);
+    }
+    if(req.requires_coi){
+      const ok = req.coi_status === 'received';
+      lines.push(`<div style="font-weight:700; color:${ok ? 'var(--navy)' : 'var(--red)'}; margin-bottom:4px;">${ok ? '✓' : '⚠'} COI: ${esc((req.coi_status || 'not_needed').replace(/_/g,' '))}</div>`);
+    }
+    if(req.elevator_reservation_required){
+      const ok = !!req.elevator_reserved;
+      lines.push(`<div style="font-weight:700; color:${ok ? 'var(--navy)' : 'var(--red)'}; margin-bottom:4px;">${ok ? '✓' : '⚠'} Freight elevator: ${ok ? 'reserved' : 'not yet reserved'}${req.elevator_window ? ' &mdash; ' + esc(req.elevator_window) : ''}</div>`);
+    }
+    if(req.parking_permit_required){
+      const ok = !!req.parking_permit_confirmed;
+      lines.push(`<div style="font-weight:700; color:${ok ? 'var(--navy)' : 'var(--red)'}; margin-bottom:4px;">${ok ? '✓' : '⚠'} Parking: ${ok ? 'confirmed' : 'NOT yet confirmed'}${req.parking_permit_reference ? ' &mdash; ' + esc(req.parking_permit_reference) : ''}</div>`);
+    }
+    if(hasStairsOrCarry){
+      const bits = [];
+      if(req.flights_of_stairs_origin) bits.push(`${req.flights_of_stairs_origin} flight${req.flights_of_stairs_origin === 1 ? '' : 's'} of stairs at origin`);
+      if(req.flights_of_stairs_destination) bits.push(`${req.flights_of_stairs_destination} flight${req.flights_of_stairs_destination === 1 ? '' : 's'} of stairs at destination`);
+      if(req.long_carry_origin) bits.push('long carry at origin (truck can\\'t park close)');
+      if(req.long_carry_destination) bits.push('long carry at destination (truck can\\'t park close)');
+      lines.push(`<div style="font-weight:700; color:#2c4a86; margin-bottom:4px;">🚶 ${esc(bits.join(' &middot; '))}</div>`);
+    }
+    if(req.building_contact_name || req.building_contact_phone){
+      lines.push(`<div class="item-meta" style="margin-bottom:4px;">Building contact: ${esc(req.building_contact_name || '—')}${req.building_contact_phone ? ' &middot; ' + esc(req.building_contact_phone) : ''}</div>`);
+    }
+    if(req.access_notes){
+      lines.push(`<div class="item-meta">${esc(req.access_notes)}</div>`);
+    }
+    infoEl.innerHTML = lines.join('');
+  }
+
+  // Building Intel — tribal-knowledge notes tied to a physical address (not a specific job),
+  // surfaced via the get_building_intel_for_address RPC so any crew dispatched to the same
+  // building sees what a prior crew already learned (elevator hours, dock codes, quirks).
+  // Crew members are staff_users rows (role='crew'), so they're covered by the table's
+  // existing is_staff()-gated RLS policy — no separate RPC is needed for the write path.
+  const BI_CATEGORY_LABELS = { access: 'Access', parking: 'Parking', elevator: 'Elevator', building_rules: 'Building Rules', hazard: 'Hazard', other: 'Other' };
+  async function loadBuildingIntel(){
+    const card = document.getElementById('buildingIntelCard');
+    const list = document.getElementById('buildingIntelList');
+    if(!currentJobOriginAddress){ card.style.display = 'none'; return; }
+    card.style.display = '';
+    const { data, error } = await sb.rpc('get_building_intel_for_address', { p_address: currentJobOriginAddress });
+    if(error){ list.innerHTML = '<div class="item-meta">Could not load building intel.</div>'; return; }
+    if(!data || !data.length){ list.innerHTML = '<div class="item-meta">No notes yet for this address — be the first to leave one below.</div>'; return; }
+    list.innerHTML = data.map(n => `
+      <div class="item-row" style="align-items:flex-start;">
+        <div>
+          <div class="item-meta" style="font-weight:700; text-transform:uppercase; font-size:10px; letter-spacing:.03em; margin-bottom:2px;">${esc(BI_CATEGORY_LABELS[n.category] || n.category)}</div>
+          <div class="item-desc">${esc(n.note)}</div>
+          <div class="item-meta">${esc(n.created_by)} &middot; ${new Date(n.created_at).toLocaleDateString()}</div>
+        </div>
+      </div>`).join('');
+  }
+  document.getElementById('biSubmitBtn').addEventListener('click', async () => {
+    const statusEl = document.getElementById('biStatus');
+    if(!currentJobId || !currentJobOriginAddress){ statusEl.textContent = 'Select a job first.'; statusEl.style.color = 'var(--danger)'; return; }
+    const note = document.getElementById('biNote').value.trim();
+    if(!note){ statusEl.textContent = 'Describe the note before saving.'; statusEl.style.color = 'var(--danger)'; return; }
+    const reporterName = document.getElementById('biReporterName').value.trim();
+    if(!reporterName){ statusEl.textContent = 'Enter your name.'; statusEl.style.color = 'var(--danger)'; return; }
+    const btn = document.getElementById('biSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    const { error } = await sb.from('building_intel_notes').insert({
+      job_id: currentJobId,
+      crew_id: currentJobCrewId || null,
+      raw_address: currentJobOriginAddress,
+      category: document.getElementById('biCategory').value,
+      note,
+      created_by: reporterName
+    });
+    btn.disabled = false; btn.textContent = 'Save Building Intel';
+    if(error){ statusEl.textContent = 'Could not save: ' + error.message; statusEl.style.color = 'var(--danger)'; return; }
+    document.getElementById('biNote').value = '';
+    statusEl.textContent = 'Saved — visible to the next crew dispatched to this address.';
+    statusEl.style.color = 'var(--steel)';
+    toast('Building intel saved.');
+    loadBuildingIntel();
+  });
+
+  const ARRIVAL_RELEVANT_STATUSES = new Set(['booked', 'en_route_origin', 'loading']);
+  async function loadArrivalStatus(){
+    if(!currentJobId) return;
+    const card = document.getElementById('arrivalCard');
+    const statusEl = document.getElementById('arrivalStatus');
+    const btn = document.getElementById('arrivalConfirmBtn');
+    const { data: job, error } = await sb.from('jobs').select('status, actual_arrival_at').eq('id', currentJobId).maybeSingle();
+    if(error || !job){ card.style.display = 'none'; return; }
+    if(job.actual_arrival_at){
+      card.style.display = '';
+      btn.style.display = 'none';
+      statusEl.textContent = 'Confirmed arrived at ' + new Date(job.actual_arrival_at).toLocaleString([], {hour:'numeric', minute:'2-digit', month:'short', day:'numeric'}) + '.';
+      return;
+    }
+    if(!ARRIVAL_RELEVANT_STATUSES.has(job.status)){ card.style.display = 'none'; return; }
+    card.style.display = '';
+    btn.style.display = '';
+    statusEl.textContent = '';
+  }
+
+  async function loadNoShowStatus(){
+    const lastEl = document.getElementById('noShowLastStatus');
+    if(!currentJobId){ lastEl.textContent = ''; return; }
+    const { data, error } = await sb.from('job_no_show_incidents')
+      .select('resolution, occurred_at, reported_by, fee_charged, fee_amount_cents')
+      .eq('job_id', currentJobId)
+      .order('occurred_at', { ascending: false })
+      .limit(1);
+    if(error){ lastEl.textContent = ''; return; }
+    if(!data || !data.length){ lastEl.textContent = 'No no-show/access incidents logged yet for this job.'; lastEl.style.color = 'var(--steel)'; return; }
+    const last = data[0];
+    const when = new Date(last.occurred_at).toLocaleString();
+    const resLabel = { pending: 'awaiting dispatch', rescheduled: 'rescheduled by dispatch', cancelled: 'job cancelled by dispatch', fee_waived: 'fee waived by dispatch' }[last.resolution] || last.resolution;
+    lastEl.textContent = `Last reported by ${last.reported_by} — ${when} (${resLabel}${last.fee_charged && last.fee_amount_cents ? `, $${(last.fee_amount_cents/100).toFixed(2)} fee charged` : ''}).`;
+    lastEl.style.color = last.resolution === 'pending' ? 'var(--danger)' : 'var(--steel)';
+  }
+  document.getElementById('noShowContactAttempted').addEventListener('change', (e) => {
+    document.getElementById('noShowContactNotes').style.display = e.target.checked ? 'block' : 'none';
+  });
+  document.getElementById('noShowSubmitBtn').addEventListener('click', async () => {
+    if(!currentJobId) return toast('Select a job first.');
+    const statusEl = document.getElementById('noShowStatus');
+    const reportedBy = document.getElementById('noShowReportedBy').value.trim();
+    if(!reportedBy){ statusEl.textContent = 'Enter your name.'; statusEl.style.color = 'var(--danger)'; return; }
+    const notes = document.getElementById('noShowNotes').value.trim();
+    if(!notes){ statusEl.textContent = 'Describe what happened.'; statusEl.style.color = 'var(--danger)'; return; }
+    const waitRaw = document.getElementById('noShowWaitMinutes').value;
+    const waitMinutes = waitRaw ? parseInt(waitRaw, 10) : null;
+    const contactAttempted = document.getElementById('noShowContactAttempted').checked;
+    const contactNotes = document.getElementById('noShowContactNotes').value.trim() || null;
+    const btn = document.getElementById('noShowSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Submitting…';
+    const { error } = await sb.from('job_no_show_incidents').insert({
+      job_id: currentJobId,
+      reported_by: reportedBy,
+      wait_minutes: (waitMinutes != null && !isNaN(waitMinutes)) ? waitMinutes : null,
+      contact_attempted: contactAttempted,
+      contact_notes: contactAttempted ? contactNotes : null,
+      notes
+    });
+    btn.disabled = false; btn.textContent = 'Submit Report';
+    if(error){ statusEl.textContent = 'Could not submit: ' + error.message; statusEl.style.color = 'var(--danger)'; return; }
+    document.getElementById('noShowWaitMinutes').value = '';
+    document.getElementById('noShowContactAttempted').checked = false;
+    document.getElementById('noShowContactNotes').value = '';
+    document.getElementById('noShowContactNotes').style.display = 'none';
+    document.getElementById('noShowNotes').value = '';
+    statusEl.textContent = 'Report submitted — dispatch has been notified.';
+    statusEl.style.color = 'var(--steel)';
+    toast('No-show/access incident reported to dispatch.');
+    loadNoShowStatus();
+  });
+
+  const delayReasonLabelsCrew = { previous_job_overran: 'Previous Job Ran Long', traffic: 'Traffic', staffing_or_crew_issue: 'Staffing / Crew Issue', mechanical_issue: 'Mechanical Issue', other: 'Other' };
+  async function loadDelayNoticeStatus(){
+    const lastEl = document.getElementById('delayNoticeLastStatus');
+    if(!currentJobId){ lastEl.textContent = ''; return; }
+    const { data, error } = await sb.from('job_delay_notices')
+      .select('reason, notes, reported_at, reported_by, resolved_at')
+      .eq('job_id', currentJobId)
+      .order('reported_at', { ascending: false })
+      .limit(1);
+    if(error){ lastEl.textContent = ''; return; }
+    if(!data || !data.length){ lastEl.textContent = 'No delay notices logged yet for this job.'; lastEl.style.color = 'var(--steel)'; return; }
+    const last = data[0];
+    const when = new Date(last.reported_at).toLocaleString();
+    lastEl.textContent = `Last reported by ${last.reported_by} — ${when} (${delayReasonLabelsCrew[last.reason] || last.reason}${last.resolved_at ? ', resolved' : ', still open'}).`;
+    lastEl.style.color = last.resolved_at ? 'var(--steel)' : 'var(--danger)';
+  }
+  document.getElementById('delayNoticeSubmitBtn').addEventListener('click', async () => {
+    if(!currentJobId) return toast('Select a job first.');
+    const statusEl = document.getElementById('delayNoticeStatus');
+    const reportedBy = document.getElementById('delayNoticeReportedBy').value.trim();
+    if(!reportedBy){ statusEl.textContent = 'Enter your name.'; statusEl.style.color = 'var(--danger)'; return; }
+    const notes = document.getElementById('delayNoticeNotes').value.trim();
+    if(!notes){ statusEl.textContent = 'Describe what\\'s happening.'; statusEl.style.color = 'var(--danger)'; return; }
+    const btn = document.getElementById('delayNoticeSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Submitting…';
+    const { error } = await sb.from('job_delay_notices').insert({
+      job_id: currentJobId,
+      reported_by: reportedBy,
+      reason: document.getElementById('delayNoticeReason').value,
+      notes,
+      new_eta_note: document.getElementById('delayNoticeEtaNote').value.trim() || null
+    });
+    btn.disabled = false; btn.textContent = 'Submit Delay Notice';
+    if(error){ statusEl.textContent = 'Could not submit: ' + error.message; statusEl.style.color = 'var(--danger)'; return; }
+    document.getElementById('delayNoticeNotes').value = '';
+    document.getElementById('delayNoticeEtaNote').value = '';
+    statusEl.textContent = 'Delay notice submitted — the customer can see it now.';
+    statusEl.style.color = 'var(--steel)';
+    toast('Delay notice sent — visible to the customer now.');
+    loadDelayNoticeStatus();
+  });
+
+  document.getElementById('arrivalConfirmBtn').addEventListener('click', async () => {
+    if(!currentJobId) return toast('Select a job first.');
+    const btn = document.getElementById('arrivalConfirmBtn');
+    const statusEl = document.getElementById('arrivalStatus');
+    btn.disabled = true;
+    try{
+      const nowIso = new Date().toISOString();
+      const { error } = await sb.from('jobs').update({ actual_arrival_at: nowIso }).eq('id', currentJobId);
+      if(error) throw error;
+      await sb.from('tracking_events').insert({
+        job_id: currentJobId, event_type: 'geofence_arrived_origin', note: 'Crew confirmed arrival at the origin address'
+      });
+      toast('Arrival confirmed.');
+      loadArrivalStatus();
+    }catch(e){
+      statusEl.textContent = 'Could not confirm arrival: ' + (e.message || 'unknown error');
+      btn.disabled = false;
+    }
+  });
+
+  function renderItemHandlingSummary(items){
+    const card = document.getElementById('itemHandlingSummaryCard');
+    const body = document.getElementById('itemHandlingSummaryBody');
+    if(!currentJobId){ card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    const list = items || [];
+    const specialEquip = list.filter(i => i.requires_special_equipment);
+    const disassembly = list.filter(i => i.needs_disassembly);
+    const notReassembled = disassembly.filter(i => !i.reassembled_at);
+    const climate = list.filter(i => i.requires_climate_controlled_storage);
+    const highValue = list.filter(i => i.is_high_value);
+    if(!specialEquip.length && !disassembly.length && !climate.length && !highValue.length){
+      body.innerHTML = '<div class="item-meta">No special handling flagged on this job\'s items yet.</div>';
+      return;
+    }
+    const rows = [];
+    if(specialEquip.length) rows.push(`<div style="color:#5b3a8a; font-weight:600; font-size:12.5px; margin-bottom:4px;">&#9878; ${specialEquip.length} item${specialEquip.length===1?'':'s'} ${specialEquip.length===1?'needs':'need'} special equipment/extra hands: ${specialEquip.map(i=>esc(i.description)).join(', ')}</div>`);
+    if(disassembly.length) rows.push(`<div style="color:#8a6d1f; font-weight:600; font-size:12.5px; margin-bottom:4px;">&#128295; ${disassembly.length} item${disassembly.length===1?'':'s'} flagged for disassembly${notReassembled.length ? ` &mdash; <strong>${notReassembled.length} not yet reassembled</strong>` : ' &mdash; all reassembled'}</div>`);
+    if(climate.length) rows.push(`<div style="color:#1f5f8a; font-weight:600; font-size:12.5px; margin-bottom:4px;">&#10052; ${climate.length} item${climate.length===1?'':'s'} ${climate.length===1?'needs':'need'} climate-controlled storage</div>`);
+    if(highValue.length) rows.push(`<div style="color:#b8860b; font-weight:600; font-size:12.5px;">&#9733; ${highValue.length} high-value item${highValue.length===1?'':'s'} logged</div>`);
+    body.innerHTML = rows.join('');
+  }
+
+  async function loadItems(){
+    if(!currentJobId) return;
+    const { data, error } = await sb.from('inventory_items').select('*').eq('job_id', currentJobId).order('created_at');
+    lastLoadedItems = data || [];
+    renderItemHandlingSummary(lastLoadedItems);
+    const list = document.getElementById('itemList');
+    if(error){ list.innerHTML = '<div class="item-meta" style="color:var(--red);">Couldn\'t load items for this job — try refreshing the page.</div>'; }
+    else if(!data || !data.length){ list.innerHTML = '<div class="item-meta">No items logged for this job yet.</div>'; }
+    else {
+      list.innerHTML = data.map(i => `
+        <div class="item-row">
+          <div>
+            <div class="item-desc">${esc(i.description)} ${i.is_high_value ? '<span class="hv">&#9733; HIGH VALUE</span>' : ''} ${i.needs_disassembly ? (i.reassembled_at ? '<span class="hv" style="background:#e6f4ea; color:#1e6b3a;">&#10003; REASSEMBLED</span>' : '<span class="hv" style="background:#fff4d9; color:#8a6d1f;">&#128295; NEEDS REASSEMBLY</span>') : ''} ${i.requires_special_equipment ? '<span class="hv" style="background:#efe6fb; color:#5b3a8a;">&#9878; SPECIAL EQUIPMENT</span>' : ''} ${i.requires_climate_controlled_storage ? '<span class="hv" style="background:#e3f2fb; color:#1f5f8a;">&#10052; CLIMATE CONTROL</span>' : ''}</div>
+            <div class="item-meta">${esc(i.qr_code)} &middot; ${esc(i.origin_room||'?')} &rarr; ${i.destination_room ? esc(i.destination_room) : '<span class="set-dest-room-link" data-id="'+esc(i.id)+'" style="color:var(--red); text-decoration:underline; cursor:pointer;">set room</span>'}</div>
+            ${i.needs_disassembly && i.disassembly_notes ? `<div class="item-meta">${esc(i.disassembly_notes)}</div>` : ''}
+            ${i.needs_disassembly && i.reassembled_at ? `<div class="item-meta">Reassembled by ${esc(i.reassembled_by||'crew')} &middot; ${new Date(i.reassembled_at).toLocaleString()}</div>` : ''}
+            ${i.requires_special_equipment && i.special_equipment_notes ? `<div class="item-meta" style="color:#5b3a8a;">${esc(i.special_equipment_notes)}</div>` : ''}
+            ${i.requires_climate_controlled_storage && i.climate_storage_notes ? `<div class="item-meta" style="color:#1f5f8a;">${esc(i.climate_storage_notes)}</div>` : ''}
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="pill pill-${i.status}">${i.status.replace(/_/g,' ')}</span>
+            ${(i.status === 'scanned_origin' || i.status === 'on_truck') ? `<button type="button" class="hold-storage-btn" data-id="${esc(i.id)}" data-armed="false" style="width:auto; padding:6px 10px; font-size:10.5px; margin-bottom:0; background:#fff; color:var(--steel); border:1.5px solid rgba(11,18,48,.15);">Can't Deliver &middot; Hold</button>` : ''}
+            ${(i.needs_disassembly && !i.reassembled_at) ? `<button type="button" class="mark-reassembled-btn" data-id="${esc(i.id)}" style="width:auto; padding:6px 10px; font-size:10.5px; margin-bottom:0; background:#fff; color:#8a6d1f; border:1.5px solid #f0d68a;">Mark Reassembled</button>` : ''}
+          </div>
+        </div>`).join('');
+      list.querySelectorAll('.mark-reassembled-btn').forEach(btn => btn.addEventListener('click', async () => {
+        const name = (prompt('Your name, for the reassembly record:') || '').trim();
+        if(!name) return toast('A name is required to mark this reassembled.');
+        btn.disabled = true; btn.textContent = 'Saving...';
+        const { error } = await sb.from('inventory_items').update({
+          reassembled_at: new Date().toISOString(), reassembled_by: name, updated_at: new Date().toISOString()
+        }).eq('id', btn.dataset.id);
+        if(error){ toast('Could not save: ' + error.message); btn.disabled = false; btn.textContent = 'Mark Reassembled'; return; }
+        loadItems();
+      }));
+      list.querySelectorAll('.hold-storage-btn').forEach(btn => btn.addEventListener('click', () => {
+        if(btn.dataset.armed !== 'true'){
+          btn.dataset.armed = 'true';
+          btn.textContent = 'Confirm hold?';
+          setTimeout(() => { btn.dataset.armed = 'false'; btn.textContent = "Can't Deliver · Hold"; }, 3000);
+          return;
+        }
+        holdItemInStorage(btn.dataset.id);
+      }));
+      list.querySelectorAll('.set-dest-room-link').forEach(link => link.addEventListener('click', () => {
+        const id = link.dataset.id;
+        const wrap = document.createElement('span');
+        wrap.style.display = 'inline-flex';
+        wrap.style.gap = '4px';
+        wrap.innerHTML = `<input type="text" style="width:120px; padding:4px 6px; margin:0; font-size:11px; border-radius:4px;" placeholder="e.g. Primary Bedroom"><button type="button" style="width:auto; padding:4px 8px; margin:0; font-size:10px;">Save</button>`;
+        link.replaceWith(wrap);
+        const input = wrap.querySelector('input');
+        const saveBtn = wrap.querySelector('button');
+        input.focus();
+        const save = async () => {
+          const val = input.value.trim();
+          if(!val) return;
+          const { error: updErr } = await sb.from('inventory_items').update({ destination_room: val, updated_at: new Date().toISOString() }).eq('id', id);
+          if(updErr){ toast('Could not set room: ' + updErr.message); return; }
+          toast('Destination room set.');
+          loadItems();
+        };
+        saveBtn.addEventListener('click', save);
+        input.addEventListener('keydown', e => { if(e.key === 'Enter') save(); });
+      }));
+    }
+    renderRoomManifest();
+    const total = data ? data.length : 0;
+    const onTruck = data ? data.filter(i=>i.status==='on_truck').length : 0;
+    const delivered = data ? data.filter(i=>i.status==='scanned_destination').length : 0;
+    const exceptions = data ? data.filter(i=>i.status==='exception').length : 0;
+    const inStorage = data ? data.filter(i=>i.status==='in_storage').length : 0;
+    document.getElementById('summary').innerHTML = `
+      <div><div class="num">${total}</div><div class="lbl">Total Items</div></div>
+      <div><div class="num">${onTruck}</div><div class="lbl">On Truck</div></div>
+      <div><div class="num">${delivered}</div><div class="lbl">Delivered</div></div>
+      <div><div class="num">${exceptions}</div><div class="lbl">Exceptions</div></div>
+      <div><div class="num">${inStorage}</div><div class="lbl">In Storage</div></div>`;
+  }
+
+  async function holdItemInStorage(itemId){
+    const { error } = await sb.from('inventory_items').update({ status: 'in_storage', updated_at: new Date().toISOString() }).eq('id', itemId);
+    if(error){ toast('Could not update item: ' + error.message); return; }
+    await sb.from('tracking_events').insert({ job_id: currentJobId, event_type: 'item_held_in_storage', note: 'Item could not be delivered at destination; held in storage by crew' });
+    const { error: holdError } = await sb.from('storage_holds').insert({ job_id: currentJobId, inventory_item_id: itemId });
+    if(holdError){ toast('Item held, but storage billing clock could not start: ' + holdError.message); loadItems(); return; }
+    toast('Item marked as held in storage. A relocation director will set the daily rate to start billing.');
+    loadItems();
+  }
+
+  document.getElementById('jobSelect').addEventListener('change', e=>{
+    currentJobId = e.target.value;
+    const j = jobsCache.find(x => x.id === currentJobId);
+    currentJobCrewId = j?.crew_id || null;
+    currentJobCrewName = j?.crews?.name || null;
+    currentJobTruckId = j?.truck_id || null;
+    currentJobTruckLabel = j?.trucks?.label || null;
+    currentJobOriginAddress = j?.origin_address || null;
+    deliveryChecklistConfirmed = false; deliveryReconciliationConfirmed = false;
+    loadItems(); loadChecklist(); loadBuildingRequirements(); loadBuildingIntel(); loadCustomerContact(); loadShiftStatus(); loadFuelLogStatus(); loadInspectionStatus(); loadEquipmentCheckStatus(); loadCrewRecentJobs(); loadSupplyRequests(); loadCrewSafetyIncidents(); loadBoxes(currentJobId); loadDispatchNotes(); loadWalkthroughStatus(); loadDeliveryWalkthroughStatus(); loadLostFoundStatus(); loadArrivalStatus(); loadNoShowStatus(); loadDelayNoticeStatus(); loadDonationItems();
+  });
+
+  function loadFuelLogStatus(){
+    const card = document.getElementById('fuelLogCard');
+    const label = document.getElementById('fuelLogTruckLabel');
+    if(!currentJobTruckId){
+      card.style.display = 'none';
+      return;
+    }
+    card.style.display = 'block';
+    label.textContent = currentJobTruckLabel ? `· ${currentJobTruckLabel}` : '';
+    document.getElementById('fuelLogStatus').textContent = '';
+  }
+
+  document.getElementById('fuelLogSubmitBtn').addEventListener('click', async () => {
+    if(!currentJobTruckId) return;
+    const statusEl = document.getElementById('fuelLogStatus');
+    const odoEl = document.getElementById('fuelLogOdometer');
+    const galEl = document.getElementById('fuelLogGallons');
+    const costEl = document.getElementById('fuelLogCost');
+    const odometer = parseInt(odoEl.value, 10);
+    if(!Number.isFinite(odometer) || odometer < 0){
+      statusEl.textContent = 'Enter a valid odometer reading.';
+      statusEl.style.color = 'var(--red, #b91c1c)';
+      return;
+    }
+    const gallons = galEl.value ? parseFloat(galEl.value) : null;
+    const costDollars = costEl.value ? parseFloat(costEl.value) : null;
+    const btn = document.getElementById('fuelLogSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    const { error } = await sb.from('truck_fuel_logs').insert({
+      truck_id: currentJobTruckId,
+      job_id: currentJobId,
+      odometer_miles: odometer,
+      gallons: (gallons != null && !isNaN(gallons)) ? gallons : null,
+      cost_cents: (costDollars != null && !isNaN(costDollars)) ? Math.round(costDollars * 100) : null
+    });
+    btn.disabled = false; btn.textContent = 'Log Fill-Up';
+    if(error){
+      statusEl.textContent = 'Could not save: ' + error.message;
+      statusEl.style.color = 'var(--red, #b91c1c)';
+      return;
+    }
+    odoEl.value = ''; galEl.value = ''; costEl.value = '';
+    statusEl.textContent = 'Fill-up logged.';
+    statusEl.style.color = 'var(--steel)';
+    toast('Fuel log saved.');
+  });
+
+  const INSPECTION_ITEMS = ['Service Brakes', 'Parking Brake', 'Steering', 'Tires', 'Lights & Turn Signals', 'Horn', 'Windshield Wipers', 'Mirrors', 'Cargo Door / Ramp', 'Fluid Leaks'];
+
+  function renderInspectionChecklist(){
+    const el = document.getElementById('inspectionChecklist');
+    el.innerHTML = INSPECTION_ITEMS.map((label, i) => `
+      <label style="display:flex; align-items:center; gap:8px; font-weight:400; text-transform:none; font-size:13.5px;">
+        <input type="checkbox" class="insp-defect-cb" data-label="${label}" style="width:auto;">
+        ${label} — flag if defective
+      </label>`).join('');
+  }
+  renderInspectionChecklist();
+
+  async function loadInspectionStatus(){
+    const card = document.getElementById('vehicleInspectionCard');
+    const label = document.getElementById('inspectionTruckLabel');
+    const lastEl = document.getElementById('inspectionLastStatus');
+    if(!currentJobTruckId){
+      card.style.display = 'none';
+      return;
+    }
+    card.style.display = 'block';
+    label.textContent = currentJobTruckLabel ? `· ${currentJobTruckLabel}` : '';
+    document.getElementById('inspectionStatus').textContent = '';
+    const { data, error } = await sb.from('truck_inspections').select('inspection_type, defects_found, resolved_at, resolution_notes, performed_at').eq('truck_id', currentJobTruckId).order('performed_at', { ascending: false }).limit(1);
+    if(error || !data || !data.length){ lastEl.textContent = 'No inspection logged yet for this truck.'; lastEl.style.color = 'var(--steel)'; return; }
+    const last = data[0];
+    const typeLabel = last.inspection_type === 'pre_trip' ? 'Pre-trip' : 'Post-trip';
+    const when = new Date(last.performed_at).toLocaleString();
+    if(last.defects_found && !last.resolved_at){
+      lastEl.textContent = `⚠ Last inspection (${typeLabel}, ${when}) flagged a defect not yet cleared by dispatch.`;
+      lastEl.style.color = 'var(--red, #b91c1c)';
+    } else {
+      lastEl.innerHTML = `Last inspection: ${esc(typeLabel)}, ${esc(when)}${last.defects_found ? ' (defect since cleared)' : ' — no issues'}.` + (last.defects_found && last.resolution_notes ? `<div style="margin-top:4px; padding-top:4px; border-top:1px solid rgba(11,18,48,.06);"><strong>Office:</strong> ${esc(last.resolution_notes)}</div>` : '');
+      lastEl.style.color = 'var(--steel)';
+    }
+  }
+
+  document.getElementById('inspectionSubmitBtn').addEventListener('click', async () => {
+    if(!currentJobTruckId) return;
+    const statusEl = document.getElementById('inspectionStatus');
+    const driverName = document.getElementById('inspectionDriverName').value.trim();
+    if(!driverName){
+      statusEl.textContent = 'Enter your name.';
+      statusEl.style.color = 'var(--red, #b91c1c)';
+      return;
+    }
+    const defectBoxes = Array.from(document.querySelectorAll('.insp-defect-cb'));
+    const items = defectBoxes.map(cb => ({ label: cb.dataset.label, ok: !cb.checked }));
+    const defectsFound = defectBoxes.some(cb => cb.checked);
+    const defectNotes = document.getElementById('inspectionDefectNotes').value.trim();
+    if(defectsFound && !defectNotes){
+      statusEl.textContent = 'Describe the defect(s) in the notes field before submitting.';
+      statusEl.style.color = 'var(--red, #b91c1c)';
+      return;
+    }
+    const odoRaw = document.getElementById('inspectionOdometer').value;
+    const odometer = odoRaw ? parseInt(odoRaw, 10) : null;
+    const btn = document.getElementById('inspectionSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    const { error } = await sb.from('truck_inspections').insert({
+      truck_id: currentJobTruckId,
+      job_id: currentJobId,
+      crew_id: currentJobCrewId || null,
+      inspection_type: document.getElementById('inspectionType').value,
+      odometer_miles: (odometer != null && !isNaN(odometer) && odometer >= 0) ? odometer : null,
+      items,
+      defects_found: defectsFound,
+      defect_notes: defectNotes || null,
+      driver_name: driverName
+    });
+    btn.disabled = false; btn.textContent = 'Submit Inspection';
+    if(error){
+      statusEl.textContent = 'Could not save: ' + error.message;
+      statusEl.style.color = 'var(--red, #b91c1c)';
+      return;
+    }
+    defectBoxes.forEach(cb => cb.checked = false);
+    document.getElementById('inspectionDefectNotes').value = '';
+    document.getElementById('inspectionOdometer').value = '';
+    statusEl.textContent = defectsFound ? 'Inspection saved — dispatch has been notified of the defect.' : 'Inspection saved — no issues reported.';
+    statusEl.style.color = 'var(--steel)';
+    toast(defectsFound ? 'Defect reported to dispatch.' : 'Inspection saved.');
+    loadInspectionStatus();
+  });
+
+  const EQUIPMENT_ITEMS = ['Dollies (2+)', 'Furniture Blankets', 'Shrink Wrap', 'Moving Straps / Rope', 'Hand Tools', 'Floor Runners / Door Jamb Protection', 'Basic Tape & Box Kit'];
+
+  function renderEquipmentChecklist(){
+    const el = document.getElementById('equipmentChecklist');
+    el.innerHTML = EQUIPMENT_ITEMS.map(label => `
+      <label style="display:flex; align-items:center; gap:8px; font-weight:400; text-transform:none; font-size:13.5px;">
+        <input type="checkbox" class="equip-missing-cb" data-label="${label}" style="width:auto;">
+        ${label} — flag if missing/short
+      </label>`).join('');
+  }
+  renderEquipmentChecklist();
+
+  async function loadEquipmentCheckStatus(){
+    const card = document.getElementById('equipmentCheckCard');
+    const label = document.getElementById('equipmentCheckTruckLabel');
+    const lastEl = document.getElementById('equipmentCheckLastStatus');
+    if(!currentJobTruckId){
+      card.style.display = 'none';
+      return;
+    }
+    card.style.display = 'block';
+    label.textContent = currentJobTruckLabel ? `· ${currentJobTruckLabel}` : '';
+    document.getElementById('equipmentCheckStatus').textContent = '';
+    const { data, error } = await sb.from('truck_equipment_checks').select('missing_found, resolved_at, resolution_notes, performed_at').eq('truck_id', currentJobTruckId).order('performed_at', { ascending: false }).limit(1);
+    if(error || !data || !data.length){ lastEl.textContent = 'No equipment check logged yet for this truck.'; lastEl.style.color = 'var(--steel)'; return; }
+    const last = data[0];
+    const when = new Date(last.performed_at).toLocaleString();
+    if(last.missing_found && !last.resolved_at){
+      lastEl.textContent = `⚠ Last equipment check (${when}) flagged something missing, not yet cleared by dispatch.`;
+      lastEl.style.color = 'var(--red, #b91c1c)';
+    } else {
+      lastEl.innerHTML = `Last equipment check: ${esc(when)}${last.missing_found ? ' (shortage since resolved)' : ' — all present'}.` + (last.missing_found && last.resolution_notes ? `<div style="margin-top:4px; padding-top:4px; border-top:1px solid rgba(11,18,48,.06);"><strong>Office:</strong> ${esc(last.resolution_notes)}</div>` : '');
+      lastEl.style.color = 'var(--steel)';
+    }
+  }
+
+  document.getElementById('equipmentCheckSubmitBtn').addEventListener('click', async () => {
+    if(!currentJobTruckId) return;
+    const statusEl = document.getElementById('equipmentCheckStatus');
+    const checkedBy = document.getElementById('equipmentCheckName').value.trim();
+    if(!checkedBy){
+      statusEl.textContent = 'Enter your name.';
+      statusEl.style.color = 'var(--red, #b91c1c)';
+      return;
+    }
+    const missingBoxes = Array.from(document.querySelectorAll('.equip-missing-cb'));
+    const items = missingBoxes.map(cb => ({ label: cb.dataset.label, ok: !cb.checked }));
+    const missingFound = missingBoxes.some(cb => cb.checked);
+    const missingNotes = document.getElementById('equipmentCheckNotes').value.trim();
+    if(missingFound && !missingNotes){
+      statusEl.textContent = 'Describe what\'s missing in the notes field before submitting.';
+      statusEl.style.color = 'var(--red, #b91c1c)';
+      return;
+    }
+    const btn = document.getElementById('equipmentCheckSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    const { error } = await sb.from('truck_equipment_checks').insert({
+      truck_id: currentJobTruckId,
+      job_id: currentJobId,
+      crew_id: currentJobCrewId || null,
+      items,
+      missing_found: missingFound,
+      missing_notes: missingNotes || null,
+      checked_by: checkedBy
+    });
+    btn.disabled = false; btn.textContent = 'Submit Equipment Check';
+    if(error){
+      statusEl.textContent = 'Could not save: ' + error.message;
+      statusEl.style.color = 'var(--red, #b91c1c)';
+      return;
+    }
+    missingBoxes.forEach(cb => cb.checked = false);
+    document.getElementById('equipmentCheckNotes').value = '';
+    statusEl.textContent = missingFound ? 'Equipment check saved — dispatch has been notified.' : 'Equipment check saved — all present.';
+    statusEl.style.color = 'var(--steel)';
+    toast(missingFound ? 'Missing equipment reported to dispatch.' : 'Equipment check saved.');
+    loadEquipmentCheckStatus();
+  });
+
+  document.getElementById('safetyIncidentSubmitBtn').addEventListener('click', async () => {
+    const statusEl = document.getElementById('safetyIncidentStatus');
+    const descEl = document.getElementById('safetyIncidentDesc');
+    const description = descEl.value.trim();
+    if(!description){
+      statusEl.textContent = 'Describe what happened before submitting.';
+      statusEl.style.color = 'var(--red, #b91c1c)';
+      return;
+    }
+    const btn = document.getElementById('safetyIncidentSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Submitting…';
+    const { error } = await sb.from('safety_incidents').insert({
+      job_id: currentJobId || null,
+      crew_id: currentJobCrewId || null,
+      incident_type: document.getElementById('safetyIncidentType').value,
+      severity: document.getElementById('safetyIncidentSeverity').value || null,
+      description,
+      reported_by: document.getElementById('safetyIncidentReporter').value.trim() || null
+    });
+    btn.disabled = false; btn.textContent = 'Submit Report';
+    if(error){
+      statusEl.textContent = 'Could not submit: ' + error.message;
+      statusEl.style.color = 'var(--red, #b91c1c)';
+      return;
+    }
+    descEl.value = '';
+    document.getElementById('safetyIncidentType').value = 'injury';
+    document.getElementById('safetyIncidentSeverity').value = '';
+    statusEl.textContent = 'Report submitted — Ops has been notified.';
+    statusEl.style.color = 'var(--steel)';
+    toast('Safety incident reported.');
+    loadCrewSafetyIncidents();
+  });
+
+  const CREW_INCIDENT_TYPE_LABELS = { injury: 'Injury', near_miss: 'Near Miss', property_damage: 'Property Damage', vehicle_accident: 'Vehicle Accident', other: 'Other' };
+  const CREW_INCIDENT_STATUS_COLOR = { open: 'var(--red, #b91c1c)', reviewed: '#8a6d1f', closed: 'var(--green, #1fb26b)' };
+  const CREW_INCIDENT_STATUS_BG = { open: '#fbe1e1', reviewed: '#fff4d9', closed: '#e3f7ec' };
+  async function loadCrewSafetyIncidents(){
+    const list = document.getElementById('crewSafetyIncidentList');
+    if(!currentJobCrewId){ list.innerHTML = ''; return; }
+    const { data, error } = await sb.from('safety_incidents')
+      .select('id, incident_type, status, reported_at, dashcam_vendor, dashcam_clip_url, staff_notes')
+      .eq('crew_id', currentJobCrewId)
+      .order('reported_at', { ascending: false })
+      .limit(5);
+    if(error || !data || !data.length){ list.innerHTML = ''; return; }
+    list.innerHTML = `<div class="item-meta" style="margin-bottom:6px;">Recently filed by this crew:</div>` + data.map(i => `
+      <div class="item-row" style="align-items:flex-start;">
+        <div>
+          <div class="item-desc">${esc(CREW_INCIDENT_TYPE_LABELS[i.incident_type] || i.incident_type)}</div>
+          <div class="item-meta">${new Date(i.reported_at).toLocaleString()}${i.dashcam_clip_url ? ` · <a href="${esc(i.dashcam_clip_url)}" target="_blank" rel="noopener noreferrer">${esc(i.dashcam_vendor || 'Dashcam clip')}</a>` : ' · No dashcam clip on file'}</div>
+          ${i.staff_notes ? `<div class="item-meta" style="margin-top:4px; padding-top:4px; border-top:1px solid rgba(11,18,48,.06);"><strong>Office:</strong> ${esc(i.staff_notes)}</div>` : ''}
+        </div>
+        <span class="pill" style="background:${CREW_INCIDENT_STATUS_BG[i.status] || '#eef1f7'}; color:${CREW_INCIDENT_STATUS_COLOR[i.status] || 'var(--steel)'};">${i.status === 'open' ? 'Open' : i.status === 'reviewed' ? 'Reviewed' : 'Closed'}</span>
+      </div>`).join('');
+  }
+
+  // Request Supplies list — staff_notes (session 194): dispatch could mark a request fulfilled
+  // with no record of what was actually sent out, and the crew who filed it never learned what
+  // to expect on the truck. Shown the same way a staff response already surfaces on the safety
+  // incident list and the inspection/equipment-check status lines above.
+  async function loadSupplyRequests(){
+    const list = document.getElementById('supplyRequestList');
+    if(!currentJobCrewId){ list.innerHTML = ''; return; }
+    const { data, error } = await sb.from('crew_supply_requests')
+      .select('id, items_needed, urgency, status, requested_at, staff_notes')
+      .eq('crew_id', currentJobCrewId)
+      .order('requested_at', { ascending: false })
+      .limit(5);
+    if(error || !data || !data.length){ list.innerHTML = ''; return; }
+    list.innerHTML = data.map(r => `
+      <div class="item-row" style="align-items:flex-start;">
+        <div>
+          <div class="item-desc">${esc(r.items_needed)}</div>
+          <div class="item-meta">${new Date(r.requested_at).toLocaleString()}${r.urgency === 'urgent' ? ' · <span style="color:var(--red, #b91c1c); font-weight:700;">Urgent</span>' : ''}</div>
+          ${r.status === 'fulfilled' && r.staff_notes ? `<div class="item-meta" style="margin-top:4px; padding-top:4px; border-top:1px solid rgba(11,18,48,.06);"><strong>Office:</strong> ${esc(r.staff_notes)}</div>` : ''}
+        </div>
+        <span class="pill" style="background:${r.status === 'fulfilled' ? '#e3f7ec' : '#fff4d9'}; color:${r.status === 'fulfilled' ? 'var(--green, #1fb26b)' : '#8a6d1f'};">${r.status === 'fulfilled' ? 'Fulfilled' : 'Open'}</span>
+      </div>`).join('');
+  }
+  document.getElementById('supplyRequestSubmitBtn').addEventListener('click', async () => {
+    const statusEl = document.getElementById('supplyRequestStatus');
+    const itemsEl = document.getElementById('supplyRequestItems');
+    const items = itemsEl.value.trim();
+    if(!items){
+      statusEl.textContent = 'Describe what you need before submitting.';
+      statusEl.style.color = 'var(--red, #b91c1c)';
+      return;
+    }
+    const btn = document.getElementById('supplyRequestSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Submitting…';
+    const { error } = await sb.from('crew_supply_requests').insert({
+      job_id: currentJobId || null,
+      crew_id: currentJobCrewId || null,
+      truck_id: currentJobTruckId || null,
+      items_needed: items,
+      urgency: document.getElementById('supplyRequestUrgency').value
+    });
+    btn.disabled = false; btn.textContent = 'Submit Request';
+    if(error){
+      statusEl.textContent = 'Could not submit: ' + error.message;
+      statusEl.style.color = 'var(--red, #b91c1c)';
+      return;
+    }
+    itemsEl.value = '';
+    document.getElementById('supplyRequestUrgency').value = 'routine';
+    statusEl.textContent = 'Request sent — dispatch has been notified.';
+    statusEl.style.color = 'var(--steel)';
+    toast('Supply request sent.');
+    loadSupplyRequests();
+  });
+
+  async function loadDispatchNotes(){
+    const list = document.getElementById('dispatchNotesList');
+    if(!currentJobId){ list.innerHTML = ''; return; }
+    const { data, error } = await sb.from('job_dispatch_notes')
+      .select('id, sender, author_name, body, created_at')
+      .eq('job_id', currentJobId)
+      .order('created_at', { ascending: false })
+      .limit(8);
+    if(error){ list.innerHTML = '<span class="item-meta" style="color:var(--red, #b91c1c);">Could not load dispatch notes.</span>'; return; }
+    if(!data || !data.length){ list.innerHTML = '<span class="item-meta">No dispatch notes on this job yet.</span>'; return; }
+    list.innerHTML = data.map(n => `
+      <div class="item-row" style="align-items:flex-start;">
+        <div>
+          <div class="item-meta" style="font-weight:700; text-transform:uppercase; font-size:10px; letter-spacing:.03em; margin-bottom:2px;">${n.sender === 'dispatch' ? '📣 Dispatch' : '🚚 Crew'}${n.author_name ? ' · ' + esc(n.author_name) : ''}</div>
+          <div class="item-desc">${esc(n.body)}</div>
+          <div class="item-meta">${new Date(n.created_at).toLocaleString()}</div>
+        </div>
+      </div>`).join('');
+  }
+  document.querySelectorAll('.dispatch-quick-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('dispatchNoteInput').value = btn.dataset.text;
+    });
+  });
+  document.getElementById('dispatchNoteSendBtn').addEventListener('click', async () => {
+    const statusEl = document.getElementById('dispatchNoteStatus');
+    if(!currentJobId){ statusEl.textContent = 'Select a job first.'; statusEl.style.color = 'var(--red, #b91c1c)'; return; }
+    const input = document.getElementById('dispatchNoteInput');
+    const body = input.value.trim();
+    if(!body){ statusEl.textContent = 'Type a note before sending.'; statusEl.style.color = 'var(--red, #b91c1c)'; return; }
+    const btn = document.getElementById('dispatchNoteSendBtn');
+    btn.disabled = true; btn.textContent = 'Sending…';
+    const { error } = await sb.from('job_dispatch_notes').insert({
+      job_id: currentJobId,
+      sender: 'crew',
+      crew_id: currentJobCrewId || null,
+      author_name: (document.getElementById('dispatchNoteName').value || '').trim() || null,
+      body
+    });
+    btn.disabled = false; btn.textContent = 'Send to Dispatch';
+    if(error){ statusEl.textContent = 'Could not send: ' + error.message; statusEl.style.color = 'var(--red, #b91c1c)'; return; }
+    input.value = '';
+    statusEl.textContent = 'Sent to dispatch.';
+    statusEl.style.color = 'var(--steel)';
+    toast('Note sent to dispatch.');
+    loadDispatchNotes();
+  });
+
+  async function loadWalkthroughStatus(){
+    const lastEl = document.getElementById('walkthroughLastStatus');
+    if(!currentJobId){ lastEl.textContent = ''; return; }
+    const { data, error } = await sb.from('job_departure_walkthroughs')
+      .select('confirmed_clear, items_found_notes, performed_by, performed_at')
+      .eq('job_id', currentJobId)
+      .order('performed_at', { ascending: false })
+      .limit(1);
+    if(error){ lastEl.textContent = "Couldn't load walkthrough status."; lastEl.style.color = 'var(--danger)'; return; }
+    if(!data || !data.length){ lastEl.textContent = 'No walkthrough logged yet for this job.'; lastEl.style.color = 'var(--steel)'; return; }
+    const last = data[0];
+    const when = new Date(last.performed_at).toLocaleString();
+    if(last.confirmed_clear){
+      lastEl.textContent = `✓ Confirmed clear by ${last.performed_by} — ${when}.`;
+      lastEl.style.color = 'var(--green)';
+    } else {
+      lastEl.textContent = `⚠ ${last.performed_by} flagged something at ${when}: ${last.items_found_notes}`;
+      lastEl.style.color = 'var(--danger)';
+    }
+  }
+
+  document.getElementById('walkthroughSubmitBtn').addEventListener('click', async () => {
+    if(!currentJobId) return toast('Select a job first.');
+    const statusEl = document.getElementById('walkthroughStatus');
+    const performedBy = document.getElementById('walkthroughName').value.trim();
+    if(!performedBy){
+      statusEl.textContent = 'Enter your name.';
+      statusEl.style.color = 'var(--danger)';
+      return;
+    }
+    const confirmed = document.getElementById('walkthroughConfirmed').checked;
+    const notes = document.getElementById('walkthroughNotes').value.trim();
+    if(!confirmed && !notes){
+      statusEl.textContent = 'Describe what was found before submitting.';
+      statusEl.style.color = 'var(--danger)';
+      return;
+    }
+    const btn = document.getElementById('walkthroughSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    const { error } = await sb.from('job_departure_walkthroughs').insert({
+      job_id: currentJobId,
+      crew_id: currentJobCrewId || null,
+      performed_by: performedBy,
+      confirmed_clear: confirmed,
+      items_found_notes: confirmed ? null : notes
+    });
+    btn.disabled = false; btn.textContent = 'Submit Walkthrough';
+    if(error){
+      statusEl.textContent = 'Could not save: ' + error.message;
+      statusEl.style.color = 'var(--danger)';
+      return;
+    }
+    document.getElementById('walkthroughNotes').value = '';
+    statusEl.textContent = confirmed ? 'Walkthrough saved — all clear.' : 'Walkthrough saved — flagged for the record.';
+    statusEl.style.color = 'var(--steel)';
+    toast(confirmed ? 'Walkthrough confirmed.' : 'Walkthrough logged — item found.');
+    loadWalkthroughStatus();
+  });
+
+  async function loadDeliveryWalkthroughStatus(){
+    const lastEl = document.getElementById('deliveryWalkthroughLastStatus');
+    if(!currentJobId){ lastEl.textContent = ''; return; }
+    const { data, error } = await sb.from('job_delivery_walkthroughs')
+      .select('confirmed_truck_empty, items_found_notes, performed_by, performed_at')
+      .eq('job_id', currentJobId)
+      .order('performed_at', { ascending: false })
+      .limit(1);
+    if(error){ lastEl.textContent = "Couldn't load walkthrough status."; lastEl.style.color = 'var(--danger)'; return; }
+    if(!data || !data.length){ lastEl.textContent = 'No delivery walkthrough logged yet for this job.'; lastEl.style.color = 'var(--steel)'; return; }
+    const last = data[0];
+    const when = new Date(last.performed_at).toLocaleString();
+    if(last.confirmed_truck_empty){
+      lastEl.textContent = `✓ Confirmed truck empty by ${last.performed_by} — ${when}.`;
+      lastEl.style.color = 'var(--green)';
+    } else {
+      lastEl.textContent = `⚠ ${last.performed_by} found something still on the truck at ${when}: ${last.items_found_notes}`;
+      lastEl.style.color = 'var(--danger)';
+    }
+  }
+
+  document.getElementById('deliveryWalkthroughSubmitBtn').addEventListener('click', async () => {
+    if(!currentJobId) return toast('Select a job first.');
+    const statusEl = document.getElementById('deliveryWalkthroughStatus');
+    const performedBy = document.getElementById('deliveryWalkthroughName').value.trim();
+    if(!performedBy){
+      statusEl.textContent = 'Enter your name.';
+      statusEl.style.color = 'var(--danger)';
+      return;
+    }
+    const confirmed = document.getElementById('deliveryWalkthroughConfirmed').checked;
+    const notes = document.getElementById('deliveryWalkthroughNotes').value.trim();
+    if(!confirmed && !notes){
+      statusEl.textContent = 'Describe what was found before submitting.';
+      statusEl.style.color = 'var(--danger)';
+      return;
+    }
+    const btn = document.getElementById('deliveryWalkthroughSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    const { error } = await sb.from('job_delivery_walkthroughs').insert({
+      job_id: currentJobId,
+      crew_id: currentJobCrewId || null,
+      performed_by: performedBy,
+      confirmed_truck_empty: confirmed,
+      items_found_notes: confirmed ? null : notes
+    });
+    btn.disabled = false; btn.textContent = 'Submit Walkthrough';
+    if(error){
+      statusEl.textContent = 'Could not save: ' + error.message;
+      statusEl.style.color = 'var(--danger)';
+      return;
+    }
+    document.getElementById('deliveryWalkthroughNotes').value = '';
+    statusEl.textContent = confirmed ? 'Walkthrough saved — truck confirmed empty.' : 'Walkthrough saved — flagged for the record.';
+    statusEl.style.color = 'var(--steel)';
+    toast(confirmed ? 'Delivery walkthrough confirmed.' : 'Delivery walkthrough logged — item found.');
+    loadDeliveryWalkthroughStatus();
+  });
+
+  async function loadDonationItems(){
+    const list = document.getElementById('donationList');
+    if(!currentJobId){ list.innerHTML = ''; return; }
+    const { data, error } = await sb.from('job_donation_items')
+      .select('id, description, estimated_value_cents, charity_name, logged_at, receipt_provided')
+      .eq('job_id', currentJobId)
+      .order('logged_at', { ascending: false });
+    if(error){ list.innerHTML = '<span class="item-meta">Could not load donation items.</span>'; return; }
+    if(!data || !data.length){ list.innerHTML = ''; return; }
+    list.innerHTML = `<div class="item-meta" style="margin-bottom:6px; font-weight:700;">Logged for this job:</div>` + data.map(d => `
+      <div class="item-row" style="align-items:flex-start;">
+        <div>
+          <div class="item-desc">${esc(d.description)}</div>
+          <div class="item-meta">${new Date(d.logged_at).toLocaleString()}${d.charity_name ? ' · ' + esc(d.charity_name) : ''}${d.estimated_value_cents != null ? ' · ~$' + (d.estimated_value_cents/100).toFixed(0) : ''}</div>
+        </div>
+        <span class="pill" style="background:${d.receipt_provided ? '#e3f7ec' : '#eef0f4'}; color:${d.receipt_provided ? 'var(--green)' : 'var(--steel)'};">${d.receipt_provided ? 'Receipt Given' : 'No Receipt Yet'}</span>
+      </div>`).join('');
+  }
+  document.getElementById('donationSubmitBtn').addEventListener('click', async () => {
+    if(!currentJobId) return toast('Select a job first.');
+    const statusEl = document.getElementById('donationStatus');
+    const description = document.getElementById('donationDesc').value.trim();
+    if(!description){ statusEl.textContent = 'Describe what is being donated.'; statusEl.style.color = 'var(--danger)'; return; }
+    const loggedBy = document.getElementById('donationLoggedBy').value.trim();
+    if(!loggedBy){ statusEl.textContent = 'Enter your name.'; statusEl.style.color = 'var(--danger)'; return; }
+    const valueRaw = document.getElementById('donationValue').value;
+    const valueDollars = valueRaw ? parseFloat(valueRaw) : null;
+    const charityName = document.getElementById('donationCharity').value.trim() || null;
+    const btn = document.getElementById('donationSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    const { error } = await sb.from('job_donation_items').insert({
+      job_id: currentJobId,
+      description,
+      estimated_value_cents: (valueDollars != null && !isNaN(valueDollars) && valueDollars >= 0) ? Math.round(valueDollars * 100) : null,
+      charity_name: charityName,
+      logged_by: loggedBy
+    });
+    btn.disabled = false; btn.textContent = 'Log Donation';
+    if(error){ statusEl.textContent = 'Could not save: ' + error.message; statusEl.style.color = 'var(--danger)'; return; }
+    document.getElementById('donationDesc').value = '';
+    document.getElementById('donationValue').value = '';
+    document.getElementById('donationCharity').value = '';
+    statusEl.textContent = 'Donation logged.';
+    statusEl.style.color = 'var(--steel)';
+    toast('Donation item logged.');
+    loadDonationItems();
+  });
+
+  document.getElementById('lfLinkJob').addEventListener('change', updateLfJobNote);
+  function updateLfJobNote(){
+    const cb = document.getElementById('lfLinkJob');
+    if(!currentJobId){ cb.checked = false; cb.disabled = true; document.getElementById('lfNoJobNote').style.display = 'block'; }
+    else { cb.disabled = false; document.getElementById('lfNoJobNote').style.display = 'none'; }
+  }
+
+  async function loadLostFoundStatus(){
+    updateLfJobNote();
+    const label = document.getElementById('lfRecentLabel');
+    const list = document.getElementById('lfRecentList');
+    const { data: recent, error: recentErr } = await sb.from('lost_found_items')
+      .select('description, found_location, status, found_at')
+      .order('found_at', { ascending: false })
+      .limit(5);
+    if(recentErr || !recent){ label.textContent = ''; list.innerHTML = ''; return; }
+    if(!recent.length){ label.textContent = ''; list.innerHTML = ''; return; }
+    label.textContent = 'Recently Logged (All Crews)';
+    const locLabels = { truck: 'Truck', warehouse: 'Warehouse', job_site: 'Job Site', other: 'Other' };
+    const statusLabels = { unclaimed: 'Unclaimed', customer_notified: 'Customer Notified', returned: 'Returned', disposed: 'Disposed' };
+    const statusColors = { unclaimed: 'var(--danger)', customer_notified: 'var(--steel)', returned: 'var(--green)', disposed: 'var(--steel)' };
+    list.innerHTML = recent.map(r => `
+      <div style="font-size:12px; padding:6px 8px; border-radius:6px; background:#f5f6f8;">
+        <strong>${esc(locLabels[r.found_location] || r.found_location)}:</strong> ${esc(r.description)}
+        <span style="color:${statusColors[r.status]}; font-weight:700; float:right;">${esc(statusLabels[r.status] || r.status)}</span>
+      </div>`).join('');
+  }
+
+  document.getElementById('lfSubmitBtn').addEventListener('click', async () => {
+    const statusEl = document.getElementById('lfStatus');
+    const foundBy = document.getElementById('lfFoundBy').value.trim();
+    const description = document.getElementById('lfDescription').value.trim();
+    if(!foundBy){ statusEl.textContent = 'Enter your name.'; statusEl.style.color = 'var(--danger)'; return; }
+    if(!description){ statusEl.textContent = 'Describe the item.'; statusEl.style.color = 'var(--danger)'; return; }
+    const linkJob = document.getElementById('lfLinkJob').checked && currentJobId;
+    const btn = document.getElementById('lfSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    let photoPath = null;
+    const file = document.getElementById('lfPhoto').files[0];
+    if(file){
+      photoPath = `lost-found/${linkJob ? currentJobId : 'unassigned'}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+      const { error: upErr } = await sb.storage.from('inventory-photos').upload(photoPath, file, { upsert: true });
+      if(upErr){
+        btn.disabled = false; btn.textContent = 'Log Found Item';
+        statusEl.textContent = 'Photo upload failed: ' + upErr.message;
+        statusEl.style.color = 'var(--danger)';
+        return;
+      }
+    }
+    const { error } = await sb.from('lost_found_items').insert({
+      job_id: linkJob ? currentJobId : null,
+      found_location: document.getElementById('lfLocation').value,
+      description,
+      photo_path: photoPath,
+      found_by: foundBy
+    });
+    btn.disabled = false; btn.textContent = 'Log Found Item';
+    if(error){
+      statusEl.textContent = 'Could not save: ' + error.message;
+      statusEl.style.color = 'var(--danger)';
+      return;
+    }
+    document.getElementById('lfDescription').value = '';
+    document.getElementById('lfPhoto').value = '';
+    statusEl.textContent = 'Found item logged — dispatch can see it in Ops.';
+    statusEl.style.color = 'var(--steel)';
+    toast('Lost & Found item logged.');
+    loadLostFoundStatus();
+  });
+
+  const TIME_OFF_STATUS_LABEL = { pending: 'Pending', approved: 'Approved', denied: 'Denied' };
+  const TIME_OFF_STATUS_COLOR = { pending: '#8a6d1f', approved: 'var(--green, #1fb26b)', denied: 'var(--red, #b91c1c)' };
+  const TIME_OFF_STATUS_BG = { pending: '#fff4d9', approved: '#e3f7ec', denied: '#fbe1e1' };
+  async function loadTimeOff(){
+    const list = document.getElementById('timeOffList');
+    if(!currentJobCrewId){ list.innerHTML = ''; return; }
+    const { data, error } = await sb.from('crew_time_off')
+      .select('id, start_date, end_date, reason, status, staff_response')
+      .eq('crew_id', currentJobCrewId)
+      .order('requested_at', { ascending: false })
+      .limit(5);
+    if(error || !data || !data.length){ list.innerHTML = ''; return; }
+    const fmt = d => new Date(d + 'T00:00:00').toLocaleDateString();
+    list.innerHTML = data.map(r => `
+      <div class="item-row" style="align-items:flex-start;">
+        <div>
+          <div class="item-desc">${fmt(r.start_date)}${r.end_date !== r.start_date ? ' &ndash; ' + fmt(r.end_date) : ''}</div>
+          <div class="item-meta">${r.reason ? esc(r.reason) : 'No reason given'}${r.staff_response ? ' · Dispatch: ' + esc(r.staff_response) : ''}</div>
+        </div>
+        <span class="pill" style="background:${TIME_OFF_STATUS_BG[r.status]}; color:${TIME_OFF_STATUS_COLOR[r.status]};">${TIME_OFF_STATUS_LABEL[r.status]}</span>
+      </div>`).join('');
+  }
+  document.getElementById('timeOffSubmitBtn').addEventListener('click', async () => {
+    const statusEl = document.getElementById('timeOffStatus');
+    const startEl = document.getElementById('timeOffStart');
+    const endEl = document.getElementById('timeOffEnd');
+    const start = startEl.value;
+    const end = endEl.value || start;
+    if(!start){
+      statusEl.textContent = 'Pick at least a first day off before submitting.';
+      statusEl.style.color = 'var(--red, #b91c1c)';
+      return;
+    }
+    if(end < start){
+      statusEl.textContent = 'Last day off can\'t be before the first day off.';
+      statusEl.style.color = 'var(--red, #b91c1c)';
+      return;
+    }
+    const btn = document.getElementById('timeOffSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Submitting…';
+    const { error } = await sb.from('crew_time_off').insert({
+      crew_id: currentJobCrewId || null,
+      start_date: start,
+      end_date: end,
+      reason: document.getElementById('timeOffReason').value.trim() || null
+    });
+    btn.disabled = false; btn.textContent = 'Submit Request';
+    if(error){
+      statusEl.textContent = 'Could not submit: ' + error.message;
+      statusEl.style.color = 'var(--red, #b91c1c)';
+      return;
+    }
+    startEl.value = ''; endEl.value = '';
+    document.getElementById('timeOffReason').value = '';
+    statusEl.textContent = 'Request sent — dispatch has been notified.';
+    statusEl.style.color = 'var(--steel)';
+    toast('Time off request sent.');
+    loadTimeOff();
+  });
+
+  const OFFLINE_QUEUE_KEY = 'eb_offline_scan_queue';
+
+  function getQueue(){
+    try{ return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]'); }
+    catch(e){ return []; }
+  }
+  function saveQueue(q){
+    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(q));
+    updateQueueBadge(q.length);
+  }
+  function queueScan(kind, code, jobId){
+    const q = getQueue();
+    q.push({ id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`, kind, code, jobId, queuedAt: new Date().toISOString() });
+    saveQueue(q);
+  }
+  function updateQueueBadge(count){
+    const el = document.getElementById('offlineBadge');
+    if(!el) return;
+    if(count > 0){
+      el.style.display = 'block';
+      el.textContent = `⏳ ${count} scan${count===1?'':'s'} queued offline — will sync automatically`;
+    } else {
+      el.style.display = 'none';
+    }
+  }
+  function isNetworkError(e){
+    if(!e) return false;
+    if(e instanceof TypeError) return true;
+    const msg = (e.message || '').toLowerCase();
+    return msg.includes('fetch') || msg.includes('network') || msg.includes('failed to');
+  }
+
+  let routeBannerTimer = null;
+  function showRouteBanner(description, destination_room, code, missingText){
+    const el = document.getElementById('routeBanner');
+    const roomEl = document.getElementById('routeBannerRoom');
+    const itemEl = document.getElementById('routeBannerItem');
+    if(destination_room){
+      roomEl.textContent = destination_room;
+      roomEl.style.color = '#fff';
+    } else {
+      roomEl.textContent = missingText || 'Room not set';
+      roomEl.style.color = '#f2c14e';
+    }
+    itemEl.textContent = `${description || code} (${code})`;
+    el.style.display = 'block';
+    if(routeBannerTimer) clearTimeout(routeBannerTimer);
+    routeBannerTimer = setTimeout(() => { el.style.display = 'none'; }, 6000);
+  }
+  document.getElementById('routeBanner').addEventListener('click', () => {
+    document.getElementById('routeBanner').style.display = 'none';
+    if(routeBannerTimer) clearTimeout(routeBannerTimer);
+  });
+
+  let lastLoadedItems = [];
+
+  function renderRoomManifest(){
+    const card = document.getElementById('roomManifestCard');
+    const list = document.getElementById('roomManifestList');
+    const itemEntries = (lastLoadedItems || []).map(i => ({
+      destination_room: i.destination_room, delivered: i.status === 'scanned_destination', skipUnassigned: i.status === 'exception'
+    }));
+    const boxEntries = (boxesCache || []).map(b => ({
+      destination_room: b.destination_room, delivered: b.status === 'scanned_destination', skipUnassigned: false
+    }));
+    const entries = itemEntries.concat(boxEntries);
+    const withRoom = entries.filter(e => e.destination_room);
+    if(!withRoom.length){ card.style.display = 'none'; return; }
+    card.style.display = '';
+    const byRoom = {};
+    withRoom.forEach(e => {
+      const r = e.destination_room;
+      byRoom[r] = byRoom[r] || { total: 0, delivered: 0 };
+      byRoom[r].total++;
+      if(e.delivered) byRoom[r].delivered++;
+    });
+    const rooms = Object.keys(byRoom).sort();
+    list.innerHTML = rooms.map(r => {
+      const c = byRoom[r];
+      const done = c.delivered === c.total;
+      return `<div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(11,18,48,.08);">
+        <div style="font-weight:700; font-size:13.5px;">${done ? '✓ ' : ''}${esc(r)}</div>
+        <div style="font-family:'Oswald',sans-serif; font-size:13px; color:${done ? 'var(--navy)' : 'var(--steel)'};">${c.delivered} / ${c.total}</div>
+      </div>`;
+    }).join('');
+    const unassigned = entries.filter(e => !e.destination_room && !e.skipUnassigned).length;
+    if(unassigned){
+      list.innerHTML += `<div class="item-meta" style="margin-top:8px; color:var(--red);">${unassigned} item${unassigned===1?'':'s'}/box${unassigned===1?'':'es'} with no destination room set — ask the office or the customer before delivery.</div>`;
+    }
+  }
+
+  async function performOriginScan(code, jobId){
+    const { data: existing, error: selErr } = await sb.from('inventory_items').select('id').eq('qr_code', code).eq('job_id', jobId).maybeSingle();
+    if(selErr) throw selErr;
+    let itemId = existing?.id;
+    if(existing){
+      const { error } = await sb.from('inventory_items').update({status:'on_truck', updated_at: new Date().toISOString()}).eq('id', existing.id);
+      if(error) throw error;
+    } else {
+      const { data: inserted, error } = await sb.from('inventory_items').insert({job_id: jobId, qr_code: code, description: 'New item scanned at origin', status:'scanned_origin'}).select('id').single();
+      if(error) throw error;
+      itemId = inserted.id;
+    }
+    const { error: teErr } = await sb.from('tracking_events').insert({job_id: jobId, event_type:'item_scanned_origin', note: code});
+    if(teErr) throw teErr;
+    return { id: itemId };
+  }
+
+  async function performDestScan(code, jobId){
+    const { data: existing, error: selErr } = await sb.from('inventory_items').select('id, status, description, destination_room').eq('qr_code', code).eq('job_id', jobId).maybeSingle();
+    if(selErr) throw selErr;
+    let routeInfo;
+    if(existing){
+      const { error } = await sb.from('inventory_items').update({status:'scanned_destination', updated_at: new Date().toISOString()}).eq('id', existing.id);
+      if(error) throw error;
+      routeInfo = { id: existing.id, description: existing.description, destination_room: existing.destination_room };
+    } else {
+      const { data: inserted, error } = await sb.from('inventory_items').insert({job_id: jobId, qr_code: code, description: 'Unexpected item at destination', status:'exception'}).select('id').single();
+      if(error) throw error;
+      routeInfo = { id: inserted.id, description: 'Unexpected item — not logged at origin', destination_room: null };
+    }
+    const { error: teErr } = await sb.from('tracking_events').insert({job_id: jobId, event_type:'item_scanned_destination', note: code});
+    if(teErr) throw teErr;
+    return routeInfo;
+  }
+
+  function isBoxCode(code){ return /^B\d+$/i.test((code || '').trim()); }
+
+  async function performBoxOriginScan(code, jobId){
+    const { data: existing, error } = await sb.from('boxes').select('id, status').eq('box_code', code).eq('job_id', jobId).maybeSingle();
+    if(error) throw error;
+    if(!existing) throw new Error('No box with that code on this job.');
+    const { error: updErr } = await sb.from('boxes').update({ status: 'scanned_origin', origin_scanned_at: new Date().toISOString() }).eq('id', existing.id);
+    if(updErr) throw updErr;
+    await sb.from('tracking_events').insert({ job_id: jobId, event_type: 'box_scanned_origin', note: code });
+    return { id: existing.id };
+  }
+
+  async function performBoxDestScan(code, jobId){
+    const { data: existing, error } = await sb.from('boxes').select('id, label, destination_room').eq('box_code', code).eq('job_id', jobId).maybeSingle();
+    if(error) throw error;
+    if(!existing) throw new Error('No box with that code on this job.');
+    const { error: updErr } = await sb.from('boxes').update({ status: 'scanned_destination', destination_scanned_at: new Date().toISOString() }).eq('id', existing.id);
+    if(updErr) throw updErr;
+    await sb.from('tracking_events').insert({ job_id: jobId, event_type: 'box_scanned_destination', note: code });
+    return { id: existing.id, label: existing.label, destination_room: existing.destination_room };
+  }
+
+  async function attachConditionPhotoIfAny(itemId, phase){
+    const fileInput = document.getElementById('conditionPhotoInput');
+    const file = fileInput.files[0];
+    if(!file || !itemId) return;
+    const statusEl = document.getElementById('conditionPhotoStatus');
+    statusEl.textContent = 'Uploading condition photo...';
+    const path = `chain-of-custody/${itemId}_${phase}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    const { error: upErr } = await sb.storage.from('inventory-photos').upload(path, file, { upsert: true });
+    if(upErr){ statusEl.textContent = 'Condition photo upload failed: ' + upErr.message; return; }
+    const column = phase === 'origin' ? 'origin_photo_url' : 'destination_photo_url';
+    const { error: updErr } = await sb.from('inventory_items').update({ [column]: path, updated_at: new Date().toISOString() }).eq('id', itemId);
+    if(updErr){ statusEl.textContent = 'Photo uploaded but could not be attached: ' + updErr.message; return; }
+    statusEl.textContent = 'Condition photo attached to this item.';
+    fileInput.value = '';
+  }
+
+  async function processOriginScan(code, jobIdParam){
+    const jobId = jobIdParam || currentJobId;
+    if(!code || !jobId) return toast('Select a job and provide a code first.');
+    if(isBoxCode(code)){
+      if(!navigator.onLine){
+        queueScan('box_origin', code, jobId);
+        toast(`Offline — box scan queued: ${code}`);
+        return;
+      }
+      try{
+        await performBoxOriginScan(code, jobId);
+        toast(`Box scanned at origin: ${code}`);
+        loadBoxes(jobId);
+      }catch(e){
+        if(isNetworkError(e)){
+          queueScan('box_origin', code, jobId);
+          toast(`Offline — box scan queued: ${code}`);
+        } else {
+          toast('Error logging box scan: ' + (e.message || 'unknown error'));
+        }
+      }
+      return;
+    }
+    if(!navigator.onLine){
+      queueScan('origin', code, jobId);
+      toast(`Offline — scan queued: ${code}`);
+      return;
+    }
+    try{
+      const result = await performOriginScan(code, jobId);
+      toast(`Scanned at origin: ${code}`);
+      await attachConditionPhotoIfAny(result.id, 'origin');
+      loadItems();
+    }catch(e){
+      if(isNetworkError(e)){
+        queueScan('origin', code, jobId);
+        toast(`Offline — scan queued: ${code}`);
+      } else {
+        toast('Error logging scan: ' + (e.message || 'unknown error'));
+      }
+    }
+  }
+
+  async function processDestScan(code, jobIdParam){
+    const jobId = jobIdParam || currentJobId;
+    if(!code || !jobId) return toast('Select a job and provide a code first.');
+    if(isBoxCode(code)){
+      const missingText = 'No room specified — check with the customer';
+      if(!navigator.onLine){
+        queueScan('box_dest', code, jobId);
+        const cached = (boxesCache || []).find(b => b.box_code === code);
+        if(cached) showRouteBanner(cached.label || code, cached.destination_room, code, missingText);
+        toast(`Offline — box scan queued: ${code}`);
+        return;
+      }
+      try{
+        const info = await performBoxDestScan(code, jobId);
+        showRouteBanner(info.label || code, info.destination_room, code, missingText);
+        loadBoxes(jobId);
+      }catch(e){
+        if(isNetworkError(e)){
+          queueScan('box_dest', code, jobId);
+          const cached = (boxesCache || []).find(b => b.box_code === code);
+          if(cached) showRouteBanner(cached.label || code, cached.destination_room, code, missingText);
+          toast(`Offline — box scan queued: ${code}`);
+        } else {
+          toast('Error logging box scan: ' + (e.message || 'unknown error'));
+        }
+      }
+      return;
+    }
+    if(!navigator.onLine){
+      queueScan('destination', code, jobId);
+      const cached = lastLoadedItems.find(i => i.qr_code === code);
+      if(cached) showRouteBanner(cached.description, cached.destination_room, code);
+      toast(`Offline — scan queued: ${code}`);
+      return;
+    }
+    try{
+      const routeInfo = await performDestScan(code, jobId);
+      showRouteBanner(routeInfo.description, routeInfo.destination_room, code);
+      await attachConditionPhotoIfAny(routeInfo.id, 'destination');
+      loadItems();
+    }catch(e){
+      if(isNetworkError(e)){
+        queueScan('destination', code, jobId);
+        const cached = lastLoadedItems.find(i => i.qr_code === code);
+        if(cached) showRouteBanner(cached.description, cached.destination_room, code);
+        toast(`Offline — scan queued: ${code}`);
+      } else {
+        toast('Error logging scan: ' + (e.message || 'unknown error'));
+      }
+    }
+  }
+
+  let flushingQueue = false;
+  async function flushOfflineQueue(){
+    if(flushingQueue || !navigator.onLine) return;
+    const queue = getQueue();
+    if(!queue.length) return;
+    flushingQueue = true;
+    const remaining = [];
+    let syncedCount = 0;
+    for(const item of queue){
+      try{
+        if(item.kind === 'origin') await performOriginScan(item.code, item.jobId);
+        else if(item.kind === 'destination') await performDestScan(item.code, item.jobId);
+        else if(item.kind === 'box_origin') await performBoxOriginScan(item.code, item.jobId);
+        else if(item.kind === 'box_dest') await performBoxDestScan(item.code, item.jobId);
+        syncedCount++;
+      }catch(e){
+        if(isNetworkError(e)){
+          remaining.push(item);
+        } else {
+          toast(`Could not sync queued scan ${item.code}: ${e.message || 'error'}`);
+        }
+      }
+    }
+    saveQueue(remaining);
+    flushingQueue = false;
+    if(syncedCount > 0){
+      toast(`Synced ${syncedCount} queued scan${syncedCount===1?'':'s'}.`);
+      loadItems();
+      loadBoxes(currentJobId);
+    }
+  }
+
+  window.addEventListener('online', flushOfflineQueue);
+  setInterval(flushOfflineQueue, 20000);
+
+  document.getElementById('manualOriginBtn').addEventListener('click', ()=>{
+    const code = document.getElementById('qrInput').value.trim();
+    processOriginScan(code);
+    document.getElementById('qrInput').value='';
+  });
+
+  document.getElementById('manualDestBtn').addEventListener('click', ()=>{
+    const code = document.getElementById('qrInput').value.trim();
+    processDestScan(code);
+    document.getElementById('qrInput').value='';
+  });
+
+  let scanStream = null;
+  let scanRAF = null;
+  let scanMode = null;
+
+  function stopScan(){
+    if(scanRAF){ cancelAnimationFrame(scanRAF); scanRAF = null; }
+    if(scanStream){ scanStream.getTracks().forEach(t=>t.stop()); scanStream = null; }
+    document.getElementById('scanModal').style.display = 'none';
+  }
+
+  async function startScan(mode){
+    scanMode = mode;
+    document.getElementById('scanModalLabel').textContent = mode === 'origin'
+      ? 'Point the camera at a QR code — Origin scan'
+      : 'Point the camera at a QR code — Destination scan';
+    document.getElementById('scanModal').style.display = 'flex';
+    let stream;
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    }catch(e){
+      toast('Camera unavailable — use manual entry below.');
+      stopScan();
+      return;
+    }
+    scanStream = stream;
+    const video = document.getElementById('scanVideo');
+    video.srcObject = stream;
+    await video.play();
+    const canvas = document.getElementById('scanCanvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    function tick(){
+      if(!scanStream) return;
+      if(video.readyState === video.HAVE_ENOUGH_DATA){
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const result = jsQR(imageData.data, imageData.width, imageData.height);
+        if(result && result.data){
+          const code = result.data.trim();
+          const mode = scanMode;
+          stopScan();
+          if(mode === 'origin') processOriginScan(code); else processDestScan(code);
+          return;
+        }
+      }
+      scanRAF = requestAnimationFrame(tick);
+    }
+    scanRAF = requestAnimationFrame(tick);
+  }
+
+  document.getElementById('scanOriginBtn').addEventListener('click', ()=>startScan('origin'));
+  document.getElementById('scanDestBtn').addEventListener('click', ()=>startScan('destination'));
+  document.getElementById('scanCancelBtn').addEventListener('click', stopScan);
+
+  function genQrCode(){
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let s = '';
+    for(let i=0;i<6;i++) s += chars[Math.floor(Math.random()*chars.length)];
+    return `EB-${s}`;
+  }
+
+  document.getElementById('generateLabelBtn').addEventListener('click', async ()=>{
+    if(!currentJobId) return toast('Select a job first.');
+    const description = document.getElementById('newItemDesc').value.trim();
+    if(!description) return toast('Enter an item description first.');
+    const origin_room = document.getElementById('newItemRoom').value.trim() || null;
+    const destination_room = document.getElementById('newItemDestRoom').value.trim() || null;
+    const is_high_value = document.getElementById('newItemHV').checked;
+    const needs_disassembly = document.getElementById('newItemNeedsDisassembly').checked;
+    const disassembly_notes = document.getElementById('newItemDisassemblyNotes').value.trim() || null;
+    const requires_special_equipment = document.getElementById('newItemSpecialEquipment').checked;
+    const special_equipment_notes = document.getElementById('newItemSpecialEquipmentNotes').value.trim() || null;
+    const requires_climate_controlled_storage = document.getElementById('newItemClimate').checked;
+    const climate_storage_notes = document.getElementById('newItemClimateNotes').value.trim() || null;
+    const qr_code = genQrCode();
+    const { error } = await sb.from('inventory_items').insert({
+      job_id: currentJobId, qr_code, description, origin_room, destination_room, is_high_value, needs_disassembly, disassembly_notes, requires_special_equipment, special_equipment_notes, requires_climate_controlled_storage, climate_storage_notes, status: 'pending'
+    });
+    if(error){ toast('Could not create item: ' + error.message); return; }
+    await sb.from('tracking_events').insert({job_id: currentJobId, event_type:'item_logged', note: `${qr_code} — ${description}`});
+
+    const canvas = document.getElementById('labelCanvas');
+    await QRCode.toCanvas(canvas, qr_code, { width: 180, margin: 1 });
+    document.getElementById('labelCode').textContent = qr_code;
+    document.getElementById('labelDesc').textContent = description + (origin_room ? ' · ' + origin_room : '') + (destination_room ? ' → ' + destination_room : '');
+    document.getElementById('labelPreview').style.display = 'block';
+
+    document.getElementById('newItemDesc').value = '';
+    document.getElementById('newItemRoom').value = '';
+    document.getElementById('newItemDestRoom').value = '';
+    document.getElementById('newItemHV').checked = false;
+    document.getElementById('newItemNeedsDisassembly').checked = false;
+    document.getElementById('newItemDisassemblyNotes').value = '';
+    document.getElementById('newItemDisassemblyNotes').style.display = 'none';
+    document.getElementById('newItemSpecialEquipment').checked = false;
+    document.getElementById('newItemSpecialEquipmentNotes').value = '';
+    document.getElementById('newItemSpecialEquipmentNotes').style.display = 'none';
+    document.getElementById('newItemClimate').checked = false;
+    document.getElementById('newItemClimateNotes').value = '';
+    document.getElementById('newItemClimateNotes').style.display = 'none';
+    toast('Item logged — print the label and attach it to the box.');
+    loadItems();
+  });
+
+  document.getElementById('newItemNeedsDisassembly').addEventListener('change', (e) => {
+    document.getElementById('newItemDisassemblyNotes').style.display = e.target.checked ? 'block' : 'none';
+  });
+  document.getElementById('newItemSpecialEquipment').addEventListener('change', (e) => {
+    document.getElementById('newItemSpecialEquipmentNotes').style.display = e.target.checked ? 'block' : 'none';
+  });
+  document.getElementById('newItemClimate').addEventListener('change', (e) => {
+    document.getElementById('newItemClimateNotes').style.display = e.target.checked ? 'block' : 'none';
+  });
+
+  async function generateBulkLabels(){
+    if(!currentJobId) return toast('Select a job first.');
+    const qtyInput = document.getElementById('bulkQty');
+    let qty = parseInt(qtyInput.value, 10);
+    if(!qty || qty < 1) return toast('Enter a quantity of at least 1.');
+    if(qty > 50) qty = 50;
+    const btn = document.getElementById('bulkGenerateBtn');
+    btn.disabled = true;
+    const originalLabel = btn.textContent;
+    btn.textContent = 'Generating…';
+    try{
+      const seen = new Set();
+      const codes = [];
+      while(codes.length < qty){
+        const c = genQrCode();
+        if(seen.has(c)) continue;
+        seen.add(c);
+        codes.push(c);
+      }
+      const rows = codes.map(qr_code => ({ job_id: currentJobId, qr_code, description: 'Pre-printed label (unassigned)', status: 'pending' }));
+      const { error } = await sb.from('inventory_items').insert(rows);
+      if(error){ toast('Could not create labels: ' + error.message); return; }
+      await sb.from('tracking_events').insert({ job_id: currentJobId, event_type: 'labels_pre_printed', note: `${qty} blank labels pre-printed` });
+
+      const images = [];
+      for(const code of codes){
+        const c = document.createElement('canvas');
+        await QRCode.toCanvas(c, code, { width: 140, margin: 1 });
+        images.push({ code, src: c.toDataURL() });
+      }
+
+      const w = window.open('', '_blank', 'width=700,height=800');
+      if(!w){ toast('Please allow pop-ups to print labels.'); loadItems(); return; }
+      const labelHtml = images.map(img => `
+        <div class="label">
+          <img src="${img.src}" alt="QR code">
+          <div class="code">${esc(img.code)}</div>
+        </div>`).join('');
+      w.document.write(`<!DOCTYPE html><html><head><title>Blank QR Labels</title><style>
+        body{font-family:sans-serif; margin:0; padding:16px;}
+        .sheet{display:grid; grid-template-columns:repeat(3, 1fr); gap:14px;}
+        .label{border:1px dashed #999; border-radius:6px; text-align:center; padding:10px; page-break-inside:avoid;}
+        .label img{width:100%; max-width:110px;}
+        .code{font-weight:700; letter-spacing:.04em; margin-top:6px; font-size:13px;}
+        @media print { .label{border:1px solid #ccc;} }
+      </style></head><body>
+        <div class="sheet">${labelHtml}</div>
+        <script>window.onload=()=>window.print();<\/script>
+      </body></html>`);
+      w.document.close();
+      toast(`${qty} blank labels created — printing sheet.`);
+      loadItems();
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+    }
+  }
+
+  document.getElementById('bulkGenerateBtn').addEventListener('click', generateBulkLabels);
+
+
+  document.getElementById('printLabelBtn').addEventListener('click', ()=>{
+    const w = window.open('', '_blank', 'width=420,height=520');
+    if(!w) return toast('Please allow pop-ups to print the label.');
+    const codeText = esc(document.getElementById('labelCode').textContent);
+    const descText = esc(document.getElementById('labelDesc').textContent);
+    const imgSrc = document.getElementById('labelCanvas').toDataURL();
+    w.document.write(`<!DOCTYPE html><html><head><title>QR Label</title><style>
+      body{font-family:sans-serif; text-align:center; padding:20px;}
+      .code{font-weight:700; letter-spacing:.05em; margin-top:8px; font-size:16px;}
+      .desc{font-size:12px; color:#555; margin-top:2px;}
+    </style></head><body>
+      <img src="${imgSrc}" alt="QR code">
+      <div class="code">${codeText}</div>
+      <div class="desc">${descText}</div>
+      <script>window.onload=()=>window.print();<\/script>
+    </body></html>`);
+    w.document.close();
+  });
+
+  function createSigPad(canvasId){
+    const canvas = document.getElementById(canvasId);
+    const ctx = canvas.getContext('2d');
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#0b1230';
+    let drawing = false;
+    let hasSig = false;
+    function pos(e){
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+    }
+    canvas.addEventListener('pointerdown', e => {
+      drawing = true; hasSig = true;
+      const p = pos(e);
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      canvas.setPointerCapture(e.pointerId);
+    });
+    canvas.addEventListener('pointermove', e => {
+      if(!drawing) return;
+      const p = pos(e);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+    });
+    ['pointerup','pointercancel','pointerleave'].forEach(evt => canvas.addEventListener(evt, () => { drawing = false; }));
+    return {
+      get hasSig(){ return hasSig; },
+      clear(){ ctx.clearRect(0, 0, canvas.width, canvas.height); hasSig = false; },
+      async upload(path){
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        const { error } = await sb.storage.from('inventory-photos').upload(path, blob, { upsert: true, contentType: 'image/png' });
+        if(error) throw error;
+        return path;
+      }
+    };
+  }
+
+  const deliverySigPad = createSigPad('sigPad');
+  const pickupSigPad = createSigPad('sigPadPickup');
+  const changeOrderSigPad = createSigPad('sigPadChangeOrder');
+  document.getElementById('sigClearBtn').addEventListener('click', () => deliverySigPad.clear());
+  document.getElementById('sigClearBtnPickup').addEventListener('click', () => pickupSigPad.clear());
+  document.getElementById('sigClearBtnChangeOrder').addEventListener('click', () => changeOrderSigPad.clear());
+
+  document.getElementById('submitChangeOrderBtn').addEventListener('click', async () => {
+    if(!currentJobId) return toast('Select a job first.');
+    const statusEl = document.getElementById('changeOrderStatus');
+    const desc = document.getElementById('coDesc').value.trim();
+    const amountVal = parseFloat(document.getElementById('coAmount').value);
+    const photoFile = document.getElementById('coPhoto').files[0];
+    if(!desc) return toast('Describe what is being added.');
+    if(!amountVal || amountVal <= 0) return toast('Enter an additional amount greater than $0.');
+    if(!photoFile) return toast('A photo of the item or reason is required for a change order.');
+    if(!changeOrderSigPad.hasSig) return toast("Capture the customer's signature before submitting a change order.");
+
+    const btn = document.getElementById('submitChangeOrderBtn');
+    btn.disabled = true;
+    statusEl.textContent = 'Uploading photo...';
+    try{
+      const photoPath = `change-orders/${currentJobId}_${Date.now()}_${photoFile.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+      const { error: photoErr } = await sb.storage.from('inventory-photos').upload(photoPath, photoFile, { upsert: true });
+      if(photoErr) throw photoErr;
+
+      statusEl.textContent = 'Saving signature...';
+      const sigPath = await changeOrderSigPad.upload(`signatures/${currentJobId}_change_order_${Date.now()}.png`);
+
+      statusEl.textContent = 'Recording change order...';
+      const { error: insertErr } = await sb.from('job_charge_lines').insert({
+        job_id: currentJobId,
+        description: desc,
+        amount_cents: Math.round(amountVal * 100),
+        is_change_order: true,
+        evidence_photo_path: photoPath,
+        customer_signature_path: sigPath,
+        approved_at: new Date().toISOString()
+      });
+      if(insertErr) throw insertErr;
+
+      await sb.from('tracking_events').insert({
+        job_id: currentJobId,
+        event_type: 'change_order_added',
+        note: `Change order added on-site: ${desc} (+$${amountVal.toFixed(2)}), photographed and signed for by the customer.`
+      });
+
+      statusEl.textContent = 'Change order recorded — visible to Ops immediately.';
+      document.getElementById('coDesc').value = '';
+      document.getElementById('coAmount').value = '';
+      document.getElementById('coPhoto').value = '';
+      changeOrderSigPad.clear();
+      toast('Change order submitted.');
+    }catch(e){
+      statusEl.textContent = 'Could not submit change order: ' + (e.message || 'unknown error');
+    }finally{
+      btn.disabled = false;
+    }
+  });
+
+  const CARGO_MAX_FILE_BYTES = 75 * 1024 * 1024;
+  async function submitCargoCheckpoint(checkpoint, fileInputId, statusElId, newStatus, btnId){
+    if(!currentJobId) return toast('Select a job first.');
+    const fileInput = document.getElementById(fileInputId);
+    const file = fileInput.files[0];
+    const statusEl = document.getElementById(statusElId);
+    if(!file) return toast('A cargo area photo or video is required for this checkpoint.');
+    if(file.size > CARGO_MAX_FILE_BYTES){
+      return toast('That file is too large (' + (file.size/1024/1024).toFixed(0) + 'MB) — please keep the video to a quick, short pan (under 75MB).');
+    }
+    const mediaType = file.type && file.type.startsWith('video/') ? 'video' : 'photo';
+    const btn = document.getElementById(btnId);
+    btn.disabled = true;
+    statusEl.textContent = 'Uploading ' + mediaType + '...';
+    try{
+      const photoPath = `${currentJobId}_${checkpoint}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+      const { error: uploadErr } = await sb.storage.from('cargo-photos').upload(photoPath, file, { upsert: true });
+      if(uploadErr) throw uploadErr;
+
+      const { error: insertErr } = await sb.from('cargo_checkpoint_photos').insert({
+        job_id: currentJobId, checkpoint, photo_path: photoPath, media_type: mediaType, crew_id: currentJobCrewId || null
+      });
+      if(insertErr) throw insertErr;
+
+      const { error: statusErr } = await sb.from('jobs').update({status: newStatus, updated_at: new Date().toISOString()}).eq('id', currentJobId);
+      if(statusErr) throw statusErr;
+
+      const mediaWord = mediaType === 'video' ? 'video captured' : 'photo taken';
+      await sb.from('tracking_events').insert({
+        job_id: currentJobId,
+        event_type: 'cargo_checkpoint_photo',
+        note: checkpoint === 'loaded_departing' ? `Cargo area ${mediaWord} — fully loaded, departing origin` : `Cargo area ${mediaWord} — arrived at destination, before unloading`,
+        photo_path: photoPath
+      });
+
+      statusEl.textContent = 'Cargo ' + mediaType + ' recorded — visible on the customer\'s portal and in Ops.';
+      fileInput.value = '';
+      toast('Cargo checkpoint confirmed.');
+    }catch(e){
+      statusEl.textContent = 'Could not record cargo checkpoint: ' + (e.message || 'unknown error');
+    }finally{
+      btn.disabled = false;
+    }
+  }
+
+  document.getElementById('cargoLoadedBtn').addEventListener('click', () => {
+    submitCargoCheckpoint('loaded_departing', 'cargoLoadedPhoto', 'cargoLoadedStatus', 'in_transit', 'cargoLoadedBtn');
+  });
+  document.getElementById('cargoArrivedBtn').addEventListener('click', () => {
+    submitCargoCheckpoint('arrived_destination', 'cargoArrivedPhoto', 'cargoArrivedStatus', 'unloading', 'cargoArrivedBtn');
+  });
+
+  document.getElementById('confirmPickupBtn').addEventListener('click', async () => {
+    if(!currentJobId) return toast('Select a job first.');
+    const signerName = document.getElementById('signerNamePickup').value.trim();
+    if(!signerName) return toast("Enter the customer's name before confirming pickup.");
+    if(!pickupSigPad.hasSig) return toast("Capture the customer's signature before confirming pickup.");
+    let sigPath;
+    try{
+      sigPath = await pickupSigPad.upload(`signatures/${currentJobId}_pickup_${Date.now()}.png`);
+    }catch(e){
+      return toast('Could not save signature: ' + (e.message || 'unknown error'));
+    }
+    const { error } = await sb.from('tracking_events').insert({job_id: currentJobId, event_type:'pickup_signature', note: `Signed by ${signerName}`, photo_path: sigPath});
+    if(error) return toast('Could not record signature: ' + error.message);
+    toast('Pickup signature captured.');
+    document.getElementById('signerNamePickup').value = '';
+    pickupSigPad.clear();
+  });
+
+  async function uploadExceptionPhotoIfAny(){
+    const fileInput = document.getElementById('exceptionPhoto');
+    const file = fileInput.files[0];
+    if(!file) return null;
+    const statusEl = document.getElementById('uploadStatus');
+    statusEl.textContent = 'Uploading photo...';
+    const path = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    const { error } = await sb.storage.from('inventory-photos').upload(path, file, { upsert: true });
+    if(error){ statusEl.textContent = 'Photo upload failed: ' + error.message; return null; }
+    statusEl.textContent = 'Photo attached.';
+    return path;
+  }
+
+  document.getElementById('closeJobBtn').addEventListener('click', async ()=>{
+    if(!currentJobId) return;
+    const note = document.getElementById('exceptionNote').value.trim();
+    if(note){
+      const photo_path = await uploadExceptionPhotoIfAny();
+      const { error: excErr } = await sb.from('tracking_events').insert({job_id: currentJobId, event_type:'exception_logged', note, photo_path});
+      if(excErr) return toast('Could not log exception: ' + excErr.message);
+      toast('Exception logged.');
+      document.getElementById('exceptionNote').value='';
+      document.getElementById('exceptionPhoto').value='';
+      document.getElementById('uploadStatus').textContent='';
+    } else {
+      const signerName = document.getElementById('signerName').value.trim();
+      if(!signerName) return toast("Enter the customer's name before marking delivered.");
+      if(!deliverySigPad.hasSig) return toast("Capture the customer's signature before marking delivered.");
+      if(!deliveryChecklistConfirmed){
+        const incomplete = await getIncompleteChecklistLabels(currentJobId);
+        if(incomplete.length){
+          deliveryChecklistConfirmed = true;
+          document.getElementById('closeJobBtn').textContent = `${incomplete.length} SOP step(s) open — Tap to Confirm Anyway`;
+          toast(`Still open: ${incomplete.slice(0,3).join(', ')}${incomplete.length > 3 ? '…' : ''}`);
+          return;
+        }
+      }
+      let unreconciledItems = [];
+      if(!deliveryReconciliationConfirmed){
+        unreconciledItems = await getUnreconciledItems(currentJobId);
+        if(unreconciledItems.length){
+          deliveryReconciliationConfirmed = true;
+          document.getElementById('closeJobBtn').textContent = `${unreconciledItems.length} item(s) unaccounted for — Tap to Confirm Anyway`;
+          toast(`Not yet scanned at destination or held: ${unreconciledItems.slice(0,3).map(i=>i.description).join(', ')}${unreconciledItems.length > 3 ? '…' : ''}`);
+          return;
+        }
+      } else {
+        unreconciledItems = await getUnreconciledItems(currentJobId);
+      }
+      let sigPath;
+      try{
+        sigPath = await deliverySigPad.upload(`signatures/${currentJobId}_delivery_${Date.now()}.png`);
+      }catch(e){
+        return toast('Could not save signature: ' + (e.message || 'unknown error'));
+      }
+      const { error: sigErr } = await sb.from('tracking_events').insert({job_id: currentJobId, event_type:'delivery_signature', note: `Signed by ${signerName}`, photo_path: sigPath});
+      if(sigErr) return toast('Could not record signature: ' + sigErr.message);
+      const { error: statusErr } = await sb.from('jobs').update({status:'delivered', updated_at: new Date().toISOString()}).eq('id', currentJobId);
+      if(statusErr) return toast('Could not mark job delivered: ' + statusErr.message);
+      const { error: completeErr } = await sb.from('tracking_events').insert({job_id: currentJobId, event_type:'delivery_complete', note:'Job marked delivered by crew'});
+      if(completeErr) return toast('Delivered, but could not log completion event: ' + completeErr.message);
+      if(unreconciledItems.length){
+        const note = `Inventory reconciliation: ${unreconciledItems.length} item(s) never scanned at destination or held in storage — ${unreconciledItems.map(i=>`${i.description} (${i.qr_code})`).join('; ')}. Crew confirmed delivery anyway.`;
+        await sb.from('tracking_events').insert({job_id: currentJobId, event_type:'exception_logged', note});
+      }
+      toast(unreconciledItems.length ? `Job marked delivered — ${unreconciledItems.length} unaccounted item(s) flagged for Ops.` : 'Job marked delivered — signature captured.');
+      document.getElementById('signerName').value = '';
+      deliverySigPad.clear();
+      deliveryChecklistConfirmed = false;
+      deliveryReconciliationConfirmed = false;
+      document.getElementById('closeJobBtn').textContent = 'Mark Job Delivered';
+      showJobDebrief(currentJobId, currentJobCrewId);
+      loadJobs();
+    }
+  });
+
+  let debriefJobId = null, debriefCrewId = null, debriefRating = 0;
+  function renderDifficultyStars(){
+    const stars = document.getElementById('difficultyStars');
+    stars.innerHTML = [1,2,3,4,5].map(n => `<span data-n="${n}" style="color:${n <= debriefRating ? '#f0b429' : '#d8dce6'};">&#9733;</span>`).join('');
+  }
+  document.getElementById('difficultyStars').addEventListener('click', (e) => {
+    const n = e.target.getAttribute('data-n');
+    if(n){ debriefRating = parseInt(n, 10); renderDifficultyStars(); }
+  });
+  async function showJobDebrief(jobId, crewId){
+    if(!jobId) return;
+    debriefJobId = jobId; debriefCrewId = crewId; debriefRating = 0;
+    renderDifficultyStars();
+    document.getElementById('debriefUnderstaffed').checked = false;
+    document.getElementById('debriefRanLong').checked = false;
+    document.getElementById('debriefNotes').value = '';
+    document.getElementById('debriefStatus').textContent = '';
+    const { data: existing } = await sb.from('job_crew_debriefs').select('id').eq('job_id', jobId).maybeSingle();
+    document.getElementById('jobDebriefCard').style.display = 'block';
+    document.getElementById('jobDebriefForm').style.display = existing ? 'none' : 'block';
+    document.getElementById('jobDebriefDone').style.display = existing ? 'block' : 'none';
+  }
+  document.getElementById('debriefSkipBtn').addEventListener('click', () => {
+    document.getElementById('jobDebriefCard').style.display = 'none';
+  });
+  document.getElementById('debriefSubmitBtn').addEventListener('click', async () => {
+    if(!debriefJobId) return;
+    if(!debriefRating) return toast('Tap a star to rate how hard the job was.');
+    const submitted_by = document.getElementById('debriefSubmittedBy').value.trim();
+    if(!submitted_by) return toast('Enter your name.');
+    const btn = document.getElementById('debriefSubmitBtn');
+    btn.disabled = true;
+    const { error } = await sb.from('job_crew_debriefs').upsert({
+      job_id: debriefJobId,
+      crew_id: debriefCrewId,
+      difficulty_rating: debriefRating,
+      was_understaffed: document.getElementById('debriefUnderstaffed').checked,
+      ran_long: document.getElementById('debriefRanLong').checked,
+      notes: document.getElementById('debriefNotes').value.trim() || null,
+      submitted_by
+    }, { onConflict: 'job_id' });
+    btn.disabled = false;
+    if(error) return toast('Could not submit debrief: ' + error.message);
+    document.getElementById('jobDebriefForm').style.display = 'none';
+    document.getElementById('jobDebriefDone').style.display = 'block';
+    toast('Debrief submitted — thanks.');
+  });
+
+  async function checkStaffSession(){
+    const { data: { session } } = await sb.auth.getSession();
+    if(session){
+      document.getElementById('staffLoginGate').style.display = 'none';
+      loadJobs();
+    } else {
+      document.getElementById('staffLoginGate').style.display = 'flex';
+    }
+  }
+
+  document.getElementById('loginBtn').addEventListener('click', async () => {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errEl = document.getElementById('loginErr');
+    errEl.classList.remove('show');
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){ errEl.classList.add('show'); return; }
+    document.getElementById('staffLoginGate').style.display = 'none';
+    loadJobs();
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await sb.auth.signOut();
+    window.location.reload();
+  });
+
+  checkStaffSession();
+  updateQueueBadge(getQueue().length);
+  flushOfflineQueue();
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js', { scope: '/crew.html' }).catch(()=>{});
+    });
+  }
+</script>
+</body>
+</html>

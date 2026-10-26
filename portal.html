@@ -1,0 +1,2699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Haulwyn OS | Client Portal</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --navy:#0a1f44; --red:#b22234; --gold:#c9a227; --ink:#0b1230; --steel:#5b6478; --off:#f6f5f1; --green:#1fb26b;}
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',sans-serif; background:var(--off); color:var(--ink);}
+  header{background:var(--navy); color:#fff; padding:22px 28px;}
+  header h1{font-family:'Oswald',sans-serif; font-size:18px; text-transform:uppercase; letter-spacing:.03em;}
+  header .sub{font-size:12.5px; color:rgba(255,255,255,.65); margin-top:2px;}
+  main{max-width:760px; margin:0 auto; padding:28px;}
+  select{width:100%; padding:13px 14px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14.5px; margin-bottom:24px; background:#fff;}
+  .card{background:#fff; border-radius:12px; padding:26px; border:1px solid rgba(11,18,48,.08); margin-bottom:22px;}
+  .card h2{font-family:'Oswald',sans-serif; font-size:14px; text-transform:uppercase; letter-spacing:.04em; color:var(--navy); margin-bottom:16px;}
+  .claim-msg{border-radius:8px; padding:12px 14px; font-size:13.5px; font-weight:600; margin-top:10px; display:none;}
+  .claim-msg.show{display:block;}
+  .claim-msg.err{background:#fbe9ea; color:var(--red);}
+  .claim-msg.ok{background:#e3f7ec; color:var(--green);}
+  .status-hero{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px;}
+  .status-hero .big{font-family:'Playfair Display',serif; font-size:26px; font-weight:700; color:var(--navy);}
+  .pill{display:inline-block; padding:6px 14px; border-radius:20px; font-size:12px; font-weight:700; text-transform:uppercase; background:var(--gold); color:var(--navy);}
+  .timeline{position:relative; padding-left:26px;}
+  .tl-item{position:relative; padding-bottom:20px;}
+  .tl-item:last-child{padding-bottom:0;}
+  .tl-item::before{content:''; position:absolute; left:-26px; top:4px; width:11px; height:11px; border-radius:50%; background:var(--navy); border:2px solid #fff; box-shadow:0 0 0 1px rgba(11,18,48,.2);}
+  .tl-item::after{content:''; position:absolute; left:-21px; top:16px; width:1px; height:calc(100% - 6px); background:rgba(11,18,48,.15);}
+  .tl-item:last-child::after{display:none;}
+  .tl-time{font-size:11.5px; color:var(--steel); text-transform:uppercase; letter-spacing:.02em; font-weight:600;}
+  .tl-note{font-size:14.5px; margin-top:2px;}
+  .item-row{display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid rgba(11,18,48,.06);}
+  .item-row:last-child{border-bottom:none;}
+  .item-desc{font-size:14px; font-weight:600;}
+  .item-meta{font-size:11.5px; color:var(--steel); margin-top:2px;}
+  .badge{display:inline-block; padding:3px 9px; border-radius:20px; font-size:10.5px; font-weight:700; text-transform:uppercase;}
+  .badge-pending{background:#eef0f4; color:var(--steel);}
+  .badge-scanned_origin{background:#fff4d9; color:#b8860b;}
+  .badge-on_truck{background:#e9eefb; color:var(--navy);}
+  .badge-scanned_destination{background:#e3f7ec; color:var(--green);}
+  .badge-exception{background:#fbe1e1; color:#d9481f;}
+  .badge-in_storage{background:#f3e8d0; color:#8a6d1f;}
+  .badge-packed{background:#eef0f4; color:var(--steel);}
+  .pack-box-row{padding:12px 0; border-bottom:1px solid rgba(11,18,48,.06);}
+  .pack-box-row:last-child{border-bottom:none;}
+  .pack-box-form{margin-top:10px; padding:12px; background:#f6f5f1; border-radius:8px; display:flex; flex-direction:column; gap:8px;}
+  .pack-box-form input, .pack-box-form select{width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:13.5px; font-family:inherit;}
+  .pack-box-form button{padding:10px 14px; border-radius:8px; border:none; background:var(--navy); color:#fff; font-size:13px; font-weight:700; cursor:pointer;}
+  .badge-received{background:#eef0f4; color:var(--steel);}
+  .badge-vaulted{background:#e3f7ec; color:var(--green);}
+  .badge-in_transit{background:#fff4d9; color:#b8860b;}
+  .badge-delivered{background:#e9eefb; color:var(--navy);}
+  .director{display:flex; align-items:center; gap:14px;}
+  .director .avatar{width:44px; height:44px; border-radius:50%; background:var(--navy); color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Oswald',sans-serif; font-weight:700;}
+  .empty{color:var(--steel); font-size:13.5px;}
+  .gate{max-width:420px; margin:80px auto; text-align:center;}
+  .gate h2{font-family:'Oswald',sans-serif; font-size:15px; text-transform:uppercase; letter-spacing:.03em; color:var(--navy); margin-bottom:10px;}
+  .gate p{font-size:13.5px; color:var(--steel); line-height:1.6;}
+  #liveTrackMap{height:220px; width:100%; border-radius:8px; margin-bottom:12px;}
+  .eta-banner{display:flex; align-items:center; justify-content:space-between; gap:14px; background:#f0f4fb; border-radius:8px; padding:12px 16px; flex-wrap:wrap;}
+  .eta-banner .eta-num{font-family:'Oswald',sans-serif; font-size:22px; font-weight:700; color:var(--navy);}
+  .est-table{width:100%; border-collapse:collapse; font-size:13.5px; margin:8px 0 12px;}
+  .est-table td{padding:7px 0; border-bottom:1px solid rgba(11,18,48,.06);}
+  .est-table td.amt{text-align:right; white-space:nowrap;}
+  .est-table tr.tot td{font-weight:700; border-bottom:none; color:var(--navy);}
+  .sig-pad{width:100%; height:150px; border:1.5px dashed rgba(11,18,48,.3); border-radius:8px; background:#fff; touch-action:none; display:block;}
+  .pbtn{flex:1 1 180px; padding:13px 14px; border-radius:8px; border:none; background:var(--navy); color:#fff; font-size:13.5px; font-weight:700; cursor:pointer; font-family:inherit;}
+  .pbtn.alt{background:#fff; color:var(--navy); border:1.5px solid rgba(11,18,48,.2);}
+  .pbtn:disabled{background:#c8ccd6; color:#fff; border-color:transparent; cursor:default;}
+  .sig-input{width:100%; padding:11px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px; font-family:inherit; margin:6px 0 10px;}
+  .truck-dot-icon{background:var(--red); width:14px; height:14px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px rgba(11,18,48,.3);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Blue Provenance Transport</h1>
+  <div class="sub">Client Portal &middot; Live Move Tracking</div>
+</header>
+
+<main>
+  <div class="card gate" id="gateCard">
+    <h2>Personalized Tracking Link Required</h2>
+    <p>Your relocation director sends you a private link for your move. Open the one in your email or text to see live status here. This page does not list other customers' moves.</p>
+  </div>
+
+  <div id="portalContent" style="display:none;">
+  <div class="card">
+    <div class="status-hero">
+      <div>
+        <div class="item-meta">YOUR MOVE STATUS</div>
+        <div class="big" id="statusBig">&ndash;</div>
+      </div>
+      <span class="pill" id="statusPill">&ndash;</span>
+    </div>
+    <div id="arrivalBanner" style="display:none; margin-top:10px; padding:9px 12px; border-radius:8px; background:#eaf7ee; border:1px solid rgba(31,107,58,.25); color:#1f6b3a; font-size:13px; font-weight:600;"></div>
+    <button id="bolBtn" style="margin-top:14px; width:100%; padding:11px 14px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); background:#fff; color:var(--navy); font-size:13.5px; font-weight:700; cursor:pointer;">View Bill of Lading &amp; Inventory Record</button>
+    <div id="bolStatus" class="claim-msg" style="margin-top:8px;"></div>
+    <a id="docsLink" href="#" style="display:block; margin-top:10px; text-align:center; font-size:13px; font-weight:700; color:var(--navy);">Your Documents: Estimate, Invoice, Receipts, Bill of Lading</a>
+  </div>
+
+  <div id="paidBanner" class="claim-msg" style="margin:-8px 0 22px;"></div>
+
+  <!-- Estimate review + e-sign. Backend: get_job_estimates / accept_job_estimate / decline_job_estimate. -->
+  <div class="card" id="estimateCard" style="display:none;">
+    <h2>Your Estimate</h2>
+    <div id="estimateContent"></div>
+  </div>
+
+  <div class="card" id="weatherAdvisoryCard" style="display:none;">
+    <h2>Weather Advisory</h2>
+    <div id="weatherAdvisoryContent"></div>
+  </div>
+
+  <div class="card" id="delayNoticeCard" style="display:none;">
+    <h2>Running Behind Schedule</h2>
+    <div id="delayNoticeContent"></div>
+  </div>
+
+  <div class="card" id="noShowCard" style="display:none;">
+    <h2>Access Issue Reported</h2>
+    <div id="noShowContent"></div>
+  </div>
+
+  <div class="card" id="feedbackCard" style="display:none;">
+    <h2>How Did We Do?</h2>
+    <div class="item-meta" style="margin-bottom:10px;">Your feedback goes straight to our team — it's not a public review, just for us.</div>
+    <div id="feedbackStars" style="display:flex; gap:6px; margin-bottom:10px;"></div>
+    <textarea id="feedbackComment" maxlength="1000" placeholder="Anything you'd like us to know? (optional)" style="width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px; font-family:inherit; min-height:60px; resize:vertical; margin-bottom:10px;"></textarea>
+    <button id="feedbackSubmitBtn" style="width:100%; padding:11px 14px; border-radius:8px; border:none; background:var(--navy); color:#fff; font-size:13.5px; font-weight:700; cursor:pointer;">Submit Feedback</button>
+    <div id="feedbackThanks" style="display:none; font-size:13.5px; color:var(--green); font-weight:700;">Thanks for letting us know — a relocation director may follow up.</div>
+    <div id="feedbackStatus" class="item-meta" style="margin-top:6px;"></div>
+  </div>
+
+  <div class="card" id="tipRequestCard" style="display:none;">
+    <h2>Leave a Tip for Your Crew</h2>
+    <div class="item-meta" id="tipRequestIntro" style="margin-bottom:10px;">Didn't have cash on move day, or just want to say thank you after the fact? Let us know an amount and how you'd like it handled — a Relocation Director will make sure it actually reaches your crew.</div>
+    <div id="tipRequestForm">
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+        <button type="button" class="tip-amount-btn" data-amt="20" style="width:auto; padding:10px 16px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); background:#fff; color:var(--navy); font-weight:700; cursor:pointer;">$20</button>
+        <button type="button" class="tip-amount-btn" data-amt="40" style="width:auto; padding:10px 16px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); background:#fff; color:var(--navy); font-weight:700; cursor:pointer;">$40</button>
+        <button type="button" class="tip-amount-btn" data-amt="60" style="width:auto; padding:10px 16px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); background:#fff; color:var(--navy); font-weight:700; cursor:pointer;">$60</button>
+      </div>
+      <label for="tipRequestAmount" style="display:block; font-size:12px; font-weight:600; color:var(--steel); text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px;">Amount ($)</label>
+      <input id="tipRequestAmount" type="number" min="1" step="1" placeholder="e.g. 40" style="width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px; margin-bottom:10px;">
+      <label for="tipRequestMethod" style="display:block; font-size:12px; font-weight:600; color:var(--steel); text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px;">How would you like this handled?</label>
+      <select id="tipRequestMethod" style="width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px; margin-bottom:10px;">
+        <option value="add_to_final_invoice">Add it to my final invoice/balance</option>
+        <option value="venmo_or_cashapp">I'll send it via Venmo/Cash App myself</option>
+        <option value="cash_or_check_dropoff">I'll drop off cash or a check</option>
+        <option value="other">Other — I'll explain below</option>
+      </select>
+      <label for="tipRequestNote" style="display:block; font-size:12px; font-weight:600; color:var(--steel); text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px;">Note (optional)</label>
+      <textarea id="tipRequestNote" maxlength="1000" placeholder="Anything you'd like your crew to know" style="width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px; font-family:inherit; min-height:60px; resize:vertical; margin-bottom:10px;"></textarea>
+      <button id="tipRequestSubmitBtn" style="width:100%; padding:11px 14px; border-radius:8px; border:none; background:var(--navy); color:#fff; font-size:13.5px; font-weight:700; cursor:pointer;">Submit Tip</button>
+      <div id="tipRequestStatus" class="item-meta" style="margin-top:6px;"></div>
+    </div>
+    <div id="tipRequestHistory" style="margin-top:14px;"></div>
+  </div>
+
+  <div class="card" id="prepChecklistCard" style="display:none;">
+    <h2>Get Ready For Move Day</h2>
+    <div class="item-meta" style="margin-bottom:10px;">A short list of the things that make move day go smoothly — check them off as you go.</div>
+    <div id="prepChecklistProgress" style="font-size:13px; font-weight:700; color:var(--navy); margin-bottom:8px;"></div>
+    <div id="prepChecklistList" style="display:flex; flex-direction:column; gap:8px;"></div>
+  </div>
+
+  <div class="card" id="accommodationCard" style="display:none;">
+    <h2>Accessibility &amp; Accommodations</h2>
+    <div class="item-meta" style="margin-bottom:10px;">Anyone in a wheelchair or with a mobility device, a hearing or vision need, a language other than English you'd prefer, or anything else that would help our crew serve you well? Telling us here means it's on the crew's radar before they ever ring the bell — not something you have to explain again at the door.</div>
+    <label style="display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; margin-bottom:10px; cursor:pointer;">
+      <input type="checkbox" id="accommodationNeeds" style="width:auto;"> Yes, there's something our crew should know
+    </label>
+    <textarea id="accommodationNotes" maxlength="1000" placeholder="e.g. My father uses a wheelchair and can't manage stairs, or please have a Spanish-speaking crew member if possible" style="display:none; width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px; font-family:inherit; min-height:60px; resize:vertical; margin-bottom:10px;"></textarea>
+    <button id="accommodationSaveBtn" style="width:100%; padding:11px 14px; border-radius:8px; border:none; background:var(--navy); color:#fff; font-size:13.5px; font-weight:700; cursor:pointer;">Save</button>
+    <div id="accommodationStatus" class="item-meta" style="margin-top:6px;"></div>
+  </div>
+
+  <div class="card" id="buildingAccessCard" style="display:none;">
+    <h2>Building Access &amp; Insurance Requirements</h2>
+    <div class="item-meta" style="margin-bottom:10px;">One of the most common causes of a move-day delay is a building that won't let the crew in — a missing certificate of insurance or an unreserved freight elevator. Here's what we have on file, and you can add or update your building's contact info below.</div>
+    <div id="buildingAccessStatusList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px; font-size:13.5px; font-weight:600;"></div>
+    <label for="buildingContactName" style="display:block; font-size:12px; font-weight:600; color:var(--steel); text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px;">Building Contact Name</label>
+    <input id="buildingContactName" type="text" placeholder="Super, management office, etc." style="width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px; margin-bottom:10px;">
+    <label for="buildingContactPhone" style="display:block; font-size:12px; font-weight:600; color:var(--steel); text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px;">Building Contact Phone</label>
+    <input id="buildingContactPhone" type="text" placeholder="(555) 555-0100" style="width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px; margin-bottom:10px;">
+    <label for="buildingAccessNotes" style="display:block; font-size:12px; font-weight:600; color:var(--steel); text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px;">Anything Else About Access?</label>
+    <textarea id="buildingAccessNotes" maxlength="1000" placeholder="Loading dock hours, parking restrictions, freight elevator size, doorman instructions..." style="width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px; font-family:inherit; min-height:60px; resize:vertical; margin-bottom:10px;"></textarea>
+    <button id="buildingAccessSaveBtn" style="width:100%; padding:11px 14px; border-radius:8px; border:none; background:var(--navy); color:#fff; font-size:13.5px; font-weight:700; cursor:pointer;">Save Building Info</button>
+    <div id="buildingAccessSaveStatus" class="item-meta" style="margin-top:6px;"></div>
+    <div style="border-top:1px solid rgba(11,18,48,.08); margin-top:18px; padding-top:16px;">
+      <div style="font-size:12px; font-weight:600; color:var(--steel); text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px;">Building Documents</div>
+      <div class="item-meta" style="margin-bottom:10px;">Have an insurance-requirements letter, an elevator reservation confirmation, or a move-in rules packet from your building? Upload it here instead of emailing it — your relocation director sees it immediately.</div>
+      <div id="buildingDocsList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
+      <input type="file" id="buildingDocFile" accept="application/pdf,image/jpeg,image/png,image/webp" style="width:100%; margin-bottom:8px; font-size:13px;">
+      <button id="buildingDocUploadBtn" style="width:100%; padding:11px 14px; border-radius:8px; border:none; background:var(--navy); color:#fff; font-size:13.5px; font-weight:700; cursor:pointer;">Upload Document</button>
+      <div id="buildingDocStatus" class="item-meta" style="margin-top:6px;"></div>
+    </div>
+  </div>
+
+  <div class="card" id="liveTrackCard" style="display:none;">
+    <h2>Live Tracking</h2>
+    <div id="liveTrackMap"></div>
+    <div class="eta-banner">
+      <div>
+        <div class="item-meta" style="margin-bottom:2px;">ESTIMATED ARRIVAL</div>
+        <div class="eta-num" id="etaText">&ndash;</div>
+      </div>
+      <div class="item-meta" style="text-align:right;" id="etaDistance">&ndash;</div>
+    </div>
+    <div class="item-meta" style="margin-top:10px;">Truck position updates automatically as your move progresses. This is our live dispatch simulation, refreshed every 15 seconds &mdash; not GPS hardware yet, so treat the ETA as a helpful estimate rather than a guarantee.</div>
+  </div>
+
+  <div class="card" id="invoiceCard" style="display:none;">
+    <h2>Invoice &amp; Payments</h2>
+    <div id="invoiceSummary" class="item-meta" style="font-size:14.5px; font-weight:700; color:var(--navy); margin-bottom:10px;"></div>
+    <div id="invoicePayments"></div>
+    <div id="payButtons" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;"></div>
+    <div id="payStatus" class="claim-msg"></div>
+    <button id="invoicePrintBtn" style="margin-top:14px; width:100%; padding:11px 14px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); background:#fff; color:var(--navy); font-size:13.5px; font-weight:700; cursor:pointer;">View / Print Invoice</button>
+    <div id="invoiceStatus" class="claim-msg" style="margin-top:8px;"></div>
+  </div>
+
+  <div class="card" id="messagesCard">
+    <h2>Message Your Move Director</h2>
+    <div class="item-meta" style="margin-bottom:10px;">A direct line to the person handling your move — no phone tag, no waiting on hold.</div>
+    <div id="messagesThread" style="display:flex; flex-direction:column; gap:8px; max-height:320px; overflow-y:auto; margin-bottom:12px;"></div>
+    <div style="display:flex; gap:8px;">
+      <input id="messageInput" type="text" placeholder="Type a message&hellip;" maxlength="2000" style="flex:1; padding:10px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px;">
+      <input type="file" id="messageAttachment" accept="image/jpeg,image/png,image/webp,image/heic,application/pdf" style="display:none;">
+      <button id="messageAttachBtn" type="button" title="Attach a photo or PDF" style="padding:10px 14px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); background:#fff; color:var(--navy); font-size:15px; cursor:pointer;">&#128206;</button>
+      <button id="messageSendBtn" style="padding:10px 18px; border-radius:8px; border:none; background:var(--navy); color:#fff; font-size:13.5px; font-weight:700; cursor:pointer;">Send</button>
+    </div>
+    <div id="messageAttachName" class="item-meta" style="margin-top:4px;"></div>
+    <div id="messageStatus" class="item-meta" style="margin-top:6px;"></div>
+  </div>
+
+  <div class="card" id="addonCard" style="display:none;">
+    <h2>Request an Add-On Service</h2>
+    <div class="item-meta" style="margin-bottom:10px;">Need something added — extra packing supplies, wrapping for a fragile piece, an additional stop, more coverage? Describe it here and your Relocation Director will follow up with pricing and next steps.</div>
+    <div id="addonList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
+    <textarea id="addonDesc" maxlength="1000" placeholder="What would you like to add?" style="width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px; font-family:inherit; min-height:70px; resize:vertical;"></textarea>
+    <button id="addonSubmitBtn" style="margin-top:10px; width:100%; padding:11px 14px; border-radius:8px; border:none; background:var(--navy); color:#fff; font-size:13.5px; font-weight:700; cursor:pointer;">Submit Request</button>
+    <div id="addonStatus" class="item-meta" style="margin-top:6px;"></div>
+  </div>
+
+  <div class="card" id="rescheduleCard" style="display:none;">
+    <h2>Request a Reschedule</h2>
+    <div class="item-meta" style="margin-bottom:10px;">Need to move your date or time window? Send a request and your Relocation Director will confirm availability — this doesn't change your move until it's approved.</div>
+    <div id="rescheduleList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
+    <label for="rescheduleDate" style="display:block; font-size:12px; font-weight:600; color:var(--steel); text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px;">New Date</label>
+    <input id="rescheduleDate" type="date" style="width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px; margin-bottom:10px;">
+    <label for="rescheduleTimeSlot" style="display:block; font-size:12px; font-weight:600; color:var(--steel); text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px;">Preferred Time Window (optional)</label>
+    <select id="rescheduleTimeSlot" style="width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px; margin-bottom:10px;">
+      <option value="">No preference</option>
+      <option value="morning">Morning</option>
+      <option value="afternoon">Afternoon</option>
+      <option value="evening">Evening</option>
+    </select>
+    <label for="rescheduleReason" style="display:block; font-size:12px; font-weight:600; color:var(--steel); text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px;">Reason (optional)</label>
+    <textarea id="rescheduleReason" maxlength="1000" placeholder="Anything that would help us accommodate the change" style="width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px; font-family:inherit; min-height:60px; resize:vertical; margin-bottom:10px;"></textarea>
+    <button id="rescheduleSubmitBtn" style="width:100%; padding:11px 14px; border-radius:8px; border:none; background:var(--navy); color:#fff; font-size:13.5px; font-weight:700; cursor:pointer;">Submit Request</button>
+    <div id="rescheduleStatus" class="item-meta" style="margin-top:6px;"></div>
+  </div>
+
+  <div class="card" id="referCard" style="display:none;">
+    <h2>Refer a Friend</h2>
+    <div class="item-meta" style="margin-bottom:10px;">Know someone else planning a move? Share your link below — the moment their move is complete, you'll get a $50 referral credit toward your own next move.</div>
+    <div style="display:flex; gap:8px; margin-bottom:12px;">
+      <input id="referLinkInput" type="text" readonly style="flex:1; padding:10px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:13px; background:#f7f8fb;">
+      <button id="referCopyBtn" style="padding:10px 16px; border-radius:8px; border:none; background:var(--navy); color:#fff; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;">Copy Link</button>
+    </div>
+    <div id="referralsList" style="display:flex; flex-direction:column; gap:6px;"></div>
+  </div>
+
+  <div class="card">
+    <h2>One Move Director, Start to Finish</h2>
+    <div class="director">
+      <div class="avatar" id="directorInitials">&ndash;</div>
+      <div>
+        <div style="font-weight:700;" id="directorName">&ndash;</div>
+        <div class="item-meta">Your single point of contact for this move</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="meetCrewCard" style="display:none;">
+    <h2>Meet Your Crew</h2>
+    <div class="director">
+      <div class="avatar" id="crewAvatarInitials" style="display:none;">&ndash;</div>
+      <img id="crewAvatarPhoto" style="display:none; width:44px; height:44px; border-radius:50%; object-fit:cover;">
+      <div>
+        <div style="font-weight:700;" id="crewLeadName">&ndash;</div>
+        <div class="item-meta" id="crewTeamSizeLine"></div>
+      </div>
+    </div>
+    <div class="item-meta" id="crewIntroNote" style="margin-top:12px;"></div>
+  </div>
+
+  <div class="card">
+    <h2>Live Timeline</h2>
+    <div class="timeline" id="timeline"><div class="empty">No events yet.</div></div>
+  </div>
+
+  <div class="card" id="cargoCheckpointsCard" style="display:none;">
+    <h2>Cargo Checkpoints</h2>
+    <div class="item-meta" style="margin-bottom:12px;">A photo or short video of the truck's actual cargo area at the two moments that matter most &mdash; fully loaded and about to leave, and arrived at your new place before anything comes off. A quick walkthrough video is real footage of your things in the truck, even though it isn't a live feed.</div>
+    <div id="cargoCheckpointsList" style="display:flex; flex-direction:column; gap:14px;"></div>
+  </div>
+
+  <div class="card">
+    <h2>Photographed Inventory</h2>
+    <div class="item-meta" style="margin-bottom:12px;">Every item is timestamped and, wherever practical, photographed at pickup and again at delivery — a chain-of-custody record tied to its own QR code, so if a question ever comes up about an item's condition, there's a real record to point to rather than two people's memory of it.</div>
+    <div id="items"><div class="empty">No items logged yet.</div></div>
+  </div>
+
+  <div class="card" id="redeliveryCard" style="display:none;">
+    <h2>Request Redelivery From Storage</h2>
+    <div class="item-meta" style="margin-bottom:10px;">Some of your items are being held in storage until redelivery can be scheduled. Tell us a date you'd like them delivered and a Relocation Director will confirm.</div>
+    <div id="redeliveryList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
+    <div id="redeliveryForm">
+      <label for="redeliveryDate" style="display:block; font-size:12px; font-weight:600; color:var(--steel); text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px;">Preferred Delivery Date</label>
+      <input id="redeliveryDate" type="date" style="width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px; margin-bottom:10px;">
+      <label for="redeliveryTimeSlot" style="display:block; font-size:12px; font-weight:600; color:var(--steel); text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px;">Preferred Time Window (optional)</label>
+      <select id="redeliveryTimeSlot" style="width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px; margin-bottom:10px;">
+        <option value="">No preference</option>
+        <option value="morning">Morning</option>
+        <option value="afternoon">Afternoon</option>
+        <option value="evening">Evening</option>
+      </select>
+      <label for="redeliveryNotes" style="display:block; font-size:12px; font-weight:600; color:var(--steel); text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px;">Anything Else? (optional)</label>
+      <textarea id="redeliveryNotes" maxlength="1000" placeholder="Access notes, timing constraints, etc." style="width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px; font-family:inherit; min-height:60px; resize:vertical; margin-bottom:10px;"></textarea>
+      <button id="redeliverySubmitBtn" style="width:100%; padding:11px 14px; border-radius:8px; border:none; background:var(--navy); color:#fff; font-size:13.5px; font-weight:700; cursor:pointer;">Submit Request</button>
+      <div id="redeliveryStatus" class="item-meta" style="margin-top:6px;"></div>
+    </div>
+  </div>
+
+  <div class="card" id="packBoxesCard" style="display:none;">
+    <h2>Pack &amp; Label Your Boxes</h2>
+    <div class="item-meta" style="margin-bottom:12px;">Print a sheet of codes now, days before your move, and stick one on each box as you pack it — no app to download, nothing to scan yourself. Tell us which room each box is headed to at the new place, and the crew will see that the instant they scan it off the truck, so nobody has to guess or ask.</div>
+    <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom:14px;">
+      <div style="flex:1; min-width:120px;">
+        <label for="packBoxesQty" style="display:block; font-size:12px; font-weight:600; color:var(--steel); text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px;">How many labels?</label>
+        <input type="number" id="packBoxesQty" min="1" max="60" value="10" style="width:100%; padding:11px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px;">
+      </div>
+      <button id="packBoxesGenBtn" style="padding:12px 16px; border-radius:8px; border:none; background:var(--navy); color:#fff; font-size:13.5px; font-weight:700; cursor:pointer; white-space:nowrap;">Generate My Box Labels</button>
+    </div>
+    <div id="packBoxesStatus" class="item-meta" style="margin-bottom:10px;"></div>
+    <div id="packBoxesList"></div>
+  </div>
+
+  <div class="card" id="supplyOrderCard" style="display:none;">
+    <h2>Order Packing Supplies</h2>
+    <div class="item-meta" style="margin-bottom:10px;">Need more boxes, tape, or wrap before move day? Tell us what you need and whether you'd like it dropped off or you'll swing by to pick it up — a Relocation Director will confirm.</div>
+    <div id="supplyOrderList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
+    <textarea id="supplyOrderItems" maxlength="1000" placeholder="e.g. 15 medium boxes, 2 rolls of tape, bubble wrap for glassware" style="width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px; font-family:inherit; min-height:60px; resize:vertical; margin-bottom:10px;"></textarea>
+    <label for="supplyOrderMethod" style="display:block; font-size:12px; font-weight:600; color:var(--steel); text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px;">How would you like it?</label>
+    <select id="supplyOrderMethod" style="width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px; margin-bottom:10px;">
+      <option value="dropoff">Drop it off for me</option>
+      <option value="pickup">I'll pick it up</option>
+    </select>
+    <button id="supplyOrderSubmitBtn" style="width:100%; padding:11px 14px; border-radius:8px; border:none; background:var(--navy); color:#fff; font-size:13.5px; font-weight:700; cursor:pointer;">Submit Request</button>
+    <div id="supplyOrderStatus" class="item-meta" style="margin-top:6px;"></div>
+  </div>
+
+  <div class="card" id="boxesCard" style="display:none;">
+    <h2>Your Boxes</h2>
+    <div class="item-meta" id="boxesCardIntro" style="margin-bottom:12px;">Every box on this move — self-labeled by you while packing, or packed and photographed by your crew — so you can see what's in a box or where it's headed without unpacking it.</div>
+    <div id="boxesGallery" style="display:flex; flex-direction:column; gap:14px;"></div>
+  </div>
+
+  <div class="card" id="vaultCard" style="display:none;">
+    <h2>Vaulted Items</h2>
+    <div class="item-meta" style="margin-bottom:12px;">Your Tier III items held in climate-controlled storage, tracked separately from the rest of your inventory.</div>
+    <div id="vaultItems"></div>
+  </div>
+
+  <div class="card" id="donationsCard" style="display:none;">
+    <h2>Donations</h2>
+    <div class="item-meta" style="margin-bottom:12px;">Items your crew logged as donated rather than moved, with a good-faith value estimate — useful for your own tax records. Not an appraisal, just what your crew noted at the time.</div>
+    <div id="donationsList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
+    <button id="donationsPrintBtn" style="width:100%; padding:11px 14px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); background:#fff; color:var(--navy); font-size:13.5px; font-weight:700; cursor:pointer;">Print Donation Record</button>
+  </div>
+
+  <div class="card" id="lostFoundCard" style="display:none;">
+    <h2>Lost &amp; Found</h2>
+    <div class="item-meta" style="margin-bottom:10px;">Occasionally something turns up after the fact — in the truck, back at the warehouse, or at your old place — that our team believes is yours. Anything listed here has already been reviewed by a Relocation Director; let us know if it's yours and how you'd like it back.</div>
+    <div id="lostFoundList" style="display:flex; flex-direction:column; gap:10px;"></div>
+  </div>
+
+  <div class="card">
+    <h2>Claims</h2>
+    <div id="claimsList" style="margin-bottom:18px;"><div class="empty">No claims filed.</div></div>
+    <div style="border-top:1px solid rgba(11,18,48,.08); padding-top:18px;">
+      <label for="claimItemSelect" style="display:block; font-size:12px; font-weight:600; color:var(--steel); text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px;">Related Item (optional)</label>
+      <select id="claimItemSelect" style="margin-bottom:14px;"><option value="">Not related to a specific item</option></select>
+      <label for="claimDescription" style="display:block; font-size:12px; font-weight:600; color:var(--steel); text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px;">Describe the Issue</label>
+      <textarea id="claimDescription" rows="4" placeholder="Describe any damage or loss you'd like us to review..." style="width:100%; padding:13px 14px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14.5px; font-family:inherit; resize:vertical; margin-bottom:10px;"></textarea>
+      <label style="display:block; font-size:12px; font-weight:600; color:var(--steel); text-transform:uppercase; letter-spacing:.02em; margin-bottom:6px;">Photos (optional, up to 6)</label>
+      <div class="item-meta" style="margin-bottom:8px;">A photo of the damage taken now is the single fastest way to get a claim decided — attach one if you can.</div>
+      <input type="file" id="claimPhotoInput" accept="image/*" capture="environment" multiple style="width:100%; margin-bottom:6px; font-size:13px;">
+      <div id="claimPhotoPreview" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;"></div>
+      <button id="submitClaimBtn" style="width:100%; padding:13px 14px; border-radius:8px; border:none; background:var(--navy); color:#fff; font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; cursor:pointer;">Submit Claim</button>
+      <div class="claim-msg" id="claimMsg"></div>
+      <div class="item-meta" style="margin-top:10px;">Claims are acknowledged within 24 hours and typically decided within 5 business days.</div>
+    </div>
+  </div>
+  </div>
+</main>
+
+<script>
+  const SUPABASE_URL = 'https://izafyooegkvstynejaxh.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6YWZ5b29lZ2t2c3R5bmVqYXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1MzQwNzcsImV4cCI6MjEwNDExMDA3N30.nKaTP_t5TrzJE0xbFb7SUX_QLRKIEGIiYTnbb8QcwYY';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const esc = s => (s ?? '').toString().replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const statusLabels = {
+    quoted:'Quote Received', booked:'Move Booked', en_route_origin:'Crew En Route',
+    loading:'Loading in Progress', in_transit:'In Transit', unloading:'Unloading in Progress',
+    delivered:'Delivered', closed:'Complete', claim_open:'Claim Under Review'
+  };
+
+  // Friendly labels for the move timeline below — the underlying event_type/note are written for
+  // internal record-keeping (crew scans, staff edits), so this translates them into something a
+  // customer should actually see rather than showing raw QR codes or "via Ops dashboard" language.
+  const EVENT_LABELS = {
+    job_booked: 'Move booked',
+    job_updated: 'Move details updated',
+    item_logged: 'Item logged for your move',
+    item_scanned_origin: 'Item scanned at pickup',
+    item_scanned_destination: 'Item scanned at delivery',
+    item_held_in_storage: 'An item is temporarily being held in storage until delivery can be completed',
+    pickup_signature: 'Pickup signed off',
+    delivery_signature: 'Delivery signed off',
+    delivery_complete: 'Move marked complete',
+    exception_logged: 'An issue was noted by the crew',
+    geofence_arrived_origin: 'Crew arrived at pickup location',
+    geofence_departed_origin: 'Crew departed the pickup location, heading to you',
+    geofence_arrived_destination: 'Crew arrived at delivery location',
+    change_order_added: 'Additional item/charge added and signed for on-site'
+  };
+  // Purely internal prep steps with no customer relevance — left off the timeline entirely.
+  const HIDE_EVENT = new Set(['labels_pre_printed']);
+  // Events whose note is an internal detail (a raw QR code, or "via Ops dashboard") rather than
+  // something meant for the customer to read.
+  const HIDE_NOTE_FOR = new Set(['job_booked', 'job_updated', 'item_logged', 'item_scanned_origin', 'item_scanned_destination', 'geofence_arrived_origin', 'geofence_departed_origin', 'geofence_arrived_destination']);
+  // Friendly labels for the inventory item status badge below — "scanned_origin"/"exception" etc.
+  // are internal crew-scanning vocabulary, not something a customer should have to decode.
+  const ITEM_STATUS_LABELS = {
+    pending: 'Pending Pickup',
+    scanned_origin: 'Picked Up',
+    on_truck: 'On The Truck',
+    scanned_destination: 'Delivered',
+    exception: 'Flagged For Review',
+    in_storage: 'Held In Storage'
+  };
+  // Friendly labels for the Vaulted Items status badge (Estate Vaulting / Tier III customers only).
+  const VAULT_STATUS_LABELS = {
+    received: 'Received At Facility',
+    vaulted: 'In Vault Storage',
+    in_transit: 'In Transit',
+    delivered: 'Delivered'
+  };
+  const dollars = c => '$' + ((c||0)/100).toLocaleString(undefined,{maximumFractionDigits:0});
+
+  // Pack & Label Your Boxes — a customer packs at their own pace, days before the move, no app
+  // and no crew required: generate a printable sheet of QR codes, stick one on each box, tell us
+  // the destination room. Two real failure modes this deliberately avoids: Quick Peek's iOS-only
+  // app that customers had to download died as a personal-storage novelty (this is a page they
+  // already have open), and a real competitor's QR system is plagued by manual-scan billing/
+  // missing-item disputes because customers do the scanning themselves — here the customer only
+  // ever prints and picks from a list; the actual origin/destination *scan* stays crew's job,
+  // exactly like the existing item-level pattern. Gated to the same pre-move states the
+  // generate_customer_box_labels/label_customer_box RPCs enforce server-side, so this card never
+  // offers something the backend would refuse.
+  const PACK_PRE_MOVE_STATUSES = new Set(['quoted', 'booked']);
+  const ROOM_OPTIONS = ['Living Room', 'Kitchen', 'Primary Bedroom', 'Bedroom 2', 'Bedroom 3', 'Bathroom', 'Office', 'Garage', 'Basement', 'Other'];
+  let packBoxesCache = [];
+  let packBoxesOpenCode = null;
+  // Photos the customer has picked for the currently-open box but not yet uploaded — cleared
+  // once Save runs (success or failure) so a stale selection never silently attaches to the
+  // wrong box after the customer taps a different row.
+  let pendingBoxPhotos = [];
+
+  function renderPackBoxesCard(jobStatus, boxes){
+    const card = document.getElementById('packBoxesCard');
+    const customerBoxes = (boxes || []).filter(b => b.packed_by === 'customer');
+    const preMove = PACK_PRE_MOVE_STATUSES.has(jobStatus);
+    if(!preMove && !customerBoxes.length){
+      // Never had any self-packed boxes and the move has already started — nothing for this
+      // card to offer or to honestly summarize, so it disappears rather than showing an empty shell.
+      card.style.display = 'none';
+      return;
+    }
+    card.style.display = 'block';
+    packBoxesCache = customerBoxes;
+    const genRow = card.querySelector('#packBoxesQty').closest('div');
+    const genBtn = document.getElementById('packBoxesGenBtn');
+    const intro = card.querySelector('.item-meta');
+    if(preMove){
+      genRow.style.display = '';
+      genBtn.style.display = '';
+      intro.textContent = "Print a sheet of codes now, days before your move, and stick one on each box as you pack it — no app to download, nothing to scan yourself. Tell us which room each box is headed to at the new place, and the crew will see that the instant they scan it off the truck, so nobody has to guess or ask.";
+    } else {
+      // Move has started (or finished) — this becomes an honest read-only summary of what was
+      // packed before move day, rather than silently vanishing the customer's own labeling work.
+      genRow.style.display = 'none';
+      genBtn.style.display = 'none';
+      intro.textContent = "Your move is already underway, so new labels can no longer be printed or edited here — this is a read-only summary of the boxes you labeled before move day.";
+    }
+    renderPackBoxesList(preMove);
+  }
+
+  function renderPackBoxesList(editable){
+    const listEl = document.getElementById('packBoxesList');
+    if(!packBoxesCache.length){
+      listEl.innerHTML = editable ? '<div class="empty">No labels generated yet — pick a quantity above and print your first sheet.</div>' : '<div class="empty">No self-packed boxes were labeled before this move began.</div>';
+      return;
+    }
+    const sorted = packBoxesCache.slice().sort((a,b) => a.box_code < b.box_code ? -1 : 1);
+    listEl.innerHTML = sorted.map(b => {
+      const isOpen = editable && packBoxesOpenCode === b.box_code;
+      const summary = b.label
+        ? `<div class="item-desc">${esc(b.box_code)} — ${esc(b.label)}</div><div class="item-meta">${b.destination_room ? 'Headed to: ' + esc(b.destination_room) : 'No destination room set yet'}</div>`
+        : `<div class="item-desc">${esc(b.box_code)}</div><div class="item-meta" style="color:var(--red);">Not labeled yet${editable ? ' — tap to add a name and room' : ''}</div>`;
+      // Thumbnails of any photo(s) already attached — box-photos is a public bucket, so a plain
+      // getPublicUrl renders directly with no signing step, same convention crew.html/ops.html use.
+      const existingThumbs = (b.photo_paths || []).map(p => {
+        const url = sb.storage.from('box-photos').getPublicUrl(p).data.publicUrl;
+        return `<img src="${url}" style="width:44px; height:44px; object-fit:cover; border-radius:6px; border:1px solid rgba(11,18,48,.15);">`;
+      }).join('');
+      const thumbsHtml = existingThumbs ? `<div style="display:flex; gap:5px; flex-wrap:wrap; margin-top:6px;">${existingThumbs}</div>` : '';
+      const formHtml = isOpen ? `
+        <div class="pack-box-form">
+          <input type="text" class="pack-label-input" placeholder="e.g. Kitchen — fragile glassware" value="${esc(b.label || '')}" maxlength="200">
+          <select class="pack-room-select">
+            <option value="">Destination room (optional)</option>
+            ${ROOM_OPTIONS.map(r => `<option value="${esc(r)}" ${b.destination_room === r ? 'selected' : ''}>${esc(r)}</option>`).join('')}
+          </select>
+          <input type="text" class="pack-notes-input" placeholder="Notes (optional)" value="${esc(b.notes || '')}" maxlength="500">
+          <label style="font-size:11.5px; color:var(--steel); margin-bottom:-2px;">Photo of what's inside (optional, up to 4)</label>
+          <input type="file" class="pack-photo-input" accept="image/*" capture="environment" multiple>
+          <div class="pack-photo-preview" style="display:flex; gap:5px; flex-wrap:wrap;"></div>
+          ${existingThumbs ? `<div style="font-size:11px; color:var(--steel);">Already attached:</div>${thumbsHtml}` : ''}
+          <button type="button" class="pack-save-btn" data-code="${esc(b.box_code)}">Save</button>
+        </div>` : (!editable && existingThumbs ? thumbsHtml : '');
+      return `<div class="pack-box-row${editable ? ' clickable' : ''}" data-code="${esc(b.box_code)}" style="${editable ? 'cursor:pointer;' : ''}">
+        ${summary}
+        ${formHtml}
+      </div>`;
+    }).join('');
+    if(!editable) return;
+    listEl.querySelectorAll('.pack-box-row').forEach(row => row.addEventListener('click', (e) => {
+      if(e.target.closest('.pack-box-form')) return;
+      pendingBoxPhotos = []; // switching boxes — never carry a photo selection to a different box
+      packBoxesOpenCode = packBoxesOpenCode === row.dataset.code ? null : row.dataset.code;
+      renderPackBoxesList(true);
+    }));
+    listEl.querySelectorAll('.pack-photo-input').forEach(input => input.addEventListener('change', () => {
+      pendingBoxPhotos = Array.from(input.files || []).slice(0, 4);
+      const preview = input.closest('.pack-box-form').querySelector('.pack-photo-preview');
+      preview.innerHTML = pendingBoxPhotos.map(f =>
+        `<img src="${URL.createObjectURL(f)}" style="width:44px; height:44px; object-fit:cover; border-radius:6px; border:1px solid rgba(11,18,48,.15);">`
+      ).join('');
+    }));
+    listEl.querySelectorAll('.pack-save-btn').forEach(btn => btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const row = btn.closest('.pack-box-row');
+      const code = btn.dataset.code;
+      const label = row.querySelector('.pack-label-input').value.trim();
+      const room = row.querySelector('.pack-room-select').value;
+      const notes = row.querySelector('.pack-notes-input').value.trim();
+      const statusEl = document.getElementById('packBoxesStatus');
+      if(!label){ statusEl.textContent = 'Give this box a name before saving.'; statusEl.style.color = 'var(--red)'; return; }
+      btn.disabled = true; btn.textContent = 'Saving…';
+      const { error } = await sb.rpc('label_customer_box', {
+        p_job_id: currentJobId, p_token: currentToken, p_box_code: code,
+        p_label: label, p_destination_room: room || null, p_notes: notes || null
+      });
+      if(error){
+        btn.disabled = false; btn.textContent = 'Save';
+        statusEl.textContent = 'Could not save: ' + error.message; statusEl.style.color = 'var(--red)';
+        return;
+      }
+      // Photos upload after the label save succeeds, into the box-photos public bucket at a
+      // <job_id>/<token>/<box_code>/filename path — the exact shape box_photo_path_allowed
+      // validates server-side, so a wrong job/token/box combination is rejected at the storage
+      // layer itself, not just by this client honoring the right folder name.
+      let photoFailCount = 0;
+      if(pendingBoxPhotos.length){
+        btn.textContent = 'Uploading photo(s)…';
+        for(const file of pendingBoxPhotos){
+          const path = `${currentJobId}/${currentToken}/${code}/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+          const { error: upErr } = await sb.storage.from('box-photos').upload(path, file);
+          if(upErr){ photoFailCount++; continue; }
+          const { error: attachErr } = await sb.rpc('add_customer_box_photo', {
+            p_job_id: currentJobId, p_token: currentToken, p_box_code: code, p_photo_path: path
+          });
+          if(attachErr) photoFailCount++;
+        }
+      }
+      btn.disabled = false; btn.textContent = 'Save';
+      statusEl.textContent = photoFailCount ? `${code} saved, but ${photoFailCount} photo(s) failed to attach — try again.` : `${code} saved.`;
+      statusEl.style.color = photoFailCount ? 'var(--red)' : 'var(--green)';
+      packBoxesOpenCode = null;
+      pendingBoxPhotos = [];
+      loadDetail(currentJobId, currentToken);
+    }));
+  }
+
+  document.getElementById('packBoxesGenBtn').addEventListener('click', async () => {
+    if(!currentJobId || !currentToken) return;
+    const statusEl = document.getElementById('packBoxesStatus');
+    const qtyInput = document.getElementById('packBoxesQty');
+    let qty = parseInt(qtyInput.value, 10);
+    if(!qty || qty < 1) qty = 1;
+    if(qty > 60) qty = 60;
+    qtyInput.value = qty;
+    const btn = document.getElementById('packBoxesGenBtn');
+    btn.disabled = true;
+    const originalText = btn.textContent;
+    btn.textContent = 'Generating…';
+    statusEl.textContent = '';
+    const { data: codes, error } = await sb.rpc('generate_customer_box_labels', { p_job_id: currentJobId, p_token: currentToken, p_quantity: qty });
+    btn.disabled = false;
+    btn.textContent = originalText;
+    if(error){
+      statusEl.textContent = 'Could not generate labels: ' + error.message;
+      statusEl.style.color = 'var(--red)';
+      return;
+    }
+    statusEl.textContent = `${(codes || []).length} label(s) created — printing your sheet now.`;
+    statusEl.style.color = 'var(--green)';
+    await printLabelSheet((codes || []).map(c => c.box_code));
+    loadDetail(currentJobId, currentToken);
+  });
+
+  // Printable label sheet — same window.open('', '_blank') + window.print() pattern already used
+  // for the Bill of Lading and Invoice below, just producing a grid of QR codes sized reasonably
+  // for adhesive labels or plain cut-apart printer paper instead of a document.
+  async function printLabelSheet(codes){
+    if(!codes || !codes.length) return;
+    const w = window.open('', '_blank', 'width=700,height=800');
+    if(!w){ alert('Please allow pop-ups to print your label sheet.'); return; }
+    const images = [];
+    for(const code of codes){
+      const c = document.createElement('canvas');
+      await QRCode.toCanvas(c, code, { width: 140, margin: 1 });
+      images.push({ code, src: c.toDataURL() });
+    }
+    const labelHtml = images.map(img => `
+      <div class="label">
+        <img src="${img.src}" alt="QR code">
+        <div class="code">${esc(img.code)}</div>
+      </div>`).join('');
+    w.document.write(`<!DOCTYPE html><html><head><title>Box Labels</title><style>
+      body{font-family:sans-serif; margin:0; padding:16px;}
+      .sheet{display:grid; grid-template-columns:repeat(3, 1fr); gap:14px;}
+      .label{border:1px dashed #999; border-radius:6px; text-align:center; padding:10px; page-break-inside:avoid;}
+      .label img{width:100%; max-width:110px;}
+      .code{font-weight:700; letter-spacing:.04em; margin-top:6px; font-size:13px;}
+      @media print { .label{border:1px solid #ccc;} }
+    </style></head><body>
+      <div class="sheet">${labelHtml}</div>
+      <script>window.onload=()=>window.print();<\/script>
+    </body></html>`);
+    w.document.close();
+  }
+
+  function getParams(){
+    const p = new URLSearchParams(window.location.search);
+    return { job: p.get('job'), token: p.get('token') };
+  }
+
+  let currentJobId = null;
+
+  async function init(){
+    const { job, token } = getParams();
+    if(!job || !token){
+      // no valid link params - show the gate, do not list any customer data
+      return;
+    }
+    // verify the token matches this specific job before revealing anything (via a security-definer RPC,
+    // not a direct table select, since the jobs table itself is staff-only now)
+    const { data: job_rows, error } = await sb.rpc('get_job_by_token', { p_job_id: job, p_token: token });
+    if(error){
+      document.getElementById('gateCard').querySelector('p').textContent = "We couldn't load your move right now. Please refresh the page — this isn't a problem with your tracking link.";
+      return;
+    }
+    if(!job_rows || !job_rows.length){
+      document.getElementById('gateCard').querySelector('p').textContent = 'This tracking link is invalid or has expired. Please request a new link from your relocation director.';
+      return;
+    }
+    currentJobId = job;
+    currentToken = token;
+    document.getElementById('gateCard').style.display = 'none';
+    document.getElementById('portalContent').style.display = 'block';
+    loadDetail(currentJobId, currentToken);
+  }
+
+  // ---- Live Tracking: a real map + ETA countdown for the in-transit leg, matching the
+  // Onfleet/Amazon-grade experience competitor research found NO moving-industry platform
+  // clearly delivers (every one of them claims "GPS tracking" in marketing copy without ever
+  // documenting whether that means a live map or just a vague geofence ping). Only shown once
+  // the truck is actually en route with a destination to head toward — the simulated truck
+  // movement job only advances position during 'in_transit', so that's the one phase with
+  // anything real to show; showing a stale/static map for other phases would be dishonest.
+  let liveTrackMap = null, liveTruckMarker = null, liveDestMarker = null, liveRouteLine = null;
+
+  function haversineMiles(lat1, lng1, lat2, lng2){
+    const toRad = d => d * Math.PI / 180;
+    const R = 3958.8; // miles
+    const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
+    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
+    return 2 * R * Math.asin(Math.sqrt(a));
+  }
+  // Average city-driving speed assumption for the ETA estimate — deliberately conservative
+  // and labeled as an estimate rather than a routed, traffic-aware prediction.
+  const ASSUMED_AVG_SPEED_MPH = 22;
+
+  function updateLiveTrackCard(job){
+    const card = document.getElementById('liveTrackCard');
+    const canTrack = job && job.status === 'in_transit' && job.truck_lat != null && job.truck_lng != null
+      && job.destination_lat != null && job.destination_lng != null;
+    if(!canTrack){ card.style.display = 'none'; return; }
+    card.style.display = 'block';
+
+    const miles = haversineMiles(job.truck_lat, job.truck_lng, job.destination_lat, job.destination_lng);
+    const etaMinutes = Math.max(1, Math.round(miles / ASSUMED_AVG_SPEED_MPH * 60));
+    document.getElementById('etaText').textContent = etaMinutes < 60
+      ? `~${etaMinutes} min`
+      : `~${(etaMinutes/60).toFixed(1)} hr`;
+    document.getElementById('etaDistance').textContent = `${miles < 0.15 ? 'Arriving now' : miles.toFixed(1) + ' mi away'}`;
+
+    if(!window.L) return; // Leaflet failed to load — the ETA text above still works without the map
+    if(!liveTrackMap){
+      liveTrackMap = L.map('liveTrackMap', { scrollWheelZoom: false }).setView([job.truck_lat, job.truck_lng], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors', maxZoom: 18
+      }).addTo(liveTrackMap);
+    }
+    const truckLatLng = [job.truck_lat, job.truck_lng];
+    const destLatLng = [job.destination_lat, job.destination_lng];
+    if(liveTruckMarker){ liveTruckMarker.setLatLng(truckLatLng); }
+    else { liveTruckMarker = L.circleMarker(truckLatLng, { radius: 8, className: 'truck-dot-icon', color:'#fff', weight:2, fillColor:'var(--red)', fillOpacity:1 }).addTo(liveTrackMap).bindTooltip('Your truck', { permanent:false }); }
+    if(!liveDestMarker){ liveDestMarker = L.marker(destLatLng).addTo(liveTrackMap).bindTooltip('Delivery address', { permanent:false }); }
+    if(liveRouteLine) liveTrackMap.removeLayer(liveRouteLine);
+    liveRouteLine = L.polyline([truckLatLng, destLatLng], { color: '#0a1f44', dashArray: '6 6', weight: 2, opacity: 0.6 }).addTo(liveTrackMap);
+    liveTrackMap.fitBounds(L.latLngBounds([truckLatLng, destLatLng]), { padding: [24,24] });
+  }
+
+  // "Meet Your Crew" -- a face and a name attached to whoever's actually coming into the
+  // customer's home, shown once a crew is assigned. Deliberately hidden entirely (not a "TBD"
+  // placeholder) until a crew_lead_name exists on the job, since a customer with no crew
+  // assigned yet has nothing real to be shown -- honest absence, same convention as the
+  // Cargo Checkpoints card only appearing once a photo actually exists.
+  function updateMeetYourCrewCard(job){
+    const card = document.getElementById('meetCrewCard');
+    if(!job.crew_lead_name){ card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    document.getElementById('crewLeadName').textContent = job.crew_lead_name;
+    const initialsEl = document.getElementById('crewAvatarInitials');
+    const photoEl = document.getElementById('crewAvatarPhoto');
+    if(job.crew_photo_path){
+      photoEl.src = sb.storage.from('crew-photos').getPublicUrl(job.crew_photo_path).data.publicUrl;
+      photoEl.style.display = 'block';
+      initialsEl.style.display = 'none';
+    } else {
+      initialsEl.textContent = job.crew_lead_name.split(' ').map(w=>w[0]).slice(0,2).join('');
+      initialsEl.style.display = 'flex';
+      photoEl.style.display = 'none';
+    }
+    document.getElementById('crewTeamSizeLine').textContent = job.crew_team_size
+      ? `Team of ${job.crew_team_size}${job.crew_team_size === 1 ? '' : ' movers'}`
+      : "Your crew lead for this move";
+    document.getElementById('crewIntroNote').textContent = job.crew_intro_note || '';
+  }
+
+  // Weather Advisory — a dispatch-issued call about this job's own scheduled date (snow, ice, a
+  // storm, flooding), distinct from a Reschedule Request the customer submits themselves and from
+  // the honestly-simulated Live Tracking card, which only ever covers the in_transit leg. Shows
+  // only the most recent advisory (the current word on the move), with a small history note if
+  // there's more than one — hidden once the job is delivered/closed/cancelled, since weather no
+  // longer matters once the move has actually happened.
+  const WEATHER_REASON_LABELS_PORTAL = { snow: 'Snow', ice: 'Ice', hurricane_or_high_wind: 'Hurricane / High Wind', flood: 'Flood', extreme_heat: 'Extreme Heat', other: 'Weather' };
+  const WEATHER_DECISION_COPY = {
+    monitoring: { label: 'We\'re Monitoring', color: '#8a6d1f' },
+    proceeding: { label: 'Proceeding As Scheduled', color: 'var(--green)' },
+    rescheduled: { label: 'Rescheduled', color: 'var(--navy)' },
+    cancelled: { label: 'Cancelled', color: 'var(--red)' }
+  };
+  async function loadWeatherAdvisories(jobId, token, status){
+    const card = document.getElementById('weatherAdvisoryCard');
+    if(status === 'delivered' || status === 'closed' || status === 'cancelled'){ card.style.display = 'none'; return; }
+    const { data, error } = await sb.rpc('get_job_weather_advisories', { p_job_id: jobId, p_token: token });
+    if(error || !data || !data.length){ card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    const latest = data[0];
+    const decisionInfo = WEATHER_DECISION_COPY[latest.decision] || { label: latest.decision, color: 'var(--steel)' };
+    const dateLine = (latest.decision === 'rescheduled' && latest.new_scheduled_date)
+      ? `<div style="margin-top:4px; font-weight:700;">New date: ${new Date(latest.new_scheduled_date + 'T00:00:00').toLocaleDateString()}</div>` : '';
+    document.getElementById('weatherAdvisoryContent').innerHTML = `
+      <div style="font-size:13.5px;"><strong>${esc(WEATHER_REASON_LABELS_PORTAL[latest.reason] || latest.reason)}</strong> &mdash; ${esc(latest.notes)}</div>
+      <div style="margin-top:6px; font-weight:700; color:${decisionInfo.color};">${esc(decisionInfo.label)}</div>
+      ${dateLine}
+      <div class="item-meta" style="margin-top:6px;">Updated ${new Date(latest.issued_at).toLocaleString()}${data.length > 1 ? ` &middot; ${data.length - 1} earlier update${data.length - 1 === 1 ? '' : 's'} on this move` : ''}</div>`;
+  }
+
+  // Delay Notice ("Running Behind Schedule") — the ordinary, far more common cause of a late
+  // crew than weather: the previous job ran long, traffic, a staffing gap, a mechanical issue.
+  // Distinct from Weather Advisory (a days-ahead go/no-go call about the scheduled date itself)
+  // and from the honestly-simulated Live Tracking card (in_transit leg only) — this can appear
+  // even before the truck departs. Either a crew member or a dispatcher can issue one; shows only
+  // the most recent, plus a history count, same convention as the Weather Advisory card. Hidden
+  // once the job is delivered/closed/cancelled, since a delay no longer matters once the move has
+  // actually happened.
+  const DELAY_REASON_LABELS_PORTAL = { previous_job_overran: 'Previous Job Ran Long', traffic: 'Traffic', staffing_or_crew_issue: 'Staffing / Crew Issue', mechanical_issue: 'Mechanical Issue', other: 'Delay' };
+  async function loadDelayNotices(jobId, token, status){
+    const card = document.getElementById('delayNoticeCard');
+    if(status === 'delivered' || status === 'closed' || status === 'cancelled'){ card.style.display = 'none'; return; }
+    const { data, error } = await sb.rpc('get_job_delay_notices', { p_job_id: jobId, p_token: token });
+    if(error || !data || !data.length){ card.style.display = 'none'; return; }
+    const open = data.filter(d => !d.resolved_at);
+    if(!open.length){ card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    const latest = open[0];
+    document.getElementById('delayNoticeContent').innerHTML = `
+      <div style="font-size:13.5px;"><strong>${esc(DELAY_REASON_LABELS_PORTAL[latest.reason] || latest.reason)}</strong> &mdash; ${esc(latest.notes)}</div>
+      ${latest.new_eta_note ? `<div style="margin-top:6px; font-weight:700; color:var(--navy);">${esc(latest.new_eta_note)}</div>` : ''}
+      <div class="item-meta" style="margin-top:6px;">Reported ${new Date(latest.reported_at).toLocaleString()}${data.length > 1 ? ` &middot; ${data.length - 1} earlier update${data.length - 1 === 1 ? '' : 's'} on this move` : ''}</div>`;
+  }
+
+  // Access Issue Reported ("No-Show / Can't Access") — the customer-facing half of a real gap
+  // session 177 built and explicitly deferred: crew.html has reported a wasted-trip incident
+  // (nobody home, nobody answered, a super wouldn't let them in) since session 177, and dispatch
+  // has worked it from a real queue in ops.html ever since, but the customer whose crew turned
+  // around never heard anything from us directly — only whatever a follow-up phone call happened
+  // to cover. Distinct from Delay Notice (a heads-up before the crew has even arrived) and from
+  // Weather Advisory (a days-ahead call about the date itself) — this is what happened once the
+  // crew was already there and couldn't proceed. Shows the latest incident's own account of what
+  // happened plus, once dispatch has resolved it, the actual outcome (rescheduled/cancelled/fee)
+  // so a customer isn't left wondering what happens next -- the same "tell them the resolution,
+  // not just the problem" instinct as the reschedule/redelivery/addon request cards elsewhere on
+  // this page. Hidden once the job is delivered/closed/cancelled, since a wasted-trip report from
+  // a job that's now well past that point is stale information, not something to still show.
+  const NO_SHOW_RESOLUTION_COPY = {
+    pending: { label: 'We\'re Following Up', color: '#8a6d1f' },
+    rescheduled: { label: 'Rescheduled', color: 'var(--navy)' },
+    cancelled: { label: 'Cancelled', color: 'var(--red)' },
+    fee_waived: { label: 'Resolved — Fee Waived', color: 'var(--green)' }
+  };
+  async function loadNoShowIncidents(jobId, token, status){
+    const card = document.getElementById('noShowCard');
+    if(status === 'delivered' || status === 'closed' || status === 'cancelled'){ card.style.display = 'none'; return; }
+    const { data, error } = await sb.rpc('get_job_no_show_incidents', { p_job_id: jobId, p_token: token });
+    if(error || !data || !data.length){ card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    const latest = data[0];
+    const resInfo = NO_SHOW_RESOLUTION_COPY[latest.resolution] || { label: latest.resolution, color: 'var(--steel)' };
+    const waitLine = latest.wait_minutes != null ? ` Our crew waited about ${latest.wait_minutes} minute${latest.wait_minutes === 1 ? '' : 's'}${latest.contact_attempted ? ' and tried reaching you' : ''}.` : (latest.contact_attempted ? ' Our crew tried reaching you.' : '');
+    const feeLine = (latest.fee_charged && latest.fee_amount_cents != null)
+      ? `<div class="item-meta" style="margin-top:6px; font-weight:600;">${dollars(latest.fee_amount_cents)} was charged for the wasted trip.</div>` : '';
+    document.getElementById('noShowContent').innerHTML = `
+      <div style="font-size:13.5px;">Our crew reported they were unable to get started on your move.${waitLine}</div>
+      <div class="item-meta" style="margin-top:6px; font-style:italic;">&ldquo;${esc(latest.notes)}&rdquo;</div>
+      <div style="margin-top:8px; font-weight:700; color:${resInfo.color};">${esc(resInfo.label)}</div>
+      ${feeLine}
+      <div class="item-meta" style="margin-top:6px;">Reported ${new Date(latest.occurred_at).toLocaleString()}${data.length > 1 ? ` &middot; ${data.length - 1} earlier report${data.length - 1 === 1 ? '' : 's'} on this move` : ''}</div>`;
+  }
+
+  // Accessibility & Accommodations — a genuinely new gap this platform never asked about: whether
+  // anyone on the move has a mobility, hearing, vision, or language need the crew should know
+  // before they arrive. Deliberately lives on the customer record (customers.needs_accommodation /
+  // accommodation_notes), not job_building_requirements, since it's a fact about the people on
+  // the move, not the building — and, for a recurring customer, it should carry forward rather
+  // than being re-asked on every job. Only initialized once per job open (like the building access
+  // contact fields) so a customer mid-typing a note doesn't get it wiped by the next 15s poll.
+  let accommodationLoadedFor = null;
+  function loadAccommodationCard(job, jobId, status){
+    const card = document.getElementById('accommodationCard');
+    if(!job || status === 'delivered' || status === 'closed' || status === 'cancelled'){ card.style.display = 'none'; accommodationLoadedFor = null; return; }
+    card.style.display = 'block';
+    if(accommodationLoadedFor === jobId) return;
+    accommodationLoadedFor = jobId;
+    const checkbox = document.getElementById('accommodationNeeds');
+    const notesEl = document.getElementById('accommodationNotes');
+    checkbox.checked = !!job.customer_needs_accommodation;
+    notesEl.value = job.customer_accommodation_notes || '';
+    notesEl.style.display = checkbox.checked ? 'block' : 'none';
+  }
+  document.getElementById('accommodationNeeds').addEventListener('change', (e) => {
+    document.getElementById('accommodationNotes').style.display = e.target.checked ? 'block' : 'none';
+  });
+  document.getElementById('accommodationSaveBtn').addEventListener('click', async () => {
+    if(!currentJobId || !currentToken) return;
+    const statusEl = document.getElementById('accommodationStatus');
+    const btn = document.getElementById('accommodationSaveBtn');
+    const needs = document.getElementById('accommodationNeeds').checked;
+    const notes = document.getElementById('accommodationNotes').value.trim();
+    btn.disabled = true; btn.textContent = 'Saving…';
+    const { error } = await sb.rpc('submit_accommodation_info', {
+      p_job_id: currentJobId, p_token: currentToken, p_needs_accommodation: needs, p_notes: needs ? (notes || null) : null
+    });
+    btn.disabled = false; btn.textContent = 'Save';
+    if(error){
+      statusEl.textContent = "Couldn't save — try again.";
+      statusEl.style.color = 'var(--red)';
+      return;
+    }
+    statusEl.textContent = 'Saved — thank you for letting us know.';
+    statusEl.style.color = 'var(--green)';
+  });
+
+  async function loadDetail(jobId, token){
+    const { data: rows } = await sb.rpc('get_job_by_token', { p_job_id: jobId, p_token: token });
+    const job = rows && rows[0];
+    if(job){
+      document.getElementById('statusBig').textContent = statusLabels[job.status] || job.status;
+      document.getElementById('statusPill').textContent = job.tier.replace('_',' ');
+      // A real (not simulated) confirmation, distinct from the honestly-labeled simulated Live
+      // Tracking card below — this is the crew's own one-tap self-report of physical arrival at
+      // your pickup address, from crew.html. Shown for the pre-departure window only; once the
+      // truck is actually en route (in_transit or later) the confirmed arrival was already the
+      // moment loading started, so it stops being the headline fact worth a banner.
+      const arrivalBanner = document.getElementById('arrivalBanner');
+      if(job.actual_arrival_at && ['booked','en_route_origin','loading'].includes(job.status)){
+        arrivalBanner.style.display = 'block';
+        arrivalBanner.textContent = `\u{1F4CD} Your crew arrived at your pickup location at ${new Date(job.actual_arrival_at).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}.`;
+      } else {
+        arrivalBanner.style.display = 'none';
+      }
+      const dn = job.move_director || 'Assigning soon';
+      document.getElementById('directorName').textContent = dn;
+      document.getElementById('directorInitials').textContent = dn.split(' ').map(w=>w[0]).slice(0,2).join('');
+      updateMeetYourCrewCard(job);
+      updateLiveTrackCard(job);
+      renderReferCard(job, jobId, token);
+      loadPrepChecklist(jobId, token, job.status);
+      loadAccommodationCard(job, jobId, job.status);
+      loadBuildingAccessCard(jobId, token, job.status);
+      renderFeedbackCard(job, jobId, token);
+      loadTipRequestCard(jobId, token, job.status);
+      loadWeatherAdvisories(jobId, token, job.status);
+      loadEstimatesAndPay(jobId, token, job);
+      loadDelayNotices(jobId, token, job.status);
+      loadNoShowIncidents(jobId, token, job.status);
+    }
+    loadMessages(jobId, token);
+    document.getElementById('addonCard').style.display = 'block';
+    loadAddonRequests(jobId, token);
+    loadRescheduleRequests(jobId, token, job ? job.status : null);
+    loadSupplyOrders(jobId, token, job ? job.status : null);
+
+    const { data: events, error: eventsErr } = await sb.rpc('get_job_tracking_events', { p_job_id: jobId, p_token: token });
+    const tl = document.getElementById('timeline');
+    if(eventsErr){
+      tl.innerHTML = '<div class="empty" style="color:var(--red);">Couldn\'t load your timeline right now — try refreshing the page.</div>';
+    } else {
+      const visibleEvents = (events || []).filter(e => !HIDE_EVENT.has(e.event_type));
+      tl.innerHTML = visibleEvents.length ? [...visibleEvents].reverse().map(e => {
+        const label = EVENT_LABELS[e.event_type] || e.event_type.replace(/_/g,' ');
+        const showNote = e.note && !HIDE_NOTE_FOR.has(e.event_type);
+        return `
+        <div class="tl-item">
+          <div class="tl-time">${new Date(e.created_at).toLocaleString()}</div>
+          <div class="tl-note">${esc(label)}${showNote ? ' &middot; '+esc(e.note) : ''}</div>
+        </div>`;
+      }).join('') : '<div class="empty">No events yet. Updates will appear here automatically.</div>';
+    }
+
+    const { data: items, error: itemsErr } = await sb.rpc('get_job_inventory_items', { p_job_id: jobId, p_token: token });
+    const il = document.getElementById('items');
+    if(itemsErr){
+      il.innerHTML = '<div class="empty" style="color:var(--red);">Couldn\'t load your inventory right now — try refreshing the page.</div>';
+    } else {
+      il.innerHTML = (items && items.length) ? items.map(i => {
+        const photoBadges = [
+          i.has_origin_photo ? '<span title="Condition photo captured at pickup" style="font-size:10px; color:var(--green); font-weight:700;">&#128247; Pickup</span>' : '',
+          i.has_destination_photo ? '<span title="Condition photo captured at delivery" style="font-size:10px; color:var(--green); font-weight:700;">&#128247; Delivery</span>' : ''
+        ].filter(Boolean).join(' &middot; ');
+        const storageNote = (i.status === 'in_storage' && i.storage_days_held != null)
+          ? `<div class="item-meta" style="color:#8a6d1f;">Held ${i.storage_days_held} day${i.storage_days_held===1?'':'s'} so far${i.storage_accrued_cents ? ` &middot; ${dollars(i.storage_accrued_cents)} in storage charges to date` : ' &middot; billing not yet started'} — a relocation director will contact you about redelivery.</div>`
+          : '';
+        // Climate-control reassurance line — only shown for an item actually flagged as needing
+        // it (electronics, wine, artwork, wood furniture) and only while it's actually in storage,
+        // since that's the only time storage_climate_controlled has a real value at all. A "not
+        // yet confirmed" state is shown plainly rather than hidden, matching this portal's own
+        // "never silently hide status" convention for parking/elevator/COI elsewhere.
+        const climateNote = (i.status === 'in_storage' && i.requires_climate_controlled_storage)
+          ? (i.storage_climate_controlled
+              ? `<div class="item-meta" style="color:#1f5f8a;">&#10052; Being kept in climate-controlled storage.</div>`
+              : `<div class="item-meta" style="color:#8a1f1f;">&#10052; Climate-controlled storage requested for this item — confirming the exact location with our warehouse team.</div>`)
+          : '';
+        return `
+        <div class="item-row">
+          <div>
+            <div class="item-desc">${esc(i.description)}</div>
+            <div class="item-meta">${esc(i.origin_room||'?')} &rarr; ${esc(i.destination_room||'?')}${photoBadges ? ' &middot; ' + photoBadges : ''}</div>
+            ${storageNote}
+            ${climateNote}
+          </div>
+          <span class="badge badge-${i.status}">${esc(ITEM_STATUS_LABELS[i.status] || i.status.replace(/_/g,' '))}</span>
+        </div>`;
+      }).join('') : '<div class="empty">No items logged yet. Your photographed inventory will appear here once pickup begins.</div>';
+    }
+
+    const { data: vaultItems, error: vaultErr } = await sb.rpc('get_job_vault_items', { p_job_id: jobId, p_token: token });
+    const vaultCard = document.getElementById('vaultCard');
+    if(vaultErr){
+      // Deliberately fail visible-but-honest rather than silently hiding a real vault card:
+      // a customer with real vaulted items should never see the card vanish because of a fetch error.
+      vaultCard.style.display = 'block';
+      document.getElementById('vaultItems').innerHTML = '<div class="item-row"><div class="item-desc" style="color:var(--red);">Couldn\'t load your vaulted items right now — try refreshing the page.</div></div>';
+    } else if(vaultItems && vaultItems.length){
+      vaultCard.style.display = 'block';
+      document.getElementById('vaultItems').innerHTML = vaultItems.map(v => {
+        const lastCheck = v.last_checked_at
+          ? `Last inspected ${new Date(v.last_checked_at).toLocaleDateString()}${v.last_seal_intact === false ? ' — <strong style="color:var(--red);">seal flagged, contact us</strong>' : ' — seal intact'}${v.last_temperature_f != null || v.last_humidity_pct != null ? ` (${[v.last_temperature_f != null ? v.last_temperature_f+'°F' : null, v.last_humidity_pct != null ? v.last_humidity_pct+'% humidity' : null].filter(Boolean).join(', ')})` : ''}`
+          : null;
+        return `
+      <div class="item-row">
+        <div>
+          <div class="item-desc">${esc(v.description)}</div>
+          <div class="item-meta">${v.climate_controlled ? 'Climate-controlled' : 'Standard storage'}${v.insured_value_cents ? ' &middot; Insured for ' + dollars(v.insured_value_cents) : ''}${v.condition_report ? ' &middot; ' + esc(v.condition_report) : ''}</div>
+          ${lastCheck ? `<div class="item-meta">${lastCheck}</div>` : ''}
+        </div>
+        <span class="badge badge-${v.status}">${esc(VAULT_STATUS_LABELS[v.status] || v.status.replace(/_/g,' '))}</span>
+      </div>`;
+      }).join('');
+    } else {
+      vaultCard.style.display = 'none';
+    }
+
+    // Boxes — token-gated exactly like every other portal section (get_job_boxes verifies the
+    // token server-side, same as get_job_by_token). One RPC now backs two cards: the read-only
+    // "Your Boxes" gallery below (every box, any time), and the pre-move "Pack & Label" card
+    // above (customer's own self-packed boxes, only while the job hasn't started moving yet —
+    // the same job.status gate the generate/label RPCs themselves enforce server-side, so this
+    // card never offers something the backend would refuse.
+    const BOX_STATUS_LABELS = { packed: 'Packed', scanned_origin: 'On The Truck', scanned_destination: 'Delivered' };
+    const { data: boxes, error: boxesErr } = await sb.rpc('get_job_boxes', { p_job_id: jobId, p_token: token });
+    const boxesCard = document.getElementById('boxesCard');
+    if(boxesErr){
+      boxesCard.style.display = 'block';
+      document.getElementById('boxesGallery').innerHTML = '<div class="item-row"><div class="item-desc" style="color:var(--red);">Couldn\'t load your boxes right now — try refreshing the page.</div></div>';
+    } else if(boxes && boxes.length){
+      boxesCard.style.display = 'block';
+      document.getElementById('boxesGallery').innerHTML = boxes.map(b => {
+        const thumbs = (b.photo_paths || []).map(p => {
+          const url = sb.storage.from('box-photos').getPublicUrl(p).data.publicUrl;
+          return `<a href="${url}" target="_blank" rel="noopener"><img src="${url}" style="width:84px; height:84px; object-fit:cover; border-radius:8px; border:1px solid rgba(11,18,48,.12);"></a>`;
+        }).join('');
+        return `
+        <div class="item-row" style="flex-direction:column; align-items:stretch;">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+            <div class="item-desc">${esc(b.box_code)}${b.label ? ' — ' + esc(b.label) : ''}</div>
+            <span class="badge badge-${b.status}">${esc(BOX_STATUS_LABELS[b.status] || b.status)}</span>
+          </div>
+          ${b.destination_room ? `<div class="item-meta" style="margin-bottom:4px;">Headed to: ${esc(b.destination_room)}</div>` : ''}
+          ${b.location ? `<div class="item-meta" style="margin-bottom:4px;">${esc(b.location)}</div>` : ''}
+          ${b.notes ? `<div class="item-meta" style="margin-bottom:8px;">${esc(b.notes)}</div>` : ''}
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">${thumbs || '<span class="item-meta">No contents photo yet.</span>'}</div>
+        </div>`;
+      }).join('');
+    } else {
+      boxesCard.style.display = 'none';
+    }
+
+    renderPackBoxesCard(job ? job.status : null, boxes || []);
+
+    // Cargo Checkpoints — token-gated exactly like Boxes above (get_job_cargo_photos verifies the
+    // token server-side). The realistic, buildable version of "a camera in the truck": one photo
+    // OR a short video at each moment a live feed would actually need to show something, not a
+    // continuous stream of a dark, signal-dead cargo box. media_type (session 150) decides
+    // whether to render a real <video controls> element or the original <img>.
+    const CARGO_CHECKPOINT_LABELS = { loaded_departing: 'Loaded & Departing', arrived_destination: 'Arrived at Delivery' };
+    const { data: cargoPhotos, error: cargoErr } = await sb.rpc('get_job_cargo_photos', { p_job_id: jobId, p_token: token });
+    const cargoCard = document.getElementById('cargoCheckpointsCard');
+    if(cargoErr){
+      cargoCard.style.display = 'block';
+      document.getElementById('cargoCheckpointsList').innerHTML = '<div class="item-row"><div class="item-desc" style="color:var(--red);">Couldn\'t load cargo checkpoint photos right now — try refreshing the page.</div></div>';
+    } else if(cargoPhotos && cargoPhotos.length){
+      cargoCard.style.display = 'block';
+      document.getElementById('cargoCheckpointsList').innerHTML = cargoPhotos.map(p => {
+        const url = sb.storage.from('cargo-photos').getPublicUrl(p.photo_path).data.publicUrl;
+        const media = p.media_type === 'video'
+          ? `<video controls preload="metadata" style="width:100%; max-width:320px; border-radius:8px; border:1px solid rgba(11,18,48,.12);"><source src="${url}"></video>`
+          : `<a href="${url}" target="_blank" rel="noopener"><img src="${url}" style="width:100%; max-width:320px; border-radius:8px; border:1px solid rgba(11,18,48,.12);"></a>`;
+        return `
+        <div class="item-row" style="flex-direction:column; align-items:stretch;">
+          <div class="item-desc" style="margin-bottom:8px;">${esc(CARGO_CHECKPOINT_LABELS[p.checkpoint] || p.checkpoint)} &mdash; ${new Date(p.taken_at).toLocaleString()}${p.media_type === 'video' ? ' <span style="font-size:11px; color:var(--steel);">(video)</span>' : ''}</div>
+          ${media}
+        </div>`;
+      }).join('');
+    } else {
+      cargoCard.style.display = 'none';
+    }
+
+    const { data: payments, error: paymentsErr } = await sb.rpc('get_job_payments', { p_job_id: jobId, p_token: token });
+    const invoiceCard = document.getElementById('invoiceCard');
+    const quoted = job ? (job.quoted_price_cents || 0) : 0;
+    if(paymentsErr){
+      // Deliberately fail visible-but-honest, same as the vault card above: a real
+      // balance-due question is exactly the kind of thing that shouldn't silently vanish.
+      invoiceCard.style.display = 'block';
+      document.getElementById('invoiceSummary').innerHTML = '<span style="color:var(--red);">Couldn\'t load your invoice right now — try refreshing the page.</span>';
+      document.getElementById('invoicePayments').innerHTML = '';
+    } else if(!quoted && (!payments || !payments.length)){
+      invoiceCard.style.display = 'none';
+    } else {
+      invoiceCard.style.display = 'block';
+      const rows = payments || [];
+      // Tips are shown in the payment list below but aren't part of what's owed on the move
+      // itself, so they're excluded from the paid/balance totals.
+      const totalPaid = rows.filter(p => p.payment_type !== 'tip').reduce((sum, p) => sum + p.amount_cents, 0);
+      const balanceDue = quoted - totalPaid;
+      const summaryEl = document.getElementById('invoiceSummary');
+      if(!quoted){
+        summaryEl.textContent = `Paid to date: ${dollars(totalPaid)}`;
+      } else if(balanceDue > 0){
+        summaryEl.innerHTML = `Balance due: ${dollars(balanceDue)} <span style="font-weight:400; color:var(--steel); font-size:12.5px;">(of ${dollars(quoted)} quoted, ${dollars(totalPaid)} paid so far)</span>`;
+      } else if(balanceDue < 0){
+        summaryEl.innerHTML = `Credit balance: ${dollars(-balanceDue)} <span style="font-weight:400; color:var(--steel); font-size:12.5px;">(overpaid on ${dollars(quoted)} quoted — your relocation director will follow up)</span>`;
+      } else {
+        summaryEl.innerHTML = `Paid in full <span style="font-weight:400; color:var(--steel); font-size:12.5px;">(${dollars(quoted)})</span>`;
+      }
+      const payTypeLabels = { deposit:'Deposit', partial:'Partial Payment', balance:'Balance Payment', refund:'Refund', adjustment:'Adjustment', tip:'Tip / Gratuity' };
+      document.getElementById('invoicePayments').innerHTML = rows.length ? rows.map(p => `
+        <div class="item-row">
+          <div>
+            <div class="item-desc">${esc(payTypeLabels[p.payment_type] || p.payment_type)}</div>
+            <div class="item-meta">${new Date(p.recorded_at).toLocaleDateString()}</div>
+          </div>
+          <span style="font-weight:700; color:${p.amount_cents < 0 ? 'var(--red)' : 'var(--ink)'};">${p.amount_cents < 0 ? '-' : ''}${dollars(Math.abs(p.amount_cents))}</span>
+        </div>`).join('') : '<div class="empty">No payments recorded yet.</div>';
+    }
+
+    const hasOpenStorageItem = !!(items && items.some(i => i.status === 'in_storage'));
+    loadRedeliveryRequests(jobId, token, hasOpenStorageItem);
+    loadLostFoundItems(jobId, token);
+    loadDonations(jobId, token);
+
+    const itemSelect = document.getElementById('claimItemSelect');
+    if(itemSelect){
+      const prevVal = itemSelect.value;
+      itemSelect.innerHTML = '<option value="">Not related to a specific item</option>' +
+        ((items && items.length) ? items.map(i => `<option value="${esc(i.id)}">${esc(i.description)}</option>`).join('') : '');
+      if(prevVal) itemSelect.value = prevVal;
+    }
+
+    loadClaims(jobId, token);
+  }
+
+  // Customer-facing Bill of Lading — built entirely from the same token-gated RPCs the
+  // rest of this page already uses (no new RPC, so no new SECURITY DEFINER grant risk).
+  // Signature images live in a staff-only storage bucket the anon/token role can't read,
+  // so signatures are shown here as text attestations ("Signed by [name] on [date]")
+  // pulled from the tracking_events note, same as the Ops-side version's image captions.
+  function showBolStatus(msg, isErr){
+    const el = document.getElementById('bolStatus');
+    el.textContent = msg;
+    el.classList.remove('show','err','ok');
+    el.classList.add('show', isErr ? 'err' : 'ok');
+    setTimeout(() => el.classList.remove('show','err','ok'), 5000);
+  }
+  document.getElementById('bolBtn').addEventListener('click', async () => {
+    if(!currentJobId || !currentToken) return;
+    const btn = document.getElementById('bolBtn');
+    const originalLabel = btn.textContent;
+    btn.textContent = 'Loading…';
+    btn.disabled = true;
+    try{
+      const [{ data: rows, error: jobErr }, { data: items }, { data: events }, { data: payments }] = await Promise.all([
+        sb.rpc('get_job_by_token', { p_job_id: currentJobId, p_token: currentToken }),
+        sb.rpc('get_job_inventory_items', { p_job_id: currentJobId, p_token: currentToken }),
+        sb.rpc('get_job_tracking_events', { p_job_id: currentJobId, p_token: currentToken }),
+        sb.rpc('get_job_payments', { p_job_id: currentJobId, p_token: currentToken })
+      ]);
+      const job = rows && rows[0];
+      if(jobErr || !job){
+        showBolStatus("Couldn't load your move details right now — try refreshing the page.", true);
+        return;
+      }
+
+      const sigEvents = (events || []).filter(e => e.event_type === 'pickup_signature' || e.event_type === 'delivery_signature');
+      const pickupSig = sigEvents.find(e => e.event_type === 'pickup_signature');
+      const deliverySig = sigEvents.find(e => e.event_type === 'delivery_signature');
+
+      const totalPaidCents = (payments || []).reduce((s,p) => s + (p.amount_cents||0), 0);
+      const balanceDueCents = Math.max(0, (job.quoted_price_cents || 0) - totalPaidCents);
+
+      const itemRows = (items && items.length) ? items.map((it,i) => `
+        <tr>
+          <td>${i+1}</td>
+          <td>${esc(it.description)}</td>
+          <td>${esc(it.origin_room || '—')}</td>
+          <td>${esc(it.destination_room || '—')}</td>
+          <td>${esc(ITEM_STATUS_LABELS[it.status] || (it.status||'').replace(/_/g,' '))}</td>
+        </tr>`).join('') : '<tr><td colspan="5" style="text-align:center; color:#777;">No inventory items recorded.</td></tr>';
+
+      const sigBlock = (label, sig) => `
+        <div style="flex:1; min-width:220px;">
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:#555; margin-bottom:6px;">${esc(label)}</div>
+          <div style="height:40px; border-bottom:1px solid #333; display:flex; align-items:flex-end; font-style:italic; font-size:13px; color:#333;">${sig ? esc(sig.note || 'Signed') : ''}</div>
+          <div style="font-size:11px; color:#555; margin-top:4px;">${sig ? new Date(sig.created_at).toLocaleString() : 'Not yet signed'}</div>
+        </div>`;
+
+      const custName = esc(job.customer_full_name || '—');
+      const jobDate = job.scheduled_date ? new Date(job.scheduled_date + 'T00:00:00').toLocaleDateString() : '—';
+
+      const w = window.open('', '_blank', 'width=900,height=1000');
+      if(!w){ showBolStatus('Please allow pop-ups in your browser to view the Bill of Lading, then try again.', true); return; }
+      w.document.write(`<!DOCTYPE html><html><head><title>Bill of Lading — ${custName}</title><style>
+        body{font-family:Georgia,'Times New Roman',serif; color:#1a1a1a; padding:32px; max-width:760px; margin:0 auto;}
+        h1{font-size:20px; letter-spacing:.03em; margin-bottom:2px;}
+        .sub{font-size:12px; color:#555; margin-bottom:22px;}
+        h2{font-size:13px; text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid #ccc; padding-bottom:4px; margin-top:26px;}
+        table{width:100%; border-collapse:collapse; font-size:12.5px; margin-top:8px;}
+        th,td{border:1px solid #ccc; padding:5px 7px; text-align:left;}
+        th{background:#f4f4f2; font-size:11px; text-transform:uppercase; letter-spacing:.03em;}
+        .grid{display:flex; flex-wrap:wrap; gap:18px; font-size:13px;}
+        .grid div{flex:1; min-width:180px;}
+        .label{font-size:11px; text-transform:uppercase; color:#555; letter-spacing:.03em;}
+        .terms{font-size:12px; line-height:1.6; color:#333;}
+        .sigrow{display:flex; gap:24px; margin-top:14px; flex-wrap:wrap;}
+        @media print{ body{padding:12px;} }
+      </style></head><body>
+        <h1>BLUE PROVENANCE TRANSPORT — Bill of Lading &amp; Inventory Record</h1>
+        <div class="sub">Generated ${new Date().toLocaleString()} · Your Move Record</div>
+
+        <h2>Move Details</h2>
+        <div class="grid">
+          <div><div class="label">Customer</div>${custName}</div>
+          <div><div class="label">Scheduled Date</div>${jobDate}</div>
+          <div><div class="label">Service Tier</div>${esc((job.tier||'—').replace('_',' '))}</div>
+          <div><div class="label">Quoted Price</div>${dollars(job.quoted_price_cents)}</div>
+        </div>
+        <div class="grid" style="margin-top:10px;">
+          <div><div class="label">Origin</div>${esc(job.origin_address || '—')}</div>
+          <div><div class="label">Destination</div>${esc(job.destination_address || '—')}</div>
+        </div>
+        <div class="grid" style="margin-top:10px;">
+          <div><div class="label">Balance Due</div>${dollars(balanceDueCents)}</div>
+        </div>
+
+        <h2>Inventory (${(items||[]).length} item${(items||[]).length===1?'':'s'})</h2>
+        <table>
+          <thead><tr><th>#</th><th>Description</th><th>Origin Room</th><th>Destination Room</th><th>Status</th></tr></thead>
+          <tbody>${itemRows}</tbody>
+        </table>
+
+        <h2>Valuation &amp; Claims Policy</h2>
+        <div class="terms">
+          This move is performed under a binding written quote. Full replacement value protection is available on every move, backed by a photographed record from pickup to delivery. If an item is damaged or lost, Blue Provenance Transport acknowledges claims within 24 hours and issues a decision within 5 business days. This document reflects the inventory and signature record on file at the time it was generated and is not itself an insurance policy or a court filing — it is your own move record.
+        </div>
+
+        <h2>Signatures</h2>
+        <div class="sigrow">
+          ${sigBlock('Pickup — Customer or Authorized Representative', pickupSig)}
+          ${sigBlock('Delivery — Customer or Authorized Representative', deliverySig)}
+        </div>
+
+        <script>window.onload=()=>window.print();<\/script>
+      </body></html>`);
+      w.document.close();
+    } catch(err){
+      showBolStatus('Could not generate the Bill of Lading. Please try again.', true);
+    } finally {
+      btn.textContent = originalLabel;
+      btn.disabled = false;
+    }
+  });
+
+  // Customer-facing printable invoice — the on-page balance/payment-history card is useful
+  // for a quick check, but corporate-relocation customers filing an expense report need an
+  // actual document to attach. Mirrors the Bill of Lading's exact print-window pattern above
+  // (and the staff-side ops.html invoice) for consistency, reusing the same token-gated RPCs
+  // already called elsewhere on this page — no new RPC, no new SECURITY DEFINER grant risk.
+  function showInvoiceStatus(msg, isErr){
+    const el = document.getElementById('invoiceStatus');
+    el.textContent = msg;
+    el.classList.remove('show','err','ok');
+    el.classList.add('show', isErr ? 'err' : 'ok');
+    setTimeout(() => el.classList.remove('show','err','ok'), 5000);
+  }
+  const invoicePrintBtn = document.getElementById('invoicePrintBtn');
+  if(invoicePrintBtn){
+    invoicePrintBtn.addEventListener('click', async () => {
+      if(!currentJobId || !currentToken) return;
+      const originalLabel = invoicePrintBtn.textContent;
+      invoicePrintBtn.textContent = 'Loading…';
+      invoicePrintBtn.disabled = true;
+      try{
+        const [{ data: rows, error: jobErr }, { data: payments }, { data: chargeLines }] = await Promise.all([
+          sb.rpc('get_job_by_token', { p_job_id: currentJobId, p_token: currentToken }),
+          sb.rpc('get_job_payments', { p_job_id: currentJobId, p_token: currentToken }),
+          sb.rpc('get_job_charge_lines', { p_job_id: currentJobId, p_token: currentToken })
+        ]);
+        const job = rows && rows[0];
+        if(jobErr || !job){
+          showInvoiceStatus("Couldn't load your invoice right now — try refreshing the page.", true);
+          return;
+        }
+        const custName = esc(job.customer_full_name || '—');
+        const jobDate = job.scheduled_date ? new Date(job.scheduled_date + 'T00:00:00').toLocaleDateString() : '—';
+        const invoiceNumber = 'INV-' + currentJobId.slice(0,8).toUpperCase();
+        const quotedCents = job.quoted_price_cents || 0;
+        const payTypeLabels = { deposit:'Deposit', partial:'Partial Payment', balance:'Balance Payment', refund:'Refund', adjustment:'Adjustment', tip:'Tip / Gratuity' };
+        const totalPaidCents = (payments || []).filter(p => p.payment_type !== 'tip').reduce((s,p) => s + (p.amount_cents||0), 0);
+        const balanceDueCents = Math.max(0, quotedCents - totalPaidCents);
+        // Itemized charges + tax when the job has any — same fallback-to-single-line behavior as
+        // the Ops-side invoice, so a job that never uses itemization looks exactly as it always has.
+        const hasChargeLines = chargeLines && chargeLines.length > 0;
+        let chargeRowsHtml;
+        if(hasChargeLines){
+          const lineTax = l => (l.taxable && l.tax_rate_pct) ? Math.round((l.amount_cents||0) * (l.tax_rate_pct/100)) : 0;
+          const taxTotalCents = chargeLines.reduce((s,l) => s + lineTax(l), 0);
+          chargeRowsHtml = chargeLines.map(l => `
+            <tr>
+              <td>${esc(l.description)}${l.taxable ? ` <span style="color:#888;">(taxable @ ${esc(String(l.tax_rate_pct ?? '0'))}%)</span>` : ''}</td>
+              <td style="text-align:right;">${dollars(l.amount_cents)}</td>
+            </tr>`).join('') + (taxTotalCents > 0 ? `<tr><td><em>Sales Tax</em></td><td style="text-align:right;">${dollars(taxTotalCents)}</td></tr>` : '');
+        } else {
+          chargeRowsHtml = `<tr><td>${esc((job.tier||'Move').replace('_',' '))} service, quoted price</td><td style="text-align:right;">${dollars(quotedCents)}</td></tr>`;
+        }
+        const paymentRows = (payments && payments.length) ? payments.map(p => `
+          <tr>
+            <td>${new Date(p.recorded_at).toLocaleDateString()}</td>
+            <td>${esc(payTypeLabels[p.payment_type] || p.payment_type)}</td>
+            <td style="text-align:right;">${p.amount_cents < 0 ? '−' : ''}${dollars(Math.abs(p.amount_cents||0))}</td>
+          </tr>`).join('') : '<tr><td colspan="3" style="text-align:center; color:#777;">No payments recorded yet.</td></tr>';
+
+        const w = window.open('', '_blank', 'width=820,height=1000');
+        if(!w){ showInvoiceStatus('Please allow pop-ups in your browser to view the invoice, then try again.', true); return; }
+        w.document.write(`<!DOCTYPE html><html><head><title>Invoice ${invoiceNumber} — ${custName}</title><style>
+          body{font-family:Georgia,'Times New Roman',serif; color:#1a1a1a; padding:32px; max-width:720px; margin:0 auto;}
+          h1{font-size:20px; letter-spacing:.03em; margin-bottom:2px;}
+          .sub{font-size:12px; color:#555; margin-bottom:22px;}
+          h2{font-size:13px; text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid #ccc; padding-bottom:4px; margin-top:26px;}
+          table{width:100%; border-collapse:collapse; font-size:12.5px; margin-top:8px;}
+          th,td{border:1px solid #ccc; padding:5px 7px; text-align:left;}
+          th{background:#f4f4f2; font-size:11px; text-transform:uppercase; letter-spacing:.03em;}
+          .grid{display:flex; flex-wrap:wrap; gap:18px; font-size:13px;}
+          .grid div{flex:1; min-width:180px;}
+          .label{font-size:11px; text-transform:uppercase; color:#555; letter-spacing:.03em;}
+          .totals{margin-top:14px; width:100%; max-width:320px; margin-left:auto;}
+          .totals tr td{border:none; padding:4px 0;}
+          .totals .final td{border-top:1.5px solid #333; font-weight:700; font-size:14px; padding-top:8px;}
+          @media print{ body{padding:12px;} }
+        </style></head><body>
+          <h1>BLUE PROVENANCE TRANSPORT — Invoice</h1>
+          <div class="sub">Invoice ${invoiceNumber} &middot; Generated ${new Date().toLocaleString()}</div>
+
+          <div class="grid">
+            <div><div class="label">Bill To</div>${custName}</div>
+            <div><div class="label">Service Date</div>${jobDate}</div>
+            <div><div class="label">Service Tier</div>${esc((job.tier||'—').replace('_',' '))}</div>
+          </div>
+          <div class="grid" style="margin-top:10px;">
+            <div><div class="label">Origin</div>${esc(job.origin_address || '—')}</div>
+            <div><div class="label">Destination</div>${esc(job.destination_address || '—')}</div>
+          </div>
+
+          <h2>Charges</h2>
+          <table>
+            <thead><tr><th>Description</th><th style="text-align:right;">Amount</th></tr></thead>
+            <tbody>${chargeRowsHtml}</tbody>
+          </table>
+
+          <h2>Payment History</h2>
+          <table>
+            <thead><tr><th>Date</th><th>Type</th><th style="text-align:right;">Amount</th></tr></thead>
+            <tbody>${paymentRows}</tbody>
+          </table>
+
+          <table class="totals">
+            <tr><td>Quoted Price</td><td style="text-align:right;">${dollars(quotedCents)}</td></tr>
+            <tr><td>Paid to Date</td><td style="text-align:right;">${dollars(totalPaidCents)}</td></tr>
+            <tr class="final"><td>Balance Due</td><td style="text-align:right;">${dollars(balanceDueCents)}</td></tr>
+          </table>
+
+          <script>window.onload=()=>window.print();<\/script>
+        </body></html>`);
+        w.document.close();
+      } catch(err){
+        showInvoiceStatus('Could not generate the invoice. Please try again.', true);
+      } finally {
+        invoicePrintBtn.textContent = originalLabel;
+        invoicePrintBtn.disabled = false;
+      }
+    });
+  }
+
+  // Direct customer <-> staff messaging — the last of the five client-portal must-haves named
+  // in the platform's own tech blueprint (live GPS, photographed inventory, vault visibility,
+  // digital signing, and direct messaging with the assigned move director) that hadn't been
+  // built yet. Reuses the same token-gated RPC pattern as claims/payments: a read RPC for the
+  // thread and a rate-limited write RPC for sending, so no broader table access is ever granted
+  // to anon. Polled on the same 15-second cadence loadDetail() already uses for live tracking.
+  let lastRenderedMessageCount = -1;
+  async function loadMessages(jobId, token){
+    const thread = document.getElementById('messagesThread');
+    if(!thread) return;
+    const { data: messages, error } = await sb.rpc('get_job_messages', { p_job_id: jobId, p_token: token });
+    if(error){
+      thread.innerHTML = '<div class="empty" style="color:var(--red);">Couldn\'t load messages right now — try refreshing the page.</div>';
+      return;
+    }
+    const rows = messages || [];
+    // Session 159: mark any unread staff messages read the moment the customer's portal loads
+    // them — this is what tells dispatch (in ops.html) whether an update actually reached the
+    // customer, instead of leaving that entirely to guesswork or a follow-up phone call. Fired
+    // on every poll, but harmless once everything's already read: the RPC's WHERE clause just
+    // matches zero rows and no-ops.
+    if(rows.some(m => m.sender === 'staff' && !m.read_at)){
+      sb.rpc('mark_staff_messages_read', { p_job_id: jobId, p_token: token }).catch(()=>{});
+    }
+    if(rows.length === lastRenderedMessageCount) return; // avoid re-render/scroll-jump every poll when nothing changed
+    lastRenderedMessageCount = rows.length;
+    thread.innerHTML = rows.length ? rows.map(m => {
+      // Attachments now come from either side: staff (ops.html, since session 1xx) or the
+      // customer's own 📎 button below (session 195) — the bucket is public with unguessable
+      // random paths for staff uploads and job/token-folder-validated paths for customer
+      // uploads, so the plain public URL renders directly with no signing step needed either way.
+      const attachmentUrl = m.attachment_path ? sb.storage.from('message-attachments').getPublicUrl(m.attachment_path).data.publicUrl : null;
+      const isImage = m.attachment_filename && /\.(jpe?g|png|webp|heic)$/i.test(m.attachment_filename);
+      const attachmentHtml = attachmentUrl ? `
+        <div style="margin-top:6px;">
+          ${isImage
+            ? `<a href="${attachmentUrl}" target="_blank" rel="noopener"><img src="${attachmentUrl}" style="max-width:200px; max-height:200px; border-radius:8px; display:block;"></a>`
+            : `<a href="${attachmentUrl}" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline; font-size:12.5px;">📎 ${esc(m.attachment_filename || 'Attachment')}</a>`}
+        </div>` : '';
+      return `
+      <div style="align-self:${m.sender === 'customer' ? 'flex-end' : 'flex-start'}; max-width:82%; background:${m.sender === 'customer' ? 'var(--navy)' : '#eef0f4'}; color:${m.sender === 'customer' ? '#fff' : 'var(--ink)'}; padding:8px 12px; border-radius:12px; font-size:13.5px; line-height:1.4;">
+        ${m.sender === 'staff' ? `<div style="font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; opacity:.65; margin-bottom:2px;">${esc(m.staff_name || 'Move Director')}</div>` : ''}
+        ${m.body && m.body !== '(attachment)' ? `<div>${esc(m.body)}</div>` : ''}
+        ${attachmentHtml}
+        <div style="font-size:10px; opacity:.6; margin-top:3px;">${new Date(m.created_at).toLocaleString()}</div>
+      </div>`;
+    }).join('') : '<div class="empty">No messages yet — say hello!</div>';
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  // A customer-picked attachment waiting to go out with the next message — cleared the moment
+  // it's sent (success or failure) so a stale selection never silently rides along on the next,
+  // unrelated message.
+  let pendingMessageAttachment = null;
+  const messageAttachBtn = document.getElementById('messageAttachBtn');
+  const messageAttachmentInput = document.getElementById('messageAttachment');
+  if(messageAttachBtn && messageAttachmentInput){
+    messageAttachBtn.addEventListener('click', () => messageAttachmentInput.click());
+    messageAttachmentInput.addEventListener('change', () => {
+      pendingMessageAttachment = messageAttachmentInput.files[0] || null;
+      document.getElementById('messageAttachName').textContent = pendingMessageAttachment ? '📎 ' + pendingMessageAttachment.name : '';
+    });
+  }
+
+  const messageSendBtn = document.getElementById('messageSendBtn');
+  const messageInput = document.getElementById('messageInput');
+  if(messageSendBtn && messageInput){
+    const sendMessage = async () => {
+      const body = messageInput.value.trim();
+      const file = pendingMessageAttachment;
+      if((!body && !file) || !currentJobId || !currentToken) return;
+      messageSendBtn.disabled = true;
+      const statusEl = document.getElementById('messageStatus');
+      statusEl.textContent = '';
+      try{
+        // Photo/PDF attachments — the same gap staff already had closed for their own replies
+        // (message-attachments, session prior to this one). A customer's upload path is
+        // validated server-side by message_attachment_path_allowed (job_id/token folder, the
+        // same pattern claim-photos/box-photos/job-documents already use), so a wrong job/token
+        // combination is rejected at the storage layer itself, not just by this client honoring
+        // the right folder name.
+        let attachment_path = null, attachment_filename = null;
+        if(file){
+          statusEl.textContent = 'Uploading attachment…';
+          const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+          const path = `${currentJobId}/${currentToken}/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+          const { error: upErr } = await sb.storage.from('message-attachments').upload(path, file);
+          if(upErr){
+            statusEl.textContent = 'Could not upload attachment: ' + upErr.message;
+            statusEl.style.color = 'var(--red)';
+            return;
+          }
+          attachment_path = path;
+          attachment_filename = file.name;
+        }
+        statusEl.textContent = '';
+        const { error } = await sb.rpc('send_job_message', {
+          p_job_id: currentJobId, p_token: currentToken, p_body: body || null,
+          p_attachment_path: attachment_path, p_attachment_filename: attachment_filename
+        });
+        if(error){
+          statusEl.textContent = error.message.includes('Rate limit')
+            ? "You've sent a lot of messages today — please try again tomorrow, or call us for anything urgent."
+            : "Couldn't send that message — please try again.";
+          statusEl.style.color = 'var(--red)';
+          return;
+        }
+        messageInput.value = '';
+        pendingMessageAttachment = null;
+        messageAttachmentInput.value = '';
+        document.getElementById('messageAttachName').textContent = '';
+        lastRenderedMessageCount = -1; // force a re-render since we know the count just changed
+        loadMessages(currentJobId, currentToken);
+      } catch(err){
+        statusEl.textContent = "Couldn't send that message — please try again.";
+        statusEl.style.color = 'var(--red)';
+      } finally {
+        messageSendBtn.disabled = false;
+      }
+    };
+    messageSendBtn.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keydown', e => { if(e.key === 'Enter') sendMessage(); });
+  }
+
+  // Request an Add-On Service — the "digital signing/payment for any add-on service" line from
+  // the platform's own client-portal blueprint. No real payment processor is connected to this
+  // platform (every "payment" today is a staff-recorded log entry, not live card processing), so
+  // this closes the buildable half: a customer can describe what they want added, a Relocation
+  // Director reviews it and either prices it onto the real invoice or declines with a note. Same
+  // token-gated read/write RPC pattern as messaging and claims — no broader table access to anon.
+  const addonStatusLabels = { pending: 'Pending Review', approved: 'Approved', declined: 'Declined' };
+  const addonStatusColors = {
+    pending: { bg:'#fff4d9', fg:'#b8860b' },
+    approved: { bg:'#e3f7ec', fg:'var(--green)' },
+    declined: { bg:'#fbe1e1', fg:'var(--danger)' }
+  };
+  async function loadAddonRequests(jobId, token){
+    const list = document.getElementById('addonList');
+    if(!list) return;
+    const { data, error } = await sb.rpc('get_job_addon_requests', { p_job_id: jobId, p_token: token });
+    if(error){ list.innerHTML = '<div class="empty" style="color:var(--red);">Couldn\'t load your requests right now — try refreshing the page.</div>'; return; }
+    const rows = data || [];
+    list.innerHTML = rows.length ? rows.map(r => {
+      const c = addonStatusColors[r.status] || addonStatusColors.pending;
+      return `
+      <div style="border:1px solid rgba(11,18,48,.08); border-radius:8px; padding:10px 12px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+          <div style="font-size:13.5px;">${esc(r.description)}</div>
+          <span class="pill" style="background:${c.bg}; color:${c.fg}; flex-shrink:0;">${addonStatusLabels[r.status] || r.status}</span>
+        </div>
+        <div class="item-meta" style="margin-top:4px;">${new Date(r.requested_at).toLocaleString()}</div>
+        ${r.staff_response ? `<div style="font-size:12.5px; margin-top:6px; padding-top:6px; border-top:1px solid rgba(11,18,48,.06);"><strong>Response:</strong> ${esc(r.staff_response)}</div>` : ''}
+      </div>`;
+    }).join('') : '<div class="empty">No requests yet.</div>';
+  }
+
+  // Request a Reschedule — the portal previously had no structured way for a customer to ask
+  // for a new date/time at all; the only option was an unstructured message or a phone call,
+  // neither of which gave staff a queue to work from or gave the customer a status to check.
+  // Hidden once a job is delivered/closed/cancelled (nothing left to reschedule) or claim_open
+  // (mirrors the same states submit_reschedule_request itself rejects server-side).
+  const rescheduleStatusLabels = { pending: 'Pending Review', approved: 'Approved', declined: 'Declined' };
+  const rescheduleStatusColors = {
+    pending: { bg:'#fff4d9', fg:'#b8860b' },
+    approved: { bg:'#e3f7ec', fg:'var(--green)' },
+    declined: { bg:'#fbe1e1', fg:'var(--danger)' }
+  };
+  const RESCHEDULE_HIDDEN_STATUSES = new Set(['delivered','closed','cancelled','claim_open']);
+  async function loadRescheduleRequests(jobId, token, jobStatus){
+    const card = document.getElementById('rescheduleCard');
+    if(!card) return;
+    if(RESCHEDULE_HIDDEN_STATUSES.has(jobStatus)){ card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    const list = document.getElementById('rescheduleList');
+    const { data, error } = await sb.rpc('get_job_reschedule_requests', { p_job_id: jobId, p_token: token });
+    if(error){ list.innerHTML = '<div class="empty" style="color:var(--red);">Couldn\'t load your requests right now — try refreshing the page.</div>'; return; }
+    const rows = data || [];
+    const timeSlotLabels = { morning:'Morning', afternoon:'Afternoon', evening:'Evening' };
+    list.innerHTML = rows.length ? rows.map(r => {
+      const c = rescheduleStatusColors[r.status] || rescheduleStatusColors.pending;
+      const dateLabel = new Date(r.requested_date + 'T00:00:00').toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
+      return `
+      <div style="border:1px solid rgba(11,18,48,.08); border-radius:8px; padding:10px 12px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+          <div style="font-size:13.5px; font-weight:600;">${esc(dateLabel)}${r.requested_time_slot ? ' &middot; ' + esc(timeSlotLabels[r.requested_time_slot] || r.requested_time_slot) : ''}</div>
+          <span class="pill" style="background:${c.bg}; color:${c.fg}; flex-shrink:0;">${rescheduleStatusLabels[r.status] || r.status}</span>
+        </div>
+        ${r.reason ? `<div class="item-meta" style="margin-top:4px;">${esc(r.reason)}</div>` : ''}
+        <div class="item-meta" style="margin-top:4px;">Requested ${new Date(r.requested_at).toLocaleString()}</div>
+        ${r.staff_response ? `<div style="font-size:12.5px; margin-top:6px; padding-top:6px; border-top:1px solid rgba(11,18,48,.06);"><strong>Response:</strong> ${esc(r.staff_response)}</div>` : ''}
+      </div>`;
+    }).join('') : '<div class="empty">No reschedule requests yet.</div>';
+  }
+  const rescheduleSubmitBtn = document.getElementById('rescheduleSubmitBtn');
+  if(rescheduleSubmitBtn){
+    rescheduleSubmitBtn.addEventListener('click', async () => {
+      const statusEl = document.getElementById('rescheduleStatus');
+      statusEl.textContent = '';
+      const dateVal = document.getElementById('rescheduleDate').value;
+      const timeSlot = document.getElementById('rescheduleTimeSlot').value || null;
+      const reason = document.getElementById('rescheduleReason').value.trim();
+      if(!dateVal || !currentJobId || !currentToken){
+        statusEl.textContent = 'Please choose a date before submitting.';
+        statusEl.style.color = 'var(--red)';
+        return;
+      }
+      rescheduleSubmitBtn.disabled = true;
+      try{
+        const { error } = await sb.rpc('submit_reschedule_request', {
+          p_job_id: currentJobId, p_token: currentToken, p_requested_date: dateVal,
+          p_requested_time_slot: timeSlot, p_reason: reason || null
+        });
+        if(error){
+          statusEl.textContent = error.message.includes('Rate limit')
+            ? "You've submitted a lot of requests today — please try again tomorrow, or call us for anything urgent."
+            : (error.message.includes('current state')
+              ? "This move can't be rescheduled anymore — please call us directly."
+              : "Couldn't submit that request — please check the date and try again.");
+          statusEl.style.color = 'var(--red)';
+          return;
+        }
+        document.getElementById('rescheduleDate').value = '';
+        document.getElementById('rescheduleTimeSlot').value = '';
+        document.getElementById('rescheduleReason').value = '';
+        statusEl.textContent = 'Request sent — your Relocation Director will confirm shortly.';
+        statusEl.style.color = 'var(--green)';
+        loadRescheduleRequests(currentJobId, currentToken, null);
+      } catch(err){
+        statusEl.textContent = "Couldn't submit that request — please try again.";
+        statusEl.style.color = 'var(--red)';
+      } finally {
+        rescheduleSubmitBtn.disabled = false;
+      }
+    });
+  }
+
+  // Request Redelivery From Storage — closes the gap between storage_holds (which previously
+  // only staff could see or act on from Ops) and the customer, who had no structured way to
+  // ask for a redelivery date at all; the portal only ever showed a passive note ("a relocation
+  // director will contact you about redelivery"). Same "customer asks, staff resolves" pattern
+  // already proven out for Add-On/Reschedule/Supply requests above — a token-gated submit + read
+  // RPC pair, staff sees and approves/declines in Ops. Only shown while the job actually has an
+  // open storage hold (has_open_hold, checked both here and server-side in submit_redelivery_request)
+  // rather than for every job, since a job with nothing in storage has nothing to request redelivery of.
+  const redeliveryStatusLabels = { pending: 'Pending Review', approved: 'Approved', declined: 'Declined' };
+  const redeliveryStatusColors = {
+    pending: { bg:'#fff4d9', fg:'#b8860b' },
+    approved: { bg:'#e3f7ec', fg:'var(--green)' },
+    declined: { bg:'#fbe1e1', fg:'var(--danger)' }
+  };
+  async function loadRedeliveryRequests(jobId, token, hasOpenStorageItem){
+    const card = document.getElementById('redeliveryCard');
+    if(!card) return;
+    const { data, error } = await sb.rpc('get_job_redelivery_requests', { p_job_id: jobId, p_token: token });
+    const rows = (!error && data) ? data : [];
+    // Keep the card visible if there's an open storage item OR an existing request on file
+    // (e.g. staff already closed the hold but the customer's own request history should stay
+    // visible, not vanish the moment it's resolved) — otherwise nothing here is real yet.
+    if(!hasOpenStorageItem && !rows.length){ card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    const list = document.getElementById('redeliveryList');
+    if(error){ list.innerHTML = '<div class="empty" style="color:var(--red);">Couldn\'t load your requests right now — try refreshing the page.</div>'; return; }
+    const timeSlotLabels = { morning:'Morning', afternoon:'Afternoon', evening:'Evening' };
+    list.innerHTML = rows.length ? rows.map(r => {
+      const c = redeliveryStatusColors[r.status] || redeliveryStatusColors.pending;
+      const dateLabel = new Date(r.requested_date + 'T00:00:00').toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
+      return `
+      <div style="border:1px solid rgba(11,18,48,.08); border-radius:8px; padding:10px 12px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+          <div style="font-size:13.5px; font-weight:600;">${esc(dateLabel)}${r.requested_time_slot ? ' &middot; ' + esc(timeSlotLabels[r.requested_time_slot] || r.requested_time_slot) : ''}</div>
+          <span class="pill" style="background:${c.bg}; color:${c.fg}; flex-shrink:0;">${redeliveryStatusLabels[r.status] || r.status}</span>
+        </div>
+        ${r.notes ? `<div class="item-meta" style="margin-top:4px;">${esc(r.notes)}</div>` : ''}
+        <div class="item-meta" style="margin-top:4px;">Requested ${new Date(r.requested_at).toLocaleString()}</div>
+        ${r.staff_response ? `<div style="font-size:12.5px; margin-top:6px; padding-top:6px; border-top:1px solid rgba(11,18,48,.06);"><strong>Response:</strong> ${esc(r.staff_response)}</div>` : ''}
+      </div>`;
+    }).join('') : '<div class="empty">No redelivery requests yet.</div>';
+    // The submit form only makes sense while something is actually held in storage right now —
+    // once staff closes the hold (or there was never one), this becomes a read-only history of
+    // past requests, same "form disappears, history stays" pattern the pack-boxes card uses once
+    // a move starts.
+    document.getElementById('redeliveryForm').style.display = hasOpenStorageItem ? 'block' : 'none';
+  }
+  const redeliverySubmitBtn = document.getElementById('redeliverySubmitBtn');
+  if(redeliverySubmitBtn){
+    redeliverySubmitBtn.addEventListener('click', async () => {
+      const statusEl = document.getElementById('redeliveryStatus');
+      statusEl.textContent = '';
+      const dateVal = document.getElementById('redeliveryDate').value;
+      const timeSlot = document.getElementById('redeliveryTimeSlot').value || null;
+      const notes = document.getElementById('redeliveryNotes').value.trim();
+      if(!dateVal || !currentJobId || !currentToken){
+        statusEl.textContent = 'Please choose a date before submitting.';
+        statusEl.style.color = 'var(--red)';
+        return;
+      }
+      redeliverySubmitBtn.disabled = true;
+      try{
+        const { error } = await sb.rpc('submit_redelivery_request', {
+          p_job_id: currentJobId, p_token: currentToken, p_requested_date: dateVal,
+          p_requested_time_slot: timeSlot, p_notes: notes || null
+        });
+        if(error){
+          statusEl.textContent = error.message.includes('Rate limit')
+            ? "You've submitted a lot of requests today — please try again tomorrow, or call us for anything urgent."
+            : (error.message.includes('no items currently held')
+              ? "There's nothing currently held in storage on this move to redeliver."
+              : "Couldn't submit that request — please try again.");
+          statusEl.style.color = 'var(--red)';
+          return;
+        }
+        document.getElementById('redeliveryDate').value = '';
+        document.getElementById('redeliveryTimeSlot').value = '';
+        document.getElementById('redeliveryNotes').value = '';
+        statusEl.textContent = 'Request sent — your Relocation Director will confirm shortly.';
+        statusEl.style.color = 'var(--green)';
+        loadRedeliveryRequests(currentJobId, currentToken, true);
+      } catch(err){
+        statusEl.textContent = "Couldn't submit that request — please try again.";
+        statusEl.style.color = 'var(--red)';
+      } finally {
+        redeliverySubmitBtn.disabled = false;
+      }
+    });
+  }
+
+  // Lost & Found — the customer-facing half of session 168's staff-only Lost & Found queue.
+  // Only ever shows an item once staff has explicitly reviewed it and clicked "Mark Notified" in
+  // Ops (status customer_notified/returned) — never the raw 'unclaimed' queue, so a customer is
+  // never shown something that hasn't actually been matched to their move yet. Deliberately no
+  // photo here (unlike claim/box photos): a found-item photo taken during a truck sweep or
+  // warehouse cleanout can incidentally show other customers' belongings or the inside of the
+  // truck/warehouse itself, so the photo stays staff-internal and only the plain description is
+  // shown — a deliberate scoping choice, not an oversight, to avoid reopening the storage-RLS
+  // design work sessions 153/155 already did carefully for a case that doesn't need it here.
+  const lfCustLocationLabels = { truck: 'Found in the truck', warehouse: 'Found at our warehouse', job_site: 'Found at a job site', other: 'Found' };
+  async function loadLostFoundItems(jobId, token){
+    const card = document.getElementById('lostFoundCard');
+    if(!card) return;
+    const { data, error } = await sb.rpc('get_job_lost_found_items', { p_job_id: jobId, p_token: token });
+    const rows = (!error && data) ? data : [];
+    if(!rows.length){ card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    const list = document.getElementById('lostFoundList');
+    if(error){ list.innerHTML = '<div class="empty" style="color:var(--red);">Couldn\'t load this right now — try refreshing the page.</div>'; return; }
+    const prefLabels = { mail: 'Mail it to me', pickup: "I'll pick it up", hold: 'Hold it until my next visit' };
+    list.innerHTML = rows.map(r => {
+      const foundDate = new Date(r.found_at).toLocaleDateString();
+      let responseBlock;
+      if(r.status === 'returned'){
+        responseBlock = `<div style="font-size:12.5px; margin-top:6px; padding-top:6px; border-top:1px solid rgba(11,18,48,.06); color:var(--green); font-weight:600;">Returned${r.returned_via ? ' — ' + esc(r.returned_via) : ''}</div>`;
+      } else if(r.customer_response === 'confirmed'){
+        responseBlock = `<div style="font-size:12.5px; margin-top:6px; padding-top:6px; border-top:1px solid rgba(11,18,48,.06);">You confirmed this is yours — <strong>${esc(prefLabels[r.return_preference] || r.return_preference)}</strong>. We'll follow up to arrange it.</div>`;
+      } else if(r.customer_response === 'not_mine'){
+        responseBlock = `<div style="font-size:12.5px; margin-top:6px; padding-top:6px; border-top:1px solid rgba(11,18,48,.06); color:var(--steel);">You told us this isn't yours.</div>`;
+      } else {
+        responseBlock = `
+          <div class="lf-respond-form" data-item-id="${esc(r.id)}" style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(11,18,48,.06);">
+            <select class="lf-pref-select" style="width:100%; padding:8px 10px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:13px; margin-bottom:8px;">
+              <option value="mail">Mail it to me</option>
+              <option value="pickup">I'll pick it up</option>
+              <option value="hold">Hold it until my next visit</option>
+            </select>
+            <div style="display:flex; gap:8px;">
+              <button type="button" class="lf-confirm-btn" style="flex:1; padding:9px 10px; border-radius:8px; border:none; background:var(--navy); color:#fff; font-size:13px; font-weight:700; cursor:pointer;">Yes, that's mine</button>
+              <button type="button" class="lf-deny-btn" style="flex:1; padding:9px 10px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); background:#fff; color:var(--steel); font-size:13px; cursor:pointer;">Not mine</button>
+            </div>
+            <div class="lf-respond-status" style="font-size:12px; margin-top:6px;"></div>
+          </div>`;
+      }
+      return `
+      <div style="border:1px solid rgba(11,18,48,.08); border-radius:8px; padding:10px 12px;">
+        <div style="font-size:13.5px; font-weight:600;">${esc(r.description)}</div>
+        <div class="item-meta" style="margin-top:2px;">${esc(lfCustLocationLabels[r.found_location] || 'Found')} &middot; ${foundDate}</div>
+        ${responseBlock}
+      </div>`;
+    }).join('');
+  }
+  const lostFoundList = document.getElementById('lostFoundList');
+  if(lostFoundList){
+    lostFoundList.addEventListener('click', async (e) => {
+      const confirmBtn = e.target.closest('.lf-confirm-btn');
+      const denyBtn = e.target.closest('.lf-deny-btn');
+      if(!confirmBtn && !denyBtn) return;
+      const formWrap = e.target.closest('.lf-respond-form');
+      const itemId = formWrap.dataset.itemId;
+      const statusEl = formWrap.querySelector('.lf-respond-status');
+      const preference = formWrap.querySelector('.lf-pref-select').value;
+      confirmBtn && (confirmBtn.disabled = true);
+      denyBtn && (denyBtn.disabled = true);
+      try{
+        const { error } = await sb.rpc('respond_to_lost_found_item', {
+          p_job_id: currentJobId, p_token: currentToken, p_item_id: itemId,
+          p_confirm: !!confirmBtn, p_return_preference: confirmBtn ? preference : null
+        });
+        if(error){
+          statusEl.textContent = error.message.includes('Rate limit')
+            ? "You've submitted a lot of responses today — please try again tomorrow, or call us."
+            : "Couldn't submit that — please try again.";
+          statusEl.style.color = 'var(--red)';
+          confirmBtn && (confirmBtn.disabled = false);
+          denyBtn && (denyBtn.disabled = false);
+          return;
+        }
+        loadLostFoundItems(currentJobId, currentToken);
+      } catch(err){
+        statusEl.textContent = "Couldn't submit that — please try again.";
+        statusEl.style.color = 'var(--red)';
+        confirmBtn && (confirmBtn.disabled = false);
+        denyBtn && (denyBtn.disabled = false);
+      }
+    });
+  }
+
+  // Donations — the customer-facing half of a crew-logged fact: something the customer chose to
+  // donate rather than move. Read-only here (the crew logs it, staff confirms a receipt was
+  // given) — the real value to the customer is a printable record of what was donated and a
+  // good-faith estimated value, for their own tax purposes, same print-window pattern already
+  // proven out for the Bill of Lading and Invoice above.
+  let lastLoadedDonations = [];
+  async function loadDonations(jobId, token){
+    const card = document.getElementById('donationsCard');
+    const { data, error } = await sb.rpc('get_job_donation_items', { p_job_id: jobId, p_token: token });
+    const rows = (!error && data) ? data : [];
+    lastLoadedDonations = rows;
+    if(!rows.length){ card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    const list = document.getElementById('donationsList');
+    if(error){ list.innerHTML = '<div class="empty" style="color:var(--red);">Couldn\'t load this right now — try refreshing the page.</div>'; return; }
+    list.innerHTML = rows.map(d => `
+      <div style="border:1px solid rgba(11,18,48,.08); border-radius:8px; padding:10px 12px;">
+        <div style="font-size:13.5px; font-weight:600;">${esc(d.description)}</div>
+        <div class="item-meta" style="margin-top:2px;">${new Date(d.logged_at).toLocaleDateString()}${d.charity_name ? ' &middot; ' + esc(d.charity_name) : ''}${d.estimated_value_cents != null ? ' &middot; ~' + dollars(d.estimated_value_cents) : ''}</div>
+        ${d.receipt_provided ? '<div style="font-size:12px; color:var(--green); font-weight:600; margin-top:4px;">Receipt on file</div>' : '<div style="font-size:12px; color:var(--steel); margin-top:4px;">Receipt not yet confirmed &mdash; use Print Donation Record below for your own copy in the meantime.</div>'}
+      </div>`).join('');
+  }
+  const donationsPrintBtn = document.getElementById('donationsPrintBtn');
+  if(donationsPrintBtn){
+    donationsPrintBtn.addEventListener('click', () => {
+      if(!lastLoadedDonations.length) return;
+      const w = window.open('', '_blank', 'width=700,height=800');
+      if(!w){ alert('Please allow pop-ups to print your donation record.'); return; }
+      const rowsHtml = lastLoadedDonations.map((d,i) => `
+        <tr>
+          <td>${i+1}</td>
+          <td>${esc(d.description)}</td>
+          <td>${esc(d.charity_name || '—')}</td>
+          <td>${new Date(d.logged_at).toLocaleDateString()}</td>
+          <td style="text-align:right;">${d.estimated_value_cents != null ? dollars(d.estimated_value_cents) : '—'}</td>
+        </tr>`).join('');
+      w.document.write(`<!DOCTYPE html><html><head><title>Donation Record</title><style>
+        body{font-family:Georgia,'Times New Roman',serif; color:#1a1a1a; padding:32px; max-width:720px; margin:0 auto;}
+        h1{font-size:20px; letter-spacing:.03em; margin-bottom:2px;}
+        .sub{font-size:12px; color:#555; margin-bottom:22px;}
+        table{width:100%; border-collapse:collapse; font-size:12.5px; margin-top:8px;}
+        th,td{border:1px solid #ccc; padding:5px 7px; text-align:left;}
+        th{background:#f4f4f2; font-size:11px; text-transform:uppercase; letter-spacing:.03em;}
+        .note{font-size:11.5px; color:#555; margin-top:16px; line-height:1.6;}
+        @media print{ body{padding:12px;} }
+      </style></head><body>
+        <h1>BLUE PROVENANCE TRANSPORT &mdash; Donation Record</h1>
+        <div class="sub">Generated ${new Date().toLocaleString()}</div>
+        <table>
+          <thead><tr><th>#</th><th>Item</th><th>Organization</th><th>Date</th><th style="text-align:right;">Est. Value</th></tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+        <div class="note">Values shown are good-faith estimates recorded by the moving crew at the time of donation, not a formal appraisal. Please consult a tax professional regarding any deduction.</div>
+        <script>window.onload=()=>window.print();<\/script>
+      </body></html>`);
+      w.document.close();
+    });
+  }
+
+  // Order Packing Supplies — the gap between the fully-internal supply_inventory (session 154,
+  // staff-only warehouse stock tracker) and the customer, who previously had zero way to ask for
+  // more boxes/tape/wrap ahead of move day except a phone call. Structurally the same "customer
+  // asks, staff resolves" pattern already proven out for Add-On Requests and Reschedule Requests
+  // above — a token-gated submit + read RPC pair, staff sees and fulfills/declines in Ops. Hidden
+  // once a move has actually started (delivered/closed/cancelled) since packing supplies are
+  // moot at that point, same reasoning as the prep checklist and building access cards.
+  const SUPPLY_ORDER_HIDDEN_STATUSES = new Set(['delivered','closed','cancelled']);
+  const supplyOrderMethodLabels = { dropoff: 'Drop-off', pickup: 'Pickup' };
+  const supplyOrderStatusLabels = { pending: 'Pending Review', fulfilled: 'Fulfilled', declined: 'Declined' };
+  const supplyOrderStatusColors = {
+    pending: { bg:'#fff4d9', fg:'#b8860b' },
+    fulfilled: { bg:'#e3f7ec', fg:'var(--green)' },
+    declined: { bg:'#fbe1e1', fg:'var(--danger)' }
+  };
+  async function loadSupplyOrders(jobId, token, jobStatus){
+    const card = document.getElementById('supplyOrderCard');
+    if(!card) return;
+    if(SUPPLY_ORDER_HIDDEN_STATUSES.has(jobStatus)){ card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    const list = document.getElementById('supplyOrderList');
+    const { data, error } = await sb.rpc('get_job_supply_orders', { p_job_id: jobId, p_token: token });
+    if(error){ list.innerHTML = '<div class="empty" style="color:var(--red);">Couldn\'t load your requests right now — try refreshing the page.</div>'; return; }
+    const rows = data || [];
+    list.innerHTML = rows.length ? rows.map(r => {
+      const c = supplyOrderStatusColors[r.status] || supplyOrderStatusColors.pending;
+      return `
+      <div style="border:1px solid rgba(11,18,48,.08); border-radius:8px; padding:10px 12px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+          <div style="font-size:13.5px;">${esc(r.items_requested)}</div>
+          <span class="pill" style="background:${c.bg}; color:${c.fg}; flex-shrink:0;">${supplyOrderStatusLabels[r.status] || r.status}</span>
+        </div>
+        <div class="item-meta" style="margin-top:4px;">${esc(supplyOrderMethodLabels[r.delivery_method] || r.delivery_method)} &middot; Requested ${new Date(r.requested_at).toLocaleString()}</div>
+        ${r.staff_response ? `<div style="font-size:12.5px; margin-top:6px; padding-top:6px; border-top:1px solid rgba(11,18,48,.06);"><strong>Response:</strong> ${esc(r.staff_response)}</div>` : ''}
+      </div>`;
+    }).join('') : '<div class="empty">No requests yet.</div>';
+  }
+  const supplyOrderSubmitBtn = document.getElementById('supplyOrderSubmitBtn');
+  const supplyOrderItemsEl = document.getElementById('supplyOrderItems');
+  if(supplyOrderSubmitBtn && supplyOrderItemsEl){
+    supplyOrderSubmitBtn.addEventListener('click', async () => {
+      const items = supplyOrderItemsEl.value.trim();
+      const statusEl = document.getElementById('supplyOrderStatus');
+      statusEl.textContent = '';
+      if(!items || !currentJobId || !currentToken) return;
+      supplyOrderSubmitBtn.disabled = true;
+      try{
+        const method = document.getElementById('supplyOrderMethod').value;
+        const { error } = await sb.rpc('submit_supply_order', { p_job_id: currentJobId, p_token: currentToken, p_items_requested: items, p_delivery_method: method });
+        if(error){
+          statusEl.textContent = error.message.includes('Rate limit')
+            ? "You've submitted a lot of requests today — please try again tomorrow, or call us for anything urgent."
+            : "Couldn't submit that request — please try again.";
+          statusEl.style.color = 'var(--red)';
+          return;
+        }
+        supplyOrderItemsEl.value = '';
+        statusEl.textContent = 'Request sent — your Relocation Director will follow up shortly.';
+        statusEl.style.color = 'var(--green)';
+        loadSupplyOrders(currentJobId, currentToken, null);
+      } catch(err){
+        statusEl.textContent = "Couldn't submit that request — please try again.";
+        statusEl.style.color = 'var(--red)';
+      } finally {
+        supplyOrderSubmitBtn.disabled = false;
+      }
+    });
+  }
+
+  // Refer a Friend — a direct-customer referral program, distinct from the B2B Broker Portal.
+  // Shown for any job that resolved a customer (a referral_code exists the moment a customer
+  // record exists, generated automatically). Loaded once per job open rather than every 15s
+  // poll tick, since a referral code never changes and the referrals list rarely does.
+  // Pre-Move Checklist: reduces the single biggest source of move-day stress — not knowing what
+  // you're supposed to have already done — by surfacing the same short, concrete task list every
+  // job is auto-seeded with the moment it's booked. Hidden entirely once a job is delivered/closed/
+  // cancelled, since prep tasks are meaningless after the fact. Loaded on every poll tick (like
+  // messages) rather than once, so a check made on one device shows up if the customer reopens
+  // the portal on another.
+  async function loadPrepChecklist(jobId, token, status){
+    const card = document.getElementById('prepChecklistCard');
+    if(status === 'delivered' || status === 'closed' || status === 'cancelled'){ card.style.display = 'none'; return; }
+    const { data, error } = await sb.rpc('get_job_prep_checklist', { p_job_id: jobId, p_token: token });
+    if(error || !data || !data.length){ card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    const doneCount = data.filter(i => i.completed_at).length;
+    document.getElementById('prepChecklistProgress').textContent = `${doneCount} of ${data.length} done`;
+    const list = document.getElementById('prepChecklistList');
+    list.innerHTML = data.map(i => `
+      <label style="display:flex; align-items:flex-start; gap:10px; font-size:13.5px; line-height:1.4; cursor:pointer; ${i.completed_at ? 'color:var(--steel); text-decoration:line-through;' : ''}">
+        <input type="checkbox" class="prep-check" data-id="${esc(i.id)}" ${i.completed_at ? 'checked' : ''} style="margin-top:3px; width:auto;">
+        <span>${esc(i.label)}</span>
+      </label>`).join('');
+    list.querySelectorAll('.prep-check').forEach(cb => cb.addEventListener('change', async () => {
+      cb.disabled = true;
+      const { error } = await sb.rpc('toggle_job_prep_item', { p_job_id: jobId, p_token: token, p_item_id: cb.dataset.id, p_completed: cb.checked });
+      if(error){ document.getElementById('prepChecklistProgress').textContent = "Couldn't update — try again."; cb.checked = !cb.checked; cb.disabled = false; return; }
+      loadPrepChecklist(jobId, token, status);
+    }));
+  }
+
+  // Post-Move Feedback: a real internal satisfaction signal, distinct from the public-review
+  // request flow (review_requests, auto-queued the moment a job is delivered/closed) — this asks
+  // the customer directly and privately rather than pushing straight to a public ask, so a
+  // problem surfaces to staff before it turns into a bad public review or a lost referral
+  // opportunity. Only shown once a job is actually delivered/closed; a job in any earlier status
+  // has nothing to rate yet. Re-submitting overwrites the prior rating (on_conflict update in the
+  // RPC), so a customer can change their mind — shown as an editable form pre-filled with their
+  // existing rating rather than a locked "already submitted" state.
+  let feedbackSelectedRating = 0;
+  let feedbackCardLoadedFor = null;
+  function renderFeedbackCard(job, jobId, token){
+    const card = document.getElementById('feedbackCard');
+    if(job.status !== 'delivered' && job.status !== 'closed'){ card.style.display = 'none'; feedbackCardLoadedFor = null; return; }
+    card.style.display = 'block';
+    // Only initialize the form once per job (like the referral card) — this runs on every 15s
+    // poll tick, and re-populating on each tick would wipe out a star pick or a comment the
+    // customer is still typing before they've hit submit.
+    if(feedbackCardLoadedFor === jobId) return;
+    feedbackCardLoadedFor = jobId;
+    feedbackSelectedRating = job.feedback_rating || 0;
+    document.getElementById('feedbackComment').value = job.feedback_comment || '';
+    renderFeedbackStars();
+    const thanks = document.getElementById('feedbackThanks');
+    const btn = document.getElementById('feedbackSubmitBtn');
+    if(job.feedback_rating){
+      thanks.style.display = 'block';
+      btn.textContent = 'Update Feedback';
+    } else {
+      thanks.style.display = 'none';
+      btn.textContent = 'Submit Feedback';
+    }
+  }
+  function renderFeedbackStars(){
+    const wrap = document.getElementById('feedbackStars');
+    wrap.innerHTML = [1,2,3,4,5].map(n => `<button type="button" class="feedback-star" data-n="${n}" style="width:auto; margin:0; padding:0; border:none; background:none; cursor:pointer; font-size:28px; line-height:1; color:${n <= feedbackSelectedRating ? '#f0b429' : 'rgba(11,18,48,.18)'};">&#9733;</button>`).join('');
+    wrap.querySelectorAll('.feedback-star').forEach(btn => btn.addEventListener('click', () => {
+      feedbackSelectedRating = parseInt(btn.dataset.n, 10);
+      renderFeedbackStars();
+    }));
+  }
+  document.getElementById('feedbackSubmitBtn').addEventListener('click', async () => {
+    const statusEl = document.getElementById('feedbackStatus');
+    if(!feedbackSelectedRating){
+      statusEl.textContent = 'Tap a star to rate your move before submitting.';
+      statusEl.style.color = 'var(--red, #b91c1c)';
+      return;
+    }
+    if(!currentJobId || !currentToken) return;
+    const btn = document.getElementById('feedbackSubmitBtn');
+    const originalLabel = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Submitting…';
+    const comment = document.getElementById('feedbackComment').value.trim();
+    const { error } = await sb.rpc('submit_post_move_feedback', { p_job_id: currentJobId, p_token: currentToken, p_rating: feedbackSelectedRating, p_comment: comment || null });
+    btn.disabled = false; btn.textContent = originalLabel;
+    if(error){
+      statusEl.textContent = "Couldn't submit — try again.";
+      statusEl.style.color = 'var(--red, #b91c1c)';
+      return;
+    }
+    statusEl.textContent = '';
+    document.getElementById('feedbackThanks').style.display = 'block';
+    btn.textContent = 'Update Feedback';
+  });
+
+  // Leave a Tip for Your Crew — until now, a tip only ever happened if the customer had cash
+  // (or a card the crew's terminal could run) at the exact moment of delivery; a customer who
+  // wants to tip later — no cash on hand that day, or thinking about it days after the move —
+  // had no channel to do so at all. Every tip on this platform has always been staff-recorded
+  // AFTER being collected (payments.payment_type = 'tip'); this closes the gap on the other end
+  // — the customer's own request to leave one — the same "customer asks, staff resolves" shape
+  // already proven out for Add-On/Reschedule/Supply requests. Deliberately distinct from those:
+  // this is money, not a service change, and it never touches the job's own balance-due
+  // calculation (tips are already excluded from that everywhere on this platform). Shown only
+  // once a job is delivered/closed, since a tip is naturally a post-move gesture — mirrors the
+  // Post-Move Feedback card's own gating for the same reason.
+  const TIP_METHOD_LABELS_PORTAL = { add_to_final_invoice: 'Added to your final invoice/balance', venmo_or_cashapp: "You'll send it via Venmo/Cash App", cash_or_check_dropoff: "You'll drop off cash or a check", other: 'Other arrangement' };
+  const TIP_STATUS_COPY = {
+    pending: { label: 'Pending Review', bg:'#fff4d9', fg:'#b8860b' },
+    fulfilled: { label: 'Confirmed', bg:'#e3f7ec', fg:'var(--green)' },
+    declined: { label: 'Could Not Process', bg:'#fbe1e1', fg:'var(--red)' }
+  };
+  let tipRequestCardLoadedFor = null;
+  async function loadTipRequestCard(jobId, token, status){
+    const card = document.getElementById('tipRequestCard');
+    if(status !== 'delivered' && status !== 'closed'){ card.style.display = 'none'; tipRequestCardLoadedFor = null; return; }
+    card.style.display = 'block';
+    const { data, error } = await sb.rpc('get_job_tip_intents', { p_job_id: jobId, p_token: token });
+    const rows = (!error && data) ? data : [];
+    const historyEl = document.getElementById('tipRequestHistory');
+    const formEl = document.getElementById('tipRequestForm');
+    if(error){
+      historyEl.innerHTML = '<div class="empty" style="color:var(--red);">Couldn\'t load this right now — try refreshing the page.</div>';
+    } else if(rows.length){
+      historyEl.innerHTML = rows.map(r => {
+        const c = TIP_STATUS_COPY[r.status] || TIP_STATUS_COPY.pending;
+        return `
+        <div style="border:1px solid rgba(11,18,48,.08); border-radius:8px; padding:10px 12px; margin-top:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+            <div style="font-size:13.5px; font-weight:600;">${dollars(r.requested_amount_cents)} &middot; ${esc(TIP_METHOD_LABELS_PORTAL[r.preferred_method] || r.preferred_method)}</div>
+            <span class="pill" style="background:${c.bg}; color:${c.fg}; flex-shrink:0;">${c.label}</span>
+          </div>
+          <div class="item-meta" style="margin-top:4px;">${new Date(r.submitted_at).toLocaleString()}</div>
+          ${r.staff_response ? `<div style="font-size:12.5px; margin-top:6px; padding-top:6px; border-top:1px solid rgba(11,18,48,.06);"><strong>Response:</strong> ${esc(r.staff_response)}</div>` : ''}
+        </div>`;
+      }).join('');
+    } else {
+      historyEl.innerHTML = '';
+    }
+    // Only reset the form fields once per job open, like the accommodation/feedback cards —
+    // a customer mid-typing a note shouldn't have it wiped by the next 15s poll.
+    if(tipRequestCardLoadedFor === jobId) return;
+    tipRequestCardLoadedFor = jobId;
+    document.getElementById('tipRequestAmount').value = '';
+    document.getElementById('tipRequestMethod').value = 'add_to_final_invoice';
+    document.getElementById('tipRequestNote').value = '';
+    document.getElementById('tipRequestStatus').textContent = '';
+  }
+  document.querySelectorAll('.tip-amount-btn').forEach(btn => btn.addEventListener('click', () => {
+    document.getElementById('tipRequestAmount').value = btn.dataset.amt;
+  }));
+  document.getElementById('tipRequestSubmitBtn').addEventListener('click', async () => {
+    if(!currentJobId || !currentToken) return;
+    const statusEl = document.getElementById('tipRequestStatus');
+    const btn = document.getElementById('tipRequestSubmitBtn');
+    const amountDollars = parseFloat(document.getElementById('tipRequestAmount').value);
+    if(!amountDollars || amountDollars <= 0){
+      statusEl.textContent = 'Enter a tip amount greater than $0.';
+      statusEl.style.color = 'var(--red)';
+      return;
+    }
+    const method = document.getElementById('tipRequestMethod').value;
+    const note = document.getElementById('tipRequestNote').value.trim();
+    btn.disabled = true; btn.textContent = 'Submitting…';
+    const { error } = await sb.rpc('submit_tip_intent', {
+      p_job_id: currentJobId, p_token: currentToken,
+      p_amount_cents: Math.round(amountDollars * 100), p_preferred_method: method, p_note: note || null
+    });
+    btn.disabled = false; btn.textContent = 'Submit Tip';
+    if(error){
+      statusEl.textContent = "Couldn't submit — try again.";
+      statusEl.style.color = 'var(--red)';
+      return;
+    }
+    document.getElementById('tipRequestAmount').value = '';
+    document.getElementById('tipRequestNote').value = '';
+    statusEl.textContent = 'Thank you — a relocation director will follow up.';
+    statusEl.style.color = 'var(--green)';
+    tipRequestCardLoadedFor = null;
+    loadTipRequestCard(currentJobId, currentToken, 'delivered');
+  });
+
+  // Building Access & Insurance Requirements — the status text (COI/elevator confirmed or not)
+  // refreshes on every poll tick like prep checklist, since staff may confirm these mid-move-window
+  // and the customer should see that update without reloading. The contact-info FORM FIELDS only
+  // populate once per job (guarded like the feedback card) so a customer mid-typing their super's
+  // phone number doesn't get it wiped out by the next 15s poll. Shown for any job that hasn't been
+  // delivered/closed/cancelled yet — building access only matters before move day, and the card
+  // is useful even when staff hasn't flagged any requirement yet, since it's often the customer,
+  // not staff, who actually knows their building's rules.
+  let buildingAccessLoadedFor = null;
+  async function loadBuildingAccessCard(jobId, token, status){
+    const card = document.getElementById('buildingAccessCard');
+    if(status === 'delivered' || status === 'closed' || status === 'cancelled'){ card.style.display = 'none'; buildingAccessLoadedFor = null; return; }
+    const { data, error } = await sb.rpc('get_job_building_requirements', { p_job_id: jobId, p_token: token });
+    if(error){ card.style.display = 'none'; return; }
+    const req = data && data[0];
+    card.style.display = 'block';
+    const parts = [];
+    if(req && req.requires_coi){
+      if(req.coi_status === 'received'){
+        parts.push('<div style="color:var(--green);">&#10003; Certificate of insurance is on file with your building.</div>');
+      } else {
+        parts.push('<div style="color:#8a6d1f;">Your building requires a certificate of insurance — we\'ve requested it. If you have a direct line to your building\'s management office, confirming with them can help this go smoothly.</div>');
+      }
+    }
+    if(req && req.elevator_reservation_required){
+      if(req.elevator_reserved){
+        parts.push(`<div style="color:var(--green);">&#10003; Freight elevator reserved${req.elevator_window ? ' for ' + esc(req.elevator_window) : ''}.</div>`);
+      } else {
+        parts.push('<div style="color:#8a6d1f;">Your building requires a freight elevator reservation — this hasn\'t been confirmed yet.</div>');
+      }
+    }
+    if(req && req.parking_permit_required){
+      if(req.parking_permit_confirmed){
+        parts.push('<div style="color:var(--green);">&#10003; Parking arrangement for the truck is confirmed.</div>');
+      } else {
+        parts.push('<div style="color:#8a6d1f;">This move needs a curbside parking arrangement (e.g. a temporary parking permit) — we\'re working on it, and it isn\'t confirmed yet.</div>');
+      }
+    }
+    document.getElementById('buildingAccessStatusList').innerHTML = parts.length ? parts.join('') :
+      '<div class="item-meta" style="font-weight:400;">No specific building requirements on file yet — if your building needs a certificate of insurance, an elevator reservation, or has any other access rules, let us know below.</div>';
+    // Documents refresh every poll (like the status list above), not just once per job open —
+    // a document staff sends back (e.g. a signed elevator confirmation) should show up without
+    // the customer having to reload the page.
+    loadBuildingDocuments(jobId, token);
+    if(buildingAccessLoadedFor === jobId) return;
+    buildingAccessLoadedFor = jobId;
+    document.getElementById('buildingContactName').value = (req && req.building_contact_name) || '';
+    document.getElementById('buildingContactPhone').value = (req && req.building_contact_phone) || '';
+    document.getElementById('buildingAccessNotes').value = (req && req.access_notes) || '';
+  }
+
+  // Building Documents — the actual paperwork a building sends about a move (an insurance
+  // requirements letter, an elevator reservation confirmation, a move-in rules packet) had
+  // nowhere to go before this except a phone call or an email attachment someone had to relay
+  // by hand to dispatch. job_building_requirements already tracks the status/lifecycle of COI,
+  // elevator, and parking, but never gave either side a document surface. uploaded_by shows both
+  // directions on one shared thread — what the customer sent, and anything staff sent back (e.g.
+  // a signed elevator confirmation) — same private bucket + path-validated storage policy
+  // pattern already proven out for claim photos (job_id/token folder structure).
+  async function loadBuildingDocuments(jobId, token){
+    const list = document.getElementById('buildingDocsList');
+    if(!list) return;
+    const { data, error } = await sb.rpc('get_job_building_documents', { p_job_id: jobId, p_token: token });
+    if(error){ list.innerHTML = '<div class="empty" style="color:var(--red);">Couldn\'t load documents right now — try refreshing the page.</div>'; return; }
+    const rows = data || [];
+    if(!rows.length){ list.innerHTML = '<div class="empty">No documents uploaded yet.</div>'; return; }
+    list.innerHTML = rows.map(d => `
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 10px; border:1px solid rgba(11,18,48,.08); border-radius:8px; font-size:13px;">
+        <div>
+          <div style="font-weight:600;">${d.uploaded_by === 'staff' ? '📤 ' : '📥 '}${esc(d.original_filename)}</div>
+          <div class="item-meta">${d.uploaded_by === 'staff' ? 'From your relocation director' : 'You uploaded'} &middot; ${new Date(d.uploaded_at).toLocaleDateString()}${d.reviewed_at ? ' &middot; Reviewed' : (d.uploaded_by === 'customer' ? ' &middot; Awaiting review' : '')}</div>
+          ${d.notes ? `<div class="item-meta">${esc(d.notes)}</div>` : ''}
+        </div>
+        <button type="button" class="building-doc-view-btn" data-path="${esc(d.file_path)}" style="width:auto; padding:6px 10px; border-radius:6px; border:1.5px solid rgba(11,18,48,.15); background:#fff; color:var(--navy); font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;">View</button>
+      </div>`).join('');
+    list.querySelectorAll('.building-doc-view-btn').forEach(btn => btn.addEventListener('click', async () => {
+      const { data: signed } = await sb.storage.from('job-documents').createSignedUrl(btn.dataset.path, 300);
+      if(signed && signed.signedUrl) window.open(signed.signedUrl, '_blank');
+    }));
+  }
+  const buildingDocUploadBtn = document.getElementById('buildingDocUploadBtn');
+  if(buildingDocUploadBtn){
+    buildingDocUploadBtn.addEventListener('click', async () => {
+      const statusEl = document.getElementById('buildingDocStatus');
+      const fileInput = document.getElementById('buildingDocFile');
+      const file = fileInput.files[0];
+      statusEl.textContent = '';
+      if(!file){ statusEl.textContent = 'Choose a file first.'; statusEl.style.color = 'var(--red)'; return; }
+      if(!currentJobId || !currentToken) return;
+      buildingDocUploadBtn.disabled = true;
+      statusEl.textContent = 'Uploading...';
+      try{
+        const path = `${currentJobId}/${currentToken}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+        const { error: upErr } = await sb.storage.from('job-documents').upload(path, file);
+        if(upErr) throw upErr;
+        const { error } = await sb.rpc('submit_building_document', {
+          p_job_id: currentJobId, p_token: currentToken, p_file_path: path, p_original_filename: file.name
+        });
+        if(error) throw error;
+        fileInput.value = '';
+        statusEl.textContent = 'Uploaded — your relocation director will take a look.';
+        statusEl.style.color = 'var(--green)';
+        loadBuildingDocuments(currentJobId, currentToken);
+      }catch(err){
+        statusEl.textContent = err.message && err.message.includes('Rate limit')
+          ? "You've uploaded a lot of documents today — please try again tomorrow, or call us for anything urgent."
+          : 'Could not upload: ' + (err.message || 'unknown error');
+        statusEl.style.color = 'var(--red)';
+      }finally{
+        buildingDocUploadBtn.disabled = false;
+      }
+    });
+  }
+  document.getElementById('buildingAccessSaveBtn').addEventListener('click', async () => {
+    const statusEl = document.getElementById('buildingAccessSaveStatus');
+    if(!currentJobId || !currentToken) return;
+    const btn = document.getElementById('buildingAccessSaveBtn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+    const name = document.getElementById('buildingContactName').value.trim();
+    const phone = document.getElementById('buildingContactPhone').value.trim();
+    const notes = document.getElementById('buildingAccessNotes').value.trim();
+    const { error } = await sb.rpc('submit_building_contact_info', {
+      p_job_id: currentJobId, p_token: currentToken,
+      p_building_contact_name: name || null, p_building_contact_phone: phone || null, p_access_notes: notes || null
+    });
+    btn.disabled = false; btn.textContent = 'Save Building Info';
+    if(error){
+      statusEl.textContent = "Couldn't save — try again.";
+      statusEl.style.color = 'var(--red, #b91c1c)';
+      return;
+    }
+    statusEl.textContent = 'Saved — thanks for letting us know!';
+    statusEl.style.color = 'var(--green)';
+  });
+
+  let referCardLoadedFor = null;
+  function renderReferCard(job, jobId, token){
+    const card = document.getElementById('referCard');
+    if(!job.customer_referral_code){ card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    const link = `${window.location.origin}/quote.html?ref=${encodeURIComponent(job.customer_referral_code)}`;
+    document.getElementById('referLinkInput').value = link;
+    if(referCardLoadedFor === jobId) return;
+    referCardLoadedFor = jobId;
+    loadReferrals(jobId, token);
+  }
+  const referralStatusColors = {
+    submitted: { bg:'#fff4d9', fg:'#b8860b', label:'Referred — awaiting their move' },
+    converted: { bg:'#e3f7ec', fg:'var(--green)', label:'Move complete — credit ready' },
+    rewarded: { bg:'#e8ecf6', fg:'var(--navy)', label:'Credit applied — thank you!' }
+  };
+  async function loadReferrals(jobId, token){
+    const list = document.getElementById('referralsList');
+    if(!list) return;
+    const { data, error } = await sb.rpc('get_customer_referrals', { p_job_id: jobId, p_token: token });
+    if(error){ list.innerHTML = ''; return; }
+    const rows = data || [];
+    list.innerHTML = rows.length ? rows.map(r => {
+      const c = referralStatusColors[r.status] || referralStatusColors.submitted;
+      return `
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 10px; border:1px solid rgba(11,18,48,.08); border-radius:8px; font-size:13px;">
+        <span>${esc(r.referred_full_name)}</span>
+        <span class="pill" style="background:${c.bg}; color:${c.fg}; flex-shrink:0;">${c.label}</span>
+      </div>`;
+    }).join('') : '<div class="empty">No referrals yet — share your link above to start earning credit.</div>';
+  }
+  const referCopyBtn = document.getElementById('referCopyBtn');
+  if(referCopyBtn){
+    referCopyBtn.addEventListener('click', async () => {
+      const input = document.getElementById('referLinkInput');
+      try{
+        await navigator.clipboard.writeText(input.value);
+        referCopyBtn.textContent = 'Copied!';
+      }catch(e){
+        input.select();
+        referCopyBtn.textContent = 'Select & copy';
+      }
+      setTimeout(() => { referCopyBtn.textContent = 'Copy Link'; }, 2000);
+    });
+  }
+
+  const addonSubmitBtn = document.getElementById('addonSubmitBtn');
+  const addonDesc = document.getElementById('addonDesc');
+  if(addonSubmitBtn && addonDesc){
+    addonSubmitBtn.addEventListener('click', async () => {
+      const description = addonDesc.value.trim();
+      const statusEl = document.getElementById('addonStatus');
+      statusEl.textContent = '';
+      if(!description || !currentJobId || !currentToken) return;
+      addonSubmitBtn.disabled = true;
+      try{
+        const { error } = await sb.rpc('submit_addon_request', { p_job_id: currentJobId, p_token: currentToken, p_description: description });
+        if(error){
+          statusEl.textContent = error.message.includes('Rate limit')
+            ? "You've submitted a lot of requests today — please try again tomorrow, or call us for anything urgent."
+            : "Couldn't submit that request — please try again.";
+          statusEl.style.color = 'var(--red)';
+          return;
+        }
+        addonDesc.value = '';
+        statusEl.textContent = 'Request sent — your Relocation Director will follow up shortly.';
+        statusEl.style.color = 'var(--green)';
+        loadAddonRequests(currentJobId, currentToken);
+      } catch(err){
+        statusEl.textContent = "Couldn't submit that request — please try again.";
+        statusEl.style.color = 'var(--red)';
+      } finally {
+        addonSubmitBtn.disabled = false;
+      }
+    });
+  }
+
+  const claimStatusLabels = {
+    acknowledged: 'Acknowledged', under_review: 'Under Review',
+    decided: 'Decided — No Payout', paid: 'Approved & Paid'
+  };
+  const claimStatusColors = {
+    acknowledged: { bg:'#fff4d9', fg:'#b8860b' },
+    under_review: { bg:'#e9eefb', fg:'var(--navy)' },
+    decided: { bg:'#eef0f4', fg:'var(--steel)' },
+    paid: { bg:'#e3f7ec', fg:'var(--green)' }
+  };
+
+  // Claim Reconsideration — until now, once a claim reached "decided" (denied), the customer's
+  // only option to push back was a phone call: nothing here let them say "please look again"
+  // and nothing gave staff a queue to work that from. Deliberately scoped to decided claims
+  // only (the RPC itself rejects anything else server-side) — a claim still open has nothing
+  // to reconsider yet. One open request at a time per claim (the form hides once a request is
+  // pending) so a customer can't spam the same claim; the outcome, once staff responds, stays
+  // visible rather than the form just reappearing silently.
+  const reconStatusCopy = {
+    pending: { label: 'Reconsideration requested — awaiting review', color: '#8a6d1f' },
+    upheld: { label: 'Reconsidered — original decision upheld', color: 'var(--steel)' },
+    reversed: { label: 'Reconsidered — reopened for another look', color: 'var(--green)' }
+  };
+  let claimReconOpenId = null;
+  async function loadClaims(jobId, token){
+    const { data: claims, error } = await sb.rpc('get_job_claims', { p_job_id: jobId, p_token: token });
+    const cl = document.getElementById('claimsList');
+    if(!cl) return;
+    if(error){
+      cl.innerHTML = '<div class="empty" style="color:var(--red);">Couldn\'t load your claims right now — try refreshing the page.</div>';
+      return;
+    }
+    if(!claims || !claims.length){
+      cl.innerHTML = '<div class="empty">No claims filed.</div>';
+      return;
+    }
+    const { data: recons } = await sb.rpc('get_job_claim_reconsiderations', { p_job_id: jobId, p_token: token });
+    const reconByClaimId = {};
+    (recons || []).forEach(r => { if(!reconByClaimId[r.claim_id]) reconByClaimId[r.claim_id] = r; }); // most-recent-first from the RPC, so first wins
+    cl.innerHTML = claims.map(c => {
+      const due = c.decision_due ? new Date(c.decision_due).toLocaleDateString() : null;
+      const colors = claimStatusColors[c.status] || { bg:'var(--gold)', fg:'var(--navy)' };
+      const recon = reconByClaimId[c.id];
+      let reconBlock = '';
+      if(c.status === 'decided'){
+        if(recon){
+          const rc = reconStatusCopy[recon.status] || { label: recon.status, color: 'var(--steel)' };
+          reconBlock = `<div style="font-size:12.5px; margin-top:8px; padding:8px 10px; background:#f6f5f1; border-radius:6px;">
+            <div style="font-weight:700; color:${rc.color};">${esc(rc.label)}</div>
+            ${recon.staff_response ? `<div style="margin-top:4px; color:var(--steel);">${esc(recon.staff_response)}</div>` : ''}
+          </div>`;
+        } else if(claimReconOpenId === c.id){
+          reconBlock = `<div class="claim-recon-form" data-claim-id="${esc(c.id)}" style="margin-top:8px;">
+            <textarea class="claim-recon-text" maxlength="1000" placeholder="Tell us why you'd like this decision looked at again" style="width:100%; padding:9px 11px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:13px; font-family:inherit; min-height:56px; resize:vertical; margin-bottom:8px;"></textarea>
+            <button type="button" class="claim-recon-submit-btn" style="width:auto; padding:9px 14px; border-radius:8px; border:none; background:var(--navy); color:#fff; font-size:12.5px; font-weight:700; cursor:pointer;">Submit</button>
+            <button type="button" class="claim-recon-cancel-btn" style="width:auto; padding:9px 14px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); background:#fff; color:var(--steel); font-size:12.5px; cursor:pointer; margin-left:6px;">Cancel</button>
+            <div class="claim-recon-status item-meta" style="margin-top:6px;"></div>
+          </div>`;
+        } else {
+          reconBlock = `<button type="button" class="claim-recon-open-btn" data-claim-id="${esc(c.id)}" style="width:auto; margin-top:8px; padding:8px 12px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); background:#fff; color:var(--navy); font-size:12px; font-weight:700; cursor:pointer;">Request Reconsideration</button>`;
+        }
+      }
+      return `
+      <div class="item-row" style="align-items:flex-start;">
+        <div>
+          <div class="item-desc">${esc(c.description)}${c.item_description ? ' <span style="font-weight:400; color:var(--steel);">&middot; ' + esc(c.item_description) + '</span>' : ''}</div>
+          <div class="item-meta">Filed ${new Date(c.opened_at).toLocaleDateString()}${c.decided_at ? ' &middot; Decided ' + new Date(c.decided_at).toLocaleDateString() : (due ? ' &middot; Decision expected by ' + due : '')}</div>
+          <div class="claim-photo-thumbs" data-claim-id="${esc(c.id)}" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;"></div>
+          ${c.status === 'decided' && c.denial_reason ? `<div style="font-size:13px; color:var(--steel); margin-top:6px; background:#f6f5f1; border-radius:6px; padding:8px 10px;"><strong style="color:var(--navy);">Why:</strong> ${esc(c.denial_reason)}</div>` : ''}
+          ${reconBlock}
+        </div>
+        <div style="text-align:right;">
+          <span class="pill" style="background:${colors.bg}; color:${colors.fg};">${esc(claimStatusLabels[c.status] || c.status)}</span>
+          ${c.status === 'paid' && c.payout_amount_cents != null ? `<div style="font-size:13px; font-weight:700; color:var(--green); margin-top:4px;">${dollars(c.payout_amount_cents)}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+    // Photos are stored in a private bucket (claim-photos), so there's no permanent public
+    // URL — a short-lived signed URL is generated per claim, same pattern the message
+    // attachments' public bucket avoids needing at all.
+    for(const c of claims){
+      const wrap = cl.querySelector(`.claim-photo-thumbs[data-claim-id="${c.id}"]`);
+      if(!wrap || !c.photo_paths || !c.photo_paths.length) continue;
+      const { data: signed } = await sb.storage.from('claim-photos').createSignedUrls(c.photo_paths, 300);
+      if(signed){
+        wrap.innerHTML = signed.filter(s => s.signedUrl).map(s =>
+          `<img src="${s.signedUrl}" style="width:48px; height:48px; object-fit:cover; border-radius:6px; border:1px solid rgba(11,18,48,.15); cursor:pointer;" onclick="window.open('${s.signedUrl}','_blank')">`
+        ).join('');
+      }
+    }
+  }
+
+  const claimsListEl = document.getElementById('claimsList');
+  if(claimsListEl){
+    claimsListEl.addEventListener('click', async (e) => {
+      const openBtn = e.target.closest('.claim-recon-open-btn');
+      if(openBtn){
+        claimReconOpenId = openBtn.dataset.claimId;
+        loadClaims(currentJobId, currentToken);
+        return;
+      }
+      const cancelBtn = e.target.closest('.claim-recon-cancel-btn');
+      if(cancelBtn){
+        claimReconOpenId = null;
+        loadClaims(currentJobId, currentToken);
+        return;
+      }
+      const submitBtn = e.target.closest('.claim-recon-submit-btn');
+      if(submitBtn){
+        const formWrap = submitBtn.closest('.claim-recon-form');
+        const claimId = formWrap.dataset.claimId;
+        const text = formWrap.querySelector('.claim-recon-text').value.trim();
+        const statusEl = formWrap.querySelector('.claim-recon-status');
+        if(!text){
+          statusEl.textContent = 'Please describe why you would like this decision reconsidered.';
+          statusEl.style.color = 'var(--red)';
+          return;
+        }
+        submitBtn.disabled = true;
+        const { error } = await sb.rpc('submit_claim_reconsideration', {
+          p_job_id: currentJobId, p_token: currentToken, p_claim_id: claimId, p_request_text: text
+        });
+        if(error){
+          submitBtn.disabled = false;
+          statusEl.textContent = error.message.includes('Rate limit')
+            ? "You've submitted a lot of requests today — please try again tomorrow, or call us for anything urgent."
+            : "Couldn't submit that — please try again.";
+          statusEl.style.color = 'var(--red)';
+          return;
+        }
+        claimReconOpenId = null;
+        loadClaims(currentJobId, currentToken);
+      }
+    });
+  }
+
+  let pendingClaimPhotos = [];
+  const claimPhotoInputEl = document.getElementById('claimPhotoInput');
+  if(claimPhotoInputEl){
+    claimPhotoInputEl.addEventListener('change', () => {
+      pendingClaimPhotos = Array.from(claimPhotoInputEl.files || []).slice(0, 6);
+      const preview = document.getElementById('claimPhotoPreview');
+      preview.innerHTML = pendingClaimPhotos.map(f =>
+        `<img src="${URL.createObjectURL(f)}" style="width:48px; height:48px; object-fit:cover; border-radius:6px; border:1px solid rgba(11,18,48,.15);">`
+      ).join('');
+    });
+  }
+
+  document.addEventListener('click', async (e) => {
+    if(e.target && e.target.id === 'submitClaimBtn'){
+      const btn = e.target;
+      const desc = document.getElementById('claimDescription').value.trim();
+      const msgEl = document.getElementById('claimMsg');
+      msgEl.classList.remove('show','err','ok');
+      // Inline error messaging (not a native alert()) so a form-filling agent driving this
+      // page can read the failure state straight off the DOM instead of getting stuck on a
+      // blocking browser dialog it can't see or dismiss.
+      if(!desc){ msgEl.textContent = 'Please describe the issue before submitting.'; msgEl.classList.add('show','err'); return; }
+      const itemId = document.getElementById('claimItemSelect').value || null;
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+      // Photos upload first (into a job/token-scoped folder the storage policy validates
+      // against the jobs table) so their storage paths can ride along on the one
+      // submit_claim call — same job_id/token pair already gates every other RPC here.
+      const photoPaths = [];
+      if(pendingClaimPhotos.length){
+        btn.textContent = 'Uploading photos...';
+        for(const file of pendingClaimPhotos){
+          const path = `${currentJobId}/${currentToken}/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+          const { error: upErr } = await sb.storage.from('claim-photos').upload(path, file);
+          if(!upErr) photoPaths.push(path);
+        }
+        btn.textContent = 'Submitting...';
+      }
+      const { error } = await sb.rpc('submit_claim', {
+        p_job_id: currentJobId, p_token: currentToken, p_description: desc, p_item_id: itemId,
+        p_photo_paths: photoPaths.length ? photoPaths : null
+      });
+      btn.disabled = false;
+      btn.textContent = 'Submit Claim';
+      if(error){
+        msgEl.textContent = 'Could not submit claim: ' + error.message;
+        msgEl.classList.add('show','err');
+        return;
+      }
+      msgEl.textContent = 'Claim submitted.';
+      msgEl.classList.add('show','ok');
+      document.getElementById('claimDescription').value = '';
+      document.getElementById('claimItemSelect').value = '';
+      pendingClaimPhotos = [];
+      if(claimPhotoInputEl) claimPhotoInputEl.value = '';
+      document.getElementById('claimPhotoPreview').innerHTML = '';
+      loadDetail(currentJobId, currentToken);
+    }
+  });
+
+  // ---- Estimate e-sign + card payments (money path) ----------------------------------------
+  // The browser never decides an amount. accept_job_estimate validates token, name, signature and
+  // expiry; stripe-checkout computes the amount server-side (stripe_amount_due) and returns a
+  // Stripe-hosted Checkout URL. A paid deposit auto-confirms the job via the Stripe webhook.
+  const money = c => '$' + ((Number(c)||0)/100).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+  const EST_STATUS = { sent:'Awaiting your signature', accepted:'Signed', declined:'Declined', expired:'Expired' };
+
+  function setMsg(el, text, ok){
+    el.textContent = text;
+    el.className = 'claim-msg show ' + (ok ? 'ok' : 'err');
+  }
+
+  // Minimal signature pad: pointer events cover mouse, pen and touch. Exports a PNG data URL,
+  // which is the only format accept_job_estimate accepts.
+  function makeSignaturePad(canvas){
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    const fit = () => {
+      const r = canvas.getBoundingClientRect();
+      canvas.width = Math.round(r.width * ratio); canvas.height = Math.round(r.height * ratio);
+      const ctx = canvas.getContext('2d');
+      ctx.scale(ratio, ratio); ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0b1230';
+    };
+    fit();
+    const ctx = () => canvas.getContext('2d');
+    let drawing = false, dirty = false, last = null;
+    const pos = e => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    canvas.addEventListener('pointerdown', e => { drawing = true; last = pos(e); canvas.setPointerCapture(e.pointerId); e.preventDefault(); });
+    canvas.addEventListener('pointermove', e => {
+      if(!drawing) return;
+      const p = pos(e); const c = ctx();
+      c.beginPath(); c.moveTo(last.x, last.y); c.lineTo(p.x, p.y); c.stroke();
+      last = p; dirty = true; e.preventDefault();
+    });
+    const stop = () => { drawing = false; };
+    canvas.addEventListener('pointerup', stop); canvas.addEventListener('pointercancel', stop); canvas.addEventListener('pointerleave', stop);
+    return {
+      isEmpty: () => !dirty,
+      clear: () => { ctx().clearRect(0, 0, canvas.width, canvas.height); dirty = false; },
+      toDataURL: () => canvas.toDataURL('image/png')
+    };
+  }
+
+  function estimateLinesHtml(e){
+    const lines = (e.lines || []).map(li => `<tr><td>${esc(li.description)}${Number(li.quantity) !== 1 ? ` <span class="item-meta">&times; ${esc(li.quantity)}</span>` : ''}</td><td class="amt">${money(li.amount_cents)}</td></tr>`).join('');
+    const tax = Number(e.tax_cents) ? `<tr><td>Tax</td><td class="amt">${money(e.tax_cents)}</td></tr>` : '';
+    const dep = Number(e.deposit_cents) ? `<tr><td>Deposit to confirm your date</td><td class="amt">${money(e.deposit_cents)}</td></tr>` : '';
+    return `<table class="est-table">${lines}${tax}<tr class="tot"><td>Total</td><td class="amt">${money(e.total_cents)}</td></tr>${dep}</table>`;
+  }
+
+  async function loadEstimatesAndPay(jobId, token, job){
+    const card = document.getElementById('estimateCard');
+    const box = document.getElementById('estimateContent');
+    const { data: ests, error } = await sb.rpc('get_job_estimates', { p_job_id: jobId, p_token: token });
+    if(error){ card.style.display = 'block'; box.innerHTML = '<div class="empty" style="color:var(--red);">Couldn\'t load your estimate right now. Try refreshing the page.</div>'; renderPayButtons(jobId, token, job, []); return; }
+    const list = Array.isArray(ests) ? ests : [];
+    if(!list.length){ card.style.display = 'none'; renderPayButtons(jobId, token, job, list); return; }
+    card.style.display = 'block';
+    // Newest first. Show the one that needs action, else the most recent.
+    const e = list.find(x => x.status === 'sent') || list[0];
+    let html = `<div class="item-meta" style="margin-bottom:6px;">${esc(EST_STATUS[e.status] || e.status)}${e.valid_until && e.status === 'sent' ? ` &middot; valid until ${esc(new Date(e.valid_until + 'T12:00:00').toLocaleDateString())}` : ''}</div>`;
+    html += estimateLinesHtml(e);
+    if(e.notes) html += `<div class="item-meta" style="white-space:pre-wrap; margin-bottom:12px;">${esc(e.notes)}</div>`;
+    if(e.status === 'sent'){
+      html += `<div style="font-size:13px; font-weight:700; color:var(--navy); margin-top:6px;">Sign to accept</div>
+        <input class="sig-input" id="sigName" maxlength="200" placeholder="Type your full name" autocomplete="name">
+        <canvas class="sig-pad" id="sigPad" aria-label="Draw your signature"></canvas>
+        <div style="display:flex; justify-content:space-between; font-size:11.5px; color:var(--steel); margin:4px 0 12px;"><span>Draw your signature above</span><a href="#" id="sigClear" style="color:var(--navy);">Clear</a></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="pbtn" id="estAccept">Accept &amp; Sign</button>
+          <button class="pbtn alt" id="estDecline">Decline</button>
+        </div>
+        <div class="item-meta" style="margin-top:8px;">By signing you accept this estimate and the Terms. Your signature, name and time are recorded.</div>
+        <div id="estMsg" class="claim-msg"></div>`;
+    } else if(e.status === 'accepted'){
+      html += `<div class="claim-msg ok show" style="margin-top:0;">Signed by ${esc(e.customer_signed_name || '')}${e.customer_signed_at ? ' on ' + esc(new Date(e.customer_signed_at).toLocaleDateString()) : ''}.</div>`;
+    } else if(e.status === 'expired'){
+      html += `<div class="claim-msg err show" style="margin-top:0;">This estimate has expired. Message your move director below for an updated one.</div>`;
+    }
+    box.innerHTML = html;
+
+    if(e.status === 'sent'){
+      const pad = makeSignaturePad(document.getElementById('sigPad'));
+      const msg = document.getElementById('estMsg');
+      document.getElementById('sigClear').addEventListener('click', ev => { ev.preventDefault(); pad.clear(); });
+      document.getElementById('estAccept').addEventListener('click', async () => {
+        const name = document.getElementById('sigName').value.trim();
+        if(name.length < 2) return setMsg(msg, 'Please type your full name.');
+        if(pad.isEmpty()) return setMsg(msg, 'Please draw your signature.');
+        const btn = document.getElementById('estAccept'); btn.disabled = true; btn.textContent = 'Signing...';
+        const { error: aErr } = await sb.rpc('accept_job_estimate', { p_job_id: jobId, p_token: token, p_estimate_id: e.id, p_signed_name: name, p_signature_data: pad.toDataURL() });
+        if(aErr){ setMsg(msg, aErr.code === 'P0001' ? aErr.message : 'Something went wrong. Please try again.'); btn.disabled = false; btn.textContent = 'Accept & Sign'; return; }
+        loadEstimatesAndPay(jobId, token, job);
+        document.getElementById('invoiceCard').scrollIntoView({ behavior:'smooth', block:'start' });
+      });
+      document.getElementById('estDecline').addEventListener('click', async () => {
+        const reason = prompt('Optional: tell us why, so we can help (or leave blank).');
+        if(reason === null) return;
+        const { error: dErr } = await sb.rpc('decline_job_estimate', { p_job_id: jobId, p_token: token, p_estimate_id: e.id, p_reason: reason });
+        if(dErr) return setMsg(msg, dErr.code === 'P0001' ? dErr.message : 'Something went wrong. Please try again.');
+        loadEstimatesAndPay(jobId, token, job);
+      });
+    }
+    renderPayButtons(jobId, token, job, list);
+  }
+
+  async function renderPayButtons(jobId, token, job, ests){
+    const wrap = document.getElementById('payButtons');
+    wrap.innerHTML = '';
+    if(!job || job.status === 'cancelled') return;
+    const accepted = (ests || []).find(x => x.status === 'accepted');
+    const { data: pays } = await sb.rpc('get_job_payments', { p_job_id: jobId, p_token: token });
+    const rows = pays || [];
+    const depositPaid = rows.filter(p => p.payment_type === 'deposit').reduce((s, p) => s + p.amount_cents, 0);
+    const paidNonTip = rows.filter(p => p.payment_type !== 'tip').reduce((s, p) => s + p.amount_cents, 0);
+    const depositDue = accepted ? (Number(accepted.deposit_cents) || 0) - depositPaid : 0;
+    const balanceDue = (Number(job.quoted_price_cents) || 0) - paidNonTip;
+    const btns = [];
+    if(depositDue > 0) btns.push({ kind:'deposit', label:`Pay Deposit ${money(depositDue)}` });
+    // Balance is offered once the estimate is signed (or there's no estimate flow, e.g. staff-booked).
+    if(balanceDue > 0 && (accepted || !(ests || []).length)) btns.push({ kind:'balance', label:`Pay Balance ${money(balanceDue)}`, alt: depositDue > 0 });
+    if(btns.length){ document.getElementById('invoiceCard').style.display = 'block'; }
+    btns.forEach(b => {
+      const el = document.createElement('button');
+      el.className = 'pbtn' + (b.alt ? ' alt' : '');
+      el.textContent = b.label;
+      el.addEventListener('click', () => startCheckout(jobId, token, b.kind, el));
+      wrap.appendChild(el);
+    });
+  }
+
+  async function startCheckout(jobId, token, kind, btn){
+    const status = document.getElementById('payStatus');
+    const label = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Opening secure checkout...';
+    const { data, error } = await sb.functions.invoke('stripe-checkout', { body: { job_id: jobId, token, kind } });
+    if(!error && data && data.url){ window.location.href = data.url; return; }
+    let msg = 'Couldn\'t start payment right now. Please try again.';
+    try { const body = error && error.context ? await error.context.json() : null; if(body && body.error) msg = body.error; } catch(_e) {}
+    if(/isn't set up yet/i.test(msg)) msg = 'Online card payment isn\'t switched on yet. Your move director will send you payment details.';
+    setMsg(status, msg);
+    btn.disabled = false; btn.textContent = label;
+  }
+
+  // Return from Stripe Checkout (?paid=1 / ?paid=0). The webhook records the payment, which can
+  // take a few seconds, so the page re-loads payments shortly after showing the banner.
+  (function handlePaidReturn(){
+    const p = new URLSearchParams(window.location.search);
+    const paid = p.get('paid');
+    const banner = document.getElementById('paidBanner');
+    if(paid === '1'){ setMsg(banner, 'Payment received. Thank you! It can take a minute to appear below.', true); setTimeout(() => { if(currentJobId) loadDetail(currentJobId, currentToken); }, 5000); }
+    else if(paid === '0'){ setMsg(banner, 'Payment was cancelled. Nothing was charged.'); }
+    if(paid !== null){ p.delete('paid'); history.replaceState(null, '', location.pathname + '?' + p.toString()); }
+  })();
+
+  (function wireDocsLink(){
+    const p = new URLSearchParams(window.location.search);
+    const j = p.get('job'), t = p.get('token');
+    const a = document.getElementById('docsLink');
+    if(j && t) a.href = `documents.html?job=${encodeURIComponent(j)}&token=${encodeURIComponent(t)}`; else a.style.display = 'none';
+  })();
+
+  let currentToken = null;
+  init();
+  setInterval(()=>{ if(currentJobId) loadDetail(currentJobId, currentToken); }, 15000);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Haulwyn OS | Estate Vaulting</title>
+<link rel="manifest" href="/manifest-vault.json">
+<meta name="theme-color" content="#0a1f44">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EB Vault">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --navy:#0a1f44; --red:#b22234; --gold:#c9a227; --ink:#0b1230; --steel:#5b6478; --off:#f6f5f1; --green:#1fb26b; --amber:#e0a30a;}
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',sans-serif; background:var(--off); color:var(--ink);}
+  header{background:var(--navy); color:#fff; padding:22px 28px;}
+  header h1{font-family:'Oswald',sans-serif; font-size:18px; text-transform:uppercase; letter-spacing:.03em;}
+  header .sub{font-size:12.5px; color:rgba(255,255,255,.65); margin-top:2px;}
+  main{max-width:1100px; margin:0 auto; padding:28px;}
+  .grid2{display:grid; grid-template-columns:1.3fr 1fr; gap:24px;}
+  .card{background:#fff; border-radius:12px; padding:24px; border:1px solid rgba(11,18,48,.08); margin-bottom:22px;}
+  .card h2{font-family:'Oswald',sans-serif; font-size:14px; text-transform:uppercase; letter-spacing:.04em; color:var(--navy); margin-bottom:16px;}
+  label{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--steel); display:block; margin-bottom:6px; margin-top:14px;}
+  label:first-of-type{margin-top:0;}
+  select, input, textarea{width:100%; padding:12px 13px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px; font-family:'Inter',sans-serif;}
+  textarea{resize:vertical; min-height:64px;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  button{padding:13px 20px; border-radius:8px; border:none; background:var(--gold); color:var(--navy); font-weight:700; text-transform:uppercase; letter-spacing:.03em; font-family:'Oswald',sans-serif; cursor:pointer; font-size:13px; margin-top:18px;}
+  button:hover{background:#b3901f;}
+  .checkbox-row{display:flex; align-items:center; gap:8px; margin-top:14px;}
+  .checkbox-row input{width:auto;}
+  .item-row{padding:16px 0; border-bottom:1px solid rgba(11,18,48,.06);}
+  .item-row:last-child{border-bottom:none;}
+  .item-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .item-desc{font-weight:700; font-size:14.5px;}
+  .item-meta{font-size:12px; color:var(--steel); margin-top:4px; line-height:1.5;}
+  .badge{display:inline-block; padding:3px 10px; border-radius:20px; font-size:10.5px; font-weight:700; text-transform:uppercase;}
+  .badge-received{background:#eef0f4; color:var(--steel);}
+  .badge-vaulted{background:#f3e8d0; color:#8a6d1f;}
+  .badge-in_transit{background:#fff4d9; color:var(--amber);}
+  .badge-delivered{background:#e3f7ec; color:var(--green);}
+  .value{font-family:'Oswald',sans-serif; font-weight:600; color:var(--navy); white-space:nowrap;}
+  .climate{display:inline-block; margin-left:6px; font-size:10.5px; color:var(--gold); font-weight:700;}
+  .summary{display:flex; gap:14px; margin-bottom:20px;}
+  .summary div{flex:1; background:var(--navy); color:#fff; border-radius:10px; padding:16px; text-align:center;}
+  .summary .num{font-family:'Playfair Display',serif; font-weight:700; font-size:22px;}
+  .summary .lbl{font-size:10px; color:rgba(255,255,255,.65); text-transform:uppercase; margin-top:3px;}
+  .empty{color:var(--steel); font-size:13.5px;}
+  #staffLoginGate{position:fixed; inset:0; background:var(--off); z-index:999; display:flex; align-items:center; justify-content:center; padding:20px;}
+  .login-card{background:#fff; border-radius:12px; padding:32px; border:1px solid rgba(11,18,48,.08); width:100%; max-width:360px; box-shadow:0 4px 24px rgba(11,18,48,.08);}
+  .login-card h2{font-family:'Oswald',sans-serif; font-size:15px; text-transform:uppercase; letter-spacing:.03em; color:var(--navy); margin-bottom:6px;}
+  .login-card p{font-size:12.5px; color:var(--steel); margin-bottom:18px; line-height:1.5;}
+  .login-card label{font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--steel); display:block; margin-bottom:6px; margin-top:12px;}
+  .login-card label:first-of-type{margin-top:0;}
+  .login-card input{width:100%; padding:12px 13px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14px; font-family:'Inter',sans-serif;}
+  .login-card button{width:100%; margin-top:18px; padding:13px; border-radius:8px; border:none; background:var(--gold); color:var(--navy); font-weight:700; text-transform:uppercase; letter-spacing:.03em; font-family:'Oswald',sans-serif; cursor:pointer; font-size:13px;}
+  .login-card .err{color:#c0392b; font-size:12.5px; margin-top:12px; display:none;}
+  .err.show{display:block !important;}
+  .logout-btn{background:none; border:1px solid rgba(255,255,255,.3); color:#fff; font-size:11px; padding:6px 12px; border-radius:6px; cursor:pointer; font-family:'Inter',sans-serif;}
+  .edit-btn{background:#fff; color:var(--navy); border:1px solid rgba(11,18,48,.15); font-size:11px; padding:6px 11px; border-radius:6px; cursor:pointer; font-family:'Inter',sans-serif; margin-top:8px;}
+  .modal-overlay{position:fixed; inset:0; background:rgba(11,18,48,.55); z-index:1000; display:none; align-items:flex-start; justify-content:center; padding:40px 20px; overflow-y:auto;}
+  .modal-overlay.show{display:flex;}
+  .modal-card{background:#fff; border-radius:12px; padding:28px; width:100%; max-width:520px;}
+  .modal-card h2{font-family:'Oswald',sans-serif; font-size:16px; text-transform:uppercase; letter-spacing:.03em; color:var(--navy); margin-bottom:4px;}
+  .modal-card .modal-sub{font-size:12.5px; color:var(--steel); margin-bottom:20px;}
+  .modal-actions{display:flex; gap:10px; justify-content:flex-end; margin-top:22px;}
+  .btn-secondary{padding:13px 20px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); background:#fff; color:var(--ink); font-weight:700; text-transform:uppercase; letter-spacing:.03em; font-family:'Oswald',sans-serif; cursor:pointer; font-size:13px; margin-top:0;}
+  .modal-msg{font-size:12.5px; margin-top:14px; display:none;}
+  .modal-msg.show{display:block;}
+  .modal-msg.err{color:#c0392b;}
+  .modal-msg.ok{color:var(--green);}
+</style>
+</head>
+<body>
+
+<div id="staffLoginGate">
+  <div class="login-card">
+    <h2>Staff Sign-In Required</h2>
+    <p>Estate Vaulting shows high-value client inventory and is restricted to authenticated Blue Provenance staff.</p>
+    <label for="loginEmail">Email</label>
+    <input id="loginEmail" type="email" placeholder="you@haulwynos.com" autocomplete="username">
+    <label for="loginPassword">Password</label>
+    <input id="loginPassword" type="password" autocomplete="current-password">
+    <button id="loginBtn">Sign In</button>
+    <div class="err" id="loginErr">Incorrect email or password.</div>
+  </div>
+</div>
+
+<header style="display:flex; align-items:center; justify-content:space-between;">
+  <div>
+    <h1>Haulwyn OS &middot; Estate Vaulting</h1>
+    <div class="sub">Tier III concierge tracking for irreplaceable &amp; high-value items</div>
+  </div>
+  <button class="logout-btn" id="logoutBtn">Sign Out</button>
+</header>
+
+<main>
+  <div class="summary" id="summaryRow">
+    <div><div class="num" id="sumCount">0</div><div class="lbl">Items in Vault</div></div>
+    <div><div class="num" id="sumValue">$0</div><div class="lbl">Total Insured Value</div></div>
+    <div><div class="num" id="sumClimate">0</div><div class="lbl">Climate-Controlled</div></div>
+    <div><div class="num" id="sumAccrued">$0</div><div class="lbl">Lifetime Accrued Storage Revenue</div></div>
+    <div><div class="num" id="sumUnbilled" style="color:var(--red);">$0</div><div class="lbl">Unbilled &mdash; Not Yet Charged</div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Vaulted Items</h2>
+      <div id="itemsList"><div class="empty">Loading&hellip;</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Log New Item</h2>
+      <label for="jobSelect">Job</label>
+      <select id="jobSelect"><option value="">Select a Tier III job&hellip;</option></select>
+
+      <label for="itemDesc">Item Description</label>
+      <textarea id="itemDesc" placeholder="e.g. 18th-century mahogany secretary desk"></textarea>
+
+      <div class="row2">
+        <div>
+          <label for="insuredValue">Insured Value ($)</label>
+          <input id="insuredValue" type="number" placeholder="45000">
+        </div>
+        <div>
+          <label for="vaultLocation">Vault Location</label>
+          <input id="vaultLocation" placeholder="Vault A - Climate Wing">
+        </div>
+      </div>
+
+      <label for="conditionReport">Condition Report</label>
+      <textarea id="conditionReport" placeholder="Pre-move condition notes, photographed and documented"></textarea>
+
+      <div class="row2">
+        <div>
+          <label for="monthlyRate">Monthly Storage Rate ($)</label>
+          <input id="monthlyRate" type="number" placeholder="150">
+        </div>
+        <div>
+          <label for="billingStartDate">Billing Start Date</label>
+          <input id="billingStartDate" type="date">
+        </div>
+      </div>
+
+      <div class="checkbox-row">
+        <input type="checkbox" id="climateControlled">
+        <label for="climateControlled" style="margin:0;">Requires Climate Control</label>
+      </div>
+
+      <label for="itemPhoto">Condition Photo</label>
+      <input type="file" id="itemPhoto" accept="image/*">
+      <div id="photoPreviewWrap" style="display:none; margin-top:10px;"><img id="photoPreview" style="max-width:100%; border-radius:8px; border:1px solid rgba(11,18,48,.12);"></div>
+
+      <button id="addItemBtn">Add to Vault</button>
+      <div id="uploadStatus" style="font-size:12px; color:var(--steel); margin-top:8px;"></div>
+      <div class="modal-msg" id="addItemMsg"></div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-overlay" id="editItemModal">
+  <div class="modal-card">
+    <h2>Edit Vaulted Item</h2>
+    <div class="modal-sub">Update this item's status, location, value, or condition notes — changes apply immediately.</div>
+
+    <label for="editDesc">Item Description</label>
+    <textarea id="editDesc"></textarea>
+
+    <div class="row2">
+      <div>
+        <label for="editValue">Insured Value ($)</label>
+        <input id="editValue" type="number">
+      </div>
+      <div>
+        <label for="editLocation">Vault Location</label>
+        <input id="editLocation">
+      </div>
+    </div>
+
+    <label for="editCondition">Condition Report</label>
+    <textarea id="editCondition"></textarea>
+
+    <div class="row2">
+      <div>
+        <label for="editMonthlyRate">Monthly Storage Rate ($)</label>
+        <input id="editMonthlyRate" type="number">
+      </div>
+      <div>
+        <label for="editBillingStartDate">Billing Start Date</label>
+        <input id="editBillingStartDate" type="date">
+      </div>
+    </div>
+    <div class="item-meta" id="editAccruedNote" style="margin-top:6px;"></div>
+
+    <label for="editStatus">Status</label>
+    <select id="editStatus">
+      <option value="received">Received</option>
+      <option value="vaulted">Vaulted</option>
+      <option value="in_transit">In Transit</option>
+      <option value="delivered">Delivered</option>
+    </select>
+
+    <div class="checkbox-row">
+      <input type="checkbox" id="editClimate">
+      <label for="editClimate" style="margin:0;">Requires Climate Control</label>
+    </div>
+
+    <div class="modal-msg" id="editMsg"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="editDeleteBtn" style="border-color:#c0392b; color:#c0392b; margin-right:auto;">Delete Item</button>
+      <button class="btn-secondary" id="editCancelBtn">Cancel</button>
+      <button id="editSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="accessLogModal">
+  <div class="modal-card">
+    <h2>Vault Access &amp; Movement Log</h2>
+    <div class="modal-sub" id="accessLogItemDesc"></div>
+
+    <label for="accessLogAction">Action</label>
+    <select id="accessLogAction">
+      <option value="inspected">Inspected</option>
+      <option value="moved">Moved within facility</option>
+      <option value="retrieved_for_delivery">Retrieved for delivery</option>
+      <option value="returned_to_vault">Returned to vault</option>
+      <option value="condition_check">Condition check</option>
+    </select>
+
+    <div class="row2" id="accessLogLocationRow">
+      <div>
+        <label for="accessLogLocationFrom">From Location</label>
+        <input id="accessLogLocationFrom" placeholder="e.g. Rack A-12">
+      </div>
+      <div>
+        <label for="accessLogLocationTo">To Location</label>
+        <input id="accessLogLocationTo" placeholder="e.g. Rack C-4">
+      </div>
+    </div>
+
+    <div id="accessLogConditionFields" hidden>
+      <div style="font-size:11.5px; color:var(--steel); margin:-2px 0 8px;">Borrowed from fine-art-logistics practice — a structured environmental reading and seal check at every inspection, not just a note, so a long-sitting Estate Vaulting item has a real ongoing record rather than a one-time intake photo.</div>
+      <div class="row2">
+        <div>
+          <label for="accessLogTemp">Temperature (&deg;F)</label>
+          <input id="accessLogTemp" type="number" step="0.1" placeholder="e.g. 68">
+        </div>
+        <div>
+          <label for="accessLogHumidity">Humidity (%)</label>
+          <input id="accessLogHumidity" type="number" step="0.1" min="0" max="100" placeholder="e.g. 45">
+        </div>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="accessLogSealIntact" checked>
+        <label for="accessLogSealIntact" style="margin:0;">Seal / wrapping intact, no signs of tampering</label>
+      </div>
+      <label for="accessLogPhoto">Condition Photo (optional)</label>
+      <input id="accessLogPhoto" type="file" accept="image/*">
+      <div id="accessLogPhotoStatus" class="item-meta" style="margin-top:4px;"></div>
+    </div>
+
+    <label for="accessLogNotes">Notes (optional)</label>
+    <textarea id="accessLogNotes" placeholder="Anything worth recording about this touch — condition observed, reason for the move, who requested it, etc."></textarea>
+
+    <div class="modal-msg" id="accessLogMsg"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="accessLogCloseBtn">Close</button>
+      <button id="accessLogSubmitBtn">Log Entry</button>
+    </div>
+
+    <div class="item-meta" style="margin-top:14px; margin-bottom:6px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; font-size:11px;">History</div>
+    <div id="accessLogHistory" style="max-height:220px; overflow-y:auto; border:1px solid rgba(11,18,48,.1); border-radius:8px; padding:10px 12px;">Loading&hellip;</div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://izafyooegkvstynejaxh.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6YWZ5b29lZ2t2c3R5bmVqYXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1MzQwNzcsImV4cCI6MjEwNDExMDA3N30.nKaTP_t5TrzJE0xbFb7SUX_QLRKIEGIiYTnbb8QcwYY';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const esc = s => (s ?? '').toString().replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const dollars = c => '$' + ((c||0)/100).toLocaleString(undefined,{maximumFractionDigits:0});
+
+  // Parses an optional dollar-amount string into integer cents. Returns null for a blank
+  // field, or NaN if the field has content but isn't a valid non-negative number — callers
+  // must check for NaN and show an error, since silently coercing a typo or a negative
+  // number was a real gap (insured_value_cents has no CHECK constraint in the database).
+  function parseDollarsToCents(str){
+    const s = (str || '').trim();
+    if(!s) return null;
+    const val = parseFloat(s);
+    if(!isFinite(val) || val < 0) return NaN;
+    return Math.round(val * 100);
+  }
+
+  // Full completed months between a billing start date and today — used to compute
+  // accrued storage revenue. Deliberately counts only whole months (not partial/prorated),
+  // since this is an estimate for staff visibility, not an actual invoice line.
+  function fullMonthsElapsed(startDateStr, asOfDateStr){
+    if(!startDateStr) return 0;
+    const start = new Date(startDateStr + 'T00:00:00');
+    const now = asOfDateStr ? new Date(asOfDateStr + 'T00:00:00') : new Date();
+    let months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+    if(now.getDate() < start.getDate()) months -= 1;
+    return Math.max(0, months);
+  }
+
+  // Storage stops accruing once an item has actually left the vault. "received" and
+  // "vaulted" are both still on-site; "in_transit" is mid-delivery-but-not-yet-out, so it
+  // still counts. Only "delivered" is excluded.
+  function isActivelyStored(item){
+    return item.status !== 'delivered';
+  }
+
+  function accruedCentsFor(item){
+    if(!isActivelyStored(item) || !item.monthly_rate_cents) return 0;
+    return fullMonthsElapsed(item.billing_start_date) * item.monthly_rate_cents;
+  }
+
+  // Storage revenue was being tracked here as a passive "estimated accrued" number, but
+  // nothing anywhere on the platform ever turned it into an actual charge — the customer's
+  // job balance never reflected it, so real recurring revenue was silently going uncollected.
+  // last_billed_through tracks how much of the accrual has actually been added to the job's
+  // quoted_price_cents (the correct way to bill it — an amount OWED, not a payment RECEIVED,
+  // so this deliberately updates jobs.quoted_price_cents rather than inserting a payments row).
+  // Unbilled months = months elapsed since the later of billing_start_date or last_billed_through.
+  function unbilledMonthsFor(item){
+    if(!isActivelyStored(item) || !item.monthly_rate_cents || !item.billing_start_date) return 0;
+    const totalMonths = fullMonthsElapsed(item.billing_start_date);
+    if(!item.last_billed_through) return totalMonths;
+    const billedMonths = fullMonthsElapsed(item.billing_start_date, item.last_billed_through);
+    return Math.max(0, totalMonths - billedMonths);
+  }
+
+  async function loadJobs(){
+    const { data } = await sb.from('jobs').select('id, tier, customers(full_name)').eq('tier','tier_3');
+    const sel = document.getElementById('jobSelect');
+    sel.innerHTML = '<option value="">Select a Tier III job&hellip;</option>' +
+      (data||[]).map(j => `<option value="${j.id}">${esc(j.customers?.full_name || 'Estate job')}</option>`).join('');
+  }
+
+  async function loadItems(){
+    const { data, error } = await sb.from('vault_items').select('*, jobs(customers(full_name))').order('created_at',{ascending:false});
+    const list = document.getElementById('itemsList');
+    if(error){
+      list.innerHTML = '<div class="empty" style="color:var(--red);">Couldn\'t load vaulted items — try refreshing the page. (Not shown as empty, since real items may exist.)</div>';
+      document.getElementById('sumCount').textContent = '–';
+      document.getElementById('sumValue').textContent = '–';
+      document.getElementById('sumClimate').textContent = '–';
+      return;
+    }
+    if(!data || !data.length){ list.innerHTML = '<div class="empty">No items vaulted yet.</div>'; updateSummary([]); return; }
+    list.innerHTML = data.map(i => `
+      <div class="item-row">
+        <div class="item-top">
+          <div>
+            <div class="item-desc">${esc(i.description)}</div>
+            <div class="item-meta">${esc(i.jobs?.customers?.full_name || 'Unassigned')} &middot; ${esc(i.vault_location || 'Location TBD')}${i.climate_controlled ? '<span class="climate">&#10052; CLIMATE</span>' : ''}</div>
+            <div class="item-meta">${esc(i.condition_report || 'No condition report yet')}</div>
+            <div class="item-meta">${storageLine(i)}</div>
+            ${i.photo_path ? `<img data-photo-path="${esc(i.photo_path)}" style="max-width:160px; border-radius:8px; margin-top:8px; border:1px solid rgba(11,18,48,.1); display:none;">` : ''}
+          </div>
+          <div style="text-align:right;">
+            <div class="value">${dollars(i.insured_value_cents)}</div>
+            <span class="badge badge-${i.status}">${i.status.replace(/_/g,' ')}</span>
+            <div><button class="edit-btn" data-id="${esc(i.id)}">Edit</button></div>
+            <div><button class="edit-btn access-log-btn" data-id="${esc(i.id)}" data-desc="${esc(i.description)}" style="margin-top:4px;">Access Log</button></div>
+          </div>
+        </div>
+      </div>`).join('');
+    updateSummary(data);
+    await resolvePhotoSignedUrls(list, 'vault-photos');
+    document.querySelectorAll('.edit-btn:not(.access-log-btn)').forEach(btn => btn.addEventListener('click', () => openEditModal(btn.dataset.id)));
+    document.querySelectorAll('.access-log-btn').forEach(btn => btn.addEventListener('click', () => openAccessLogModal(btn.dataset.id, btn.dataset.desc)));
+    // Scoped to `list`, not `document` — the Edit modal's own accrual note (editAccruedNote)
+    // reuses this same storageLine() output and can render its own Bill Now button, but that
+    // copy is intentionally left unwired here to avoid double-listener/stale-state risk; billing
+    // from the main list (which always reflects the latest load) is the supported path.
+    list.querySelectorAll('.bill-now-btn').forEach(btn => btn.addEventListener('click', () => billStorageNow(btn.dataset.id, btn)));
+  }
+
+  // Turns accrued-but-unbilled storage months into an actual charge. Deliberately adds to the
+  // job's quoted_price_cents (an amount OWED) rather than inserting a payments row (an amount
+  // RECEIVED) — that's the correct direction for a new charge, and it's what makes the increase
+  // show up automatically everywhere balance-due is already computed from quoted_price_cents:
+  // the Ops Job Details modal, the customer portal's Invoice card, and both printable invoices.
+  async function billStorageNow(itemId, btn){
+    const originalLabel = btn.textContent;
+    btn.textContent = 'Billing…';
+    btn.disabled = true;
+    try{
+      const { data: item, error: itemErr } = await sb.from('vault_items').select('*').eq('id', itemId).single();
+      if(itemErr || !item) throw new Error(itemErr?.message || 'Item not found');
+      const unbilledMonths = unbilledMonthsFor(item);
+      if(unbilledMonths <= 0 || !item.job_id) throw new Error('Nothing unbilled, or no job linked.');
+      const unbilledCents = unbilledMonths * item.monthly_rate_cents;
+
+      const { data: job, error: jobErr } = await sb.from('jobs').select('quoted_price_cents').eq('id', item.job_id).single();
+      if(jobErr || !job) throw new Error(jobErr?.message || 'Could not load the linked job.');
+      const newQuotedCents = (job.quoted_price_cents || 0) + unbilledCents;
+
+      const { error: updateJobErr } = await sb.from('jobs').update({ quoted_price_cents: newQuotedCents, updated_at: new Date().toISOString() }).eq('id', item.job_id);
+      if(updateJobErr) throw new Error(updateJobErr.message);
+
+      // Mark billed through today. unbilledMonthsFor() measures "full months" against the
+      // billing anniversary day-of-month (billing_start_date's day), not calendar-month
+      // boundaries — so last_billed_through must be computed the same way, via
+      // fullMonthsElapsed(billing_start_date, last_billed_through). Using today keeps both
+      // ends of that comparison on the same anniversary-day clock: fullMonthsElapsed(start, today)
+      // right now equals exactly the unbilledMonths we just charged, so the next unbilled
+      // calculation nets to zero. (A calendar month-end date here would undercount by one
+      // anniversary-month and double-bill on the very next click — confirmed by direct
+      // simulation before shipping this.)
+      const now = new Date();
+      const pad2 = n => String(n).padStart(2, '0');
+      const billedThrough = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+      const { error: itemUpdateErr } = await sb.from('vault_items').update({ last_billed_through: billedThrough }).eq('id', itemId);
+      if(itemUpdateErr) throw new Error(itemUpdateErr.message);
+
+      await sb.from('tracking_events').insert({ job_id: item.job_id, event_type: 'job_updated', note: `Storage fee billed: ${unbilledMonths} month(s) x ${dollars(item.monthly_rate_cents)} = ${dollars(unbilledCents)} added to quoted price (Estate Vaulting).` });
+
+      await loadItems();
+    } catch(err){
+      alert('Could not bill this item: ' + err.message);
+      btn.textContent = originalLabel;
+      btn.disabled = false;
+    }
+  }
+
+  // Photos live in private buckets now (staff-only), so a stored path is resolved to a short-lived
+  // signed URL at render time instead of a permanent public URL.
+  async function resolvePhotoSignedUrls(containerEl, bucket){
+    const imgs = containerEl.querySelectorAll('img[data-photo-path]');
+    if(!imgs.length) return;
+    const paths = [...imgs].map(img => img.getAttribute('data-photo-path'));
+    const { data, error } = await sb.storage.from(bucket).createSignedUrls(paths, 300);
+    if(error || !data) return;
+    imgs.forEach((img, idx) => {
+      const signed = data[idx];
+      if(signed && signed.signedUrl){
+        img.src = signed.signedUrl;
+        img.style.display = '';
+      }
+    });
+  }
+
+  // Per-item storage line under the condition report: how long it's been billing, at what
+  // rate, and the resulting estimate — or a visible nudge when a still-stored item has no
+  // rate configured yet, so staff notice the gap instead of silently under-billing forever.
+  function storageLine(i, includeBillButton = true){
+    if(!isActivelyStored(i)) return 'No longer accruing storage (delivered).';
+    if(!i.monthly_rate_cents){
+      return '<span style="color:var(--amber); font-weight:700;">Monthly storage rate not set — this item is not accruing billable revenue.</span>';
+    }
+    const months = fullMonthsElapsed(i.billing_start_date);
+    const accrued = accruedCentsFor(i);
+    const since = i.billing_start_date ? new Date(i.billing_start_date + 'T00:00:00').toLocaleDateString() : 'unknown date';
+    const unbilledMonths = unbilledMonthsFor(i);
+    const unbilledCents = unbilledMonths * i.monthly_rate_cents;
+    let line = `${dollars(i.monthly_rate_cents)}/mo since ${since} &middot; ${months} full month${months===1?'':'s'} accrued &middot; <strong>${dollars(accrued)} lifetime accrued</strong>`;
+    if(unbilledMonths > 0 && i.job_id){
+      line += `<br><span style="color:var(--red); font-weight:700;">${unbilledMonths} unbilled month${unbilledMonths===1?'':'s'} (${dollars(unbilledCents)}) — not yet added to the customer's balance</span>${includeBillButton ? ` <button class="bill-now-btn" data-id="${esc(i.id)}" style="margin-left:6px; font-size:11px; padding:3px 9px; border-radius:5px; border:1px solid var(--red); color:var(--red); background:#fff; cursor:pointer;">Bill Now</button>` : ''}`;
+    } else if(unbilledMonths > 0 && !i.job_id){
+      line += `<br><span style="color:var(--amber);">${unbilledMonths} unbilled month${unbilledMonths===1?'':'s'} (${dollars(unbilledCents)}) — no job linked, can't be added to a balance.</span>`;
+    } else if(i.last_billed_through){
+      line += `<br><span style="color:var(--steel); font-size:11.5px;">Fully billed through ${new Date(i.last_billed_through + 'T00:00:00').toLocaleDateString()}.</span>`;
+    }
+    return line;
+  }
+
+  function updateSummary(data){
+    document.getElementById('sumCount').textContent = data.length;
+    document.getElementById('sumValue').textContent = dollars(data.reduce((s,i)=>s+(i.insured_value_cents||0),0));
+    document.getElementById('sumClimate').textContent = data.filter(i=>i.climate_controlled).length;
+    document.getElementById('sumAccrued').textContent = dollars(data.reduce((s,i)=>s+accruedCentsFor(i),0));
+    document.getElementById('sumUnbilled').textContent = dollars(data.reduce((s,i)=>s + (unbilledMonthsFor(i) * (i.monthly_rate_cents||0)), 0));
+  }
+
+  document.getElementById('itemPhoto').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    const wrap = document.getElementById('photoPreviewWrap');
+    if(!file){ wrap.style.display = 'none'; return; }
+    document.getElementById('photoPreview').src = URL.createObjectURL(file);
+    wrap.style.display = 'block';
+  });
+
+  async function uploadPhotoIfAny(){
+    const fileInput = document.getElementById('itemPhoto');
+    const file = fileInput.files[0];
+    if(!file) return null;
+    const statusEl = document.getElementById('uploadStatus');
+    statusEl.textContent = 'Uploading photo…';
+    const path = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    const { error } = await sb.storage.from('vault-photos').upload(path, file, { upsert: true });
+    if(error){ statusEl.textContent = 'Photo upload failed: ' + error.message; return null; }
+    statusEl.textContent = 'Photo uploaded.';
+    return path;
+  }
+
+  document.getElementById('addItemBtn').addEventListener('click', async () => {
+    const msg = document.getElementById('addItemMsg');
+    msg.classList.remove('show','err','ok');
+    const job_id = document.getElementById('jobSelect').value || null;
+    const description = document.getElementById('itemDesc').value.trim();
+    const insuredValueRaw = document.getElementById('insuredValue').value;
+    const vault_location = document.getElementById('vaultLocation').value.trim();
+    const condition_report = document.getElementById('conditionReport').value.trim();
+    const climate_controlled = document.getElementById('climateControlled').checked;
+    const monthlyRateRaw = document.getElementById('monthlyRate').value;
+    const billing_start_date = document.getElementById('billingStartDate').value || null;
+    // Inline error messaging (not a native alert()) so a form-filling agent driving this
+    // page can read the failure state straight off the DOM instead of getting stuck on a
+    // blocking browser dialog it can't see or dismiss.
+    if(!description){ msg.textContent = 'Enter an item description.'; msg.classList.add('show','err'); return; }
+    const insuredValueCents = parseDollarsToCents(insuredValueRaw);
+    if(Number.isNaN(insuredValueCents)){
+      msg.textContent = 'Insured value must be a non-negative number.';
+      msg.classList.add('show','err');
+      return;
+    }
+    const monthlyRateCents = parseDollarsToCents(monthlyRateRaw);
+    if(Number.isNaN(monthlyRateCents)){
+      msg.textContent = 'Monthly storage rate must be a non-negative number.';
+      msg.classList.add('show','err');
+      return;
+    }
+    const btn = document.getElementById('addItemBtn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+    const photo_path = await uploadPhotoIfAny();
+    const { error } = await sb.from('vault_items').insert({
+      job_id,
+      description,
+      insured_value_cents: insuredValueCents,
+      vault_location: vault_location || null,
+      condition_report: condition_report || null,
+      climate_controlled,
+      photo_path,
+      status: 'received',
+      monthly_rate_cents: monthlyRateCents,
+      billing_start_date
+    });
+    btn.disabled = false; btn.textContent = 'Add to Vault';
+    if(error){
+      msg.textContent = 'Could not add this item — nothing was saved: ' + error.message;
+      msg.classList.add('show','err');
+      return;
+    }
+    document.getElementById('itemDesc').value = '';
+    document.getElementById('insuredValue').value = '';
+    document.getElementById('vaultLocation').value = '';
+    document.getElementById('conditionReport').value = '';
+    document.getElementById('climateControlled').checked = false;
+    document.getElementById('monthlyRate').value = '';
+    document.getElementById('billingStartDate').value = '';
+    document.getElementById('itemPhoto').value = '';
+    document.getElementById('photoPreviewWrap').style.display = 'none';
+    document.getElementById('uploadStatus').textContent = '';
+    msg.textContent = 'Item added to the vault.';
+    msg.classList.add('show','ok');
+    loadItems();
+  });
+
+  let editCurrentId = null;
+  let editDeleteArmed = false;
+
+  async function openEditModal(id){
+    editCurrentId = id;
+    editDeleteArmed = false;
+    const msg = document.getElementById('editMsg');
+    msg.classList.remove('show','err','ok');
+    document.getElementById('editDeleteBtn').textContent = 'Delete Item';
+    const { data } = await sb.from('vault_items').select('*').eq('id', id).single();
+    if(!data) return;
+    document.getElementById('editDesc').value = data.description || '';
+    document.getElementById('editValue').value = data.insured_value_cents == null ? '' : (data.insured_value_cents / 100);
+    document.getElementById('editLocation').value = data.vault_location || '';
+    document.getElementById('editCondition').value = data.condition_report || '';
+    document.getElementById('editStatus').value = data.status || 'received';
+    document.getElementById('editClimate').checked = !!data.climate_controlled;
+    document.getElementById('editMonthlyRate').value = data.monthly_rate_cents == null ? '' : (data.monthly_rate_cents / 100);
+    document.getElementById('editBillingStartDate').value = data.billing_start_date || '';
+    document.getElementById('editAccruedNote').innerHTML = storageLine(data, false);
+    document.getElementById('editItemModal').classList.add('show');
+  }
+
+  document.getElementById('editCancelBtn').addEventListener('click', () => {
+    document.getElementById('editItemModal').classList.remove('show');
+    editDeleteArmed = false;
+    document.getElementById('editDeleteBtn').textContent = 'Delete Item';
+  });
+
+  // Chain-of-custody trail for items already sitting in the vault — a separate concern from
+  // editing the item's own record above. Every physical touch (a staff member pulling it to
+  // inspect, moving it to a different rack, retrieving it for delivery) gets its own row here
+  // rather than overwriting anything, so the history is append-only and can't be edited away.
+  let accessLogCurrentItemId = null;
+  const ACCESS_LOG_ACTION_LABELS = { inspected: 'Inspected', moved: 'Moved within facility', retrieved_for_delivery: 'Retrieved for delivery', returned_to_vault: 'Returned to vault', condition_check: 'Condition check' };
+
+  async function loadAccessLogHistory(itemId){
+    const historyEl = document.getElementById('accessLogHistory');
+    const { data, error } = await sb.from('vault_access_log').select('*').eq('vault_item_id', itemId).order('created_at', { ascending: false });
+    if(error){ historyEl.innerHTML = '<span style="color:var(--red, #c0392b);">Could not load history.</span>'; return; }
+    if(!data || !data.length){ historyEl.innerHTML = '<span class="item-meta">No access history recorded yet.</span>'; return; }
+    historyEl.innerHTML = data.map(l => {
+      const readings = [];
+      if(l.temperature_f != null) readings.push(`${l.temperature_f}&deg;F`);
+      if(l.humidity_pct != null) readings.push(`${l.humidity_pct}% humidity`);
+      if(l.seal_intact === false) readings.push('<strong style="color:var(--danger,#c0392b);">SEAL NOT INTACT</strong>');
+      else if(l.seal_intact === true) readings.push('seal intact');
+      return `
+      <div style="padding:6px 0; border-bottom:1px solid rgba(11,18,48,.06); font-size:12.5px;">
+        <div><strong>${esc(ACCESS_LOG_ACTION_LABELS[l.action] || l.action)}</strong> &middot; ${new Date(l.created_at).toLocaleString()}</div>
+        <div class="item-meta">${esc(l.staff_email || 'Unknown staff')}${(l.location_from || l.location_to) ? ` &middot; ${esc(l.location_from || '?')} &rarr; ${esc(l.location_to || '?')}` : ''}</div>
+        ${readings.length ? `<div class="item-meta">${readings.join(' &middot; ')}</div>` : ''}
+        ${l.notes ? `<div class="item-meta">${esc(l.notes)}</div>` : ''}
+        ${l.photo_path ? `<img data-photo-path="${esc(l.photo_path)}" style="max-width:120px; border-radius:6px; margin-top:6px; border:1px solid rgba(11,18,48,.1); display:none;">` : ''}
+      </div>`;
+    }).join('');
+    await resolvePhotoSignedUrls(historyEl, 'vault-photos');
+  }
+
+  function accessLogShowConditionFields(){
+    document.getElementById('accessLogConditionFields').hidden = document.getElementById('accessLogAction').value !== 'condition_check';
+  }
+  document.getElementById('accessLogAction').addEventListener('change', accessLogShowConditionFields);
+
+  async function uploadConditionPhotoIfAny(){
+    const fileInput = document.getElementById('accessLogPhoto');
+    const file = fileInput.files[0];
+    if(!file) return null;
+    const statusEl = document.getElementById('accessLogPhotoStatus');
+    statusEl.textContent = 'Uploading photo…';
+    const path = `condition-checks/${accessLogCurrentItemId}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    const { error } = await sb.storage.from('vault-photos').upload(path, file, { upsert: true });
+    if(error){ statusEl.textContent = 'Photo upload failed: ' + error.message; return null; }
+    statusEl.textContent = 'Photo uploaded.';
+    return path;
+  }
+
+  async function openAccessLogModal(itemId, description){
+    accessLogCurrentItemId = itemId;
+    document.getElementById('accessLogItemDesc').textContent = description || '';
+    document.getElementById('accessLogAction').value = 'inspected';
+    document.getElementById('accessLogLocationFrom').value = '';
+    document.getElementById('accessLogLocationTo').value = '';
+    document.getElementById('accessLogNotes').value = '';
+    document.getElementById('accessLogTemp').value = '';
+    document.getElementById('accessLogHumidity').value = '';
+    document.getElementById('accessLogSealIntact').checked = true;
+    document.getElementById('accessLogPhoto').value = '';
+    document.getElementById('accessLogPhotoStatus').textContent = '';
+    accessLogShowConditionFields();
+    const msg = document.getElementById('accessLogMsg');
+    msg.classList.remove('show','err','ok');
+    document.getElementById('accessLogModal').classList.add('show');
+    await loadAccessLogHistory(itemId);
+  }
+
+  document.getElementById('accessLogCloseBtn').addEventListener('click', () => {
+    document.getElementById('accessLogModal').classList.remove('show');
+  });
+
+  document.getElementById('accessLogSubmitBtn').addEventListener('click', async () => {
+    if(!accessLogCurrentItemId) return;
+    const msg = document.getElementById('accessLogMsg');
+    msg.classList.remove('show','err','ok');
+    const btn = document.getElementById('accessLogSubmitBtn');
+    btn.disabled = true;
+    const isConditionCheck = document.getElementById('accessLogAction').value === 'condition_check';
+    const tempRaw = document.getElementById('accessLogTemp').value;
+    const humidityRaw = document.getElementById('accessLogHumidity').value;
+    if(isConditionCheck && humidityRaw !== '' && (parseFloat(humidityRaw) < 0 || parseFloat(humidityRaw) > 100)){
+      msg.textContent = 'Humidity must be between 0 and 100.';
+      msg.classList.add('show','err');
+      btn.disabled = false;
+      return;
+    }
+    const photoPath = isConditionCheck ? await uploadConditionPhotoIfAny() : null;
+    const { error } = await sb.from('vault_access_log').insert({
+      vault_item_id: accessLogCurrentItemId,
+      staff_email: currentStaffEmail,
+      action: document.getElementById('accessLogAction').value,
+      location_from: document.getElementById('accessLogLocationFrom').value.trim() || null,
+      location_to: document.getElementById('accessLogLocationTo').value.trim() || null,
+      notes: document.getElementById('accessLogNotes').value.trim() || null,
+      temperature_f: isConditionCheck && tempRaw !== '' ? parseFloat(tempRaw) : null,
+      humidity_pct: isConditionCheck && humidityRaw !== '' ? parseFloat(humidityRaw) : null,
+      seal_intact: isConditionCheck ? document.getElementById('accessLogSealIntact').checked : null,
+      photo_path: photoPath
+    });
+    btn.disabled = false;
+    if(error){
+      msg.textContent = 'Could not log entry: ' + error.message;
+      msg.classList.add('show','err');
+      return;
+    }
+    msg.textContent = 'Entry logged.';
+    msg.classList.add('show','ok');
+    document.getElementById('accessLogLocationFrom').value = '';
+    document.getElementById('accessLogLocationTo').value = '';
+    document.getElementById('accessLogNotes').value = '';
+    document.getElementById('accessLogTemp').value = '';
+    document.getElementById('accessLogHumidity').value = '';
+    document.getElementById('accessLogPhoto').value = '';
+    document.getElementById('accessLogPhotoStatus').textContent = '';
+    await loadAccessLogHistory(accessLogCurrentItemId);
+  });
+
+  document.getElementById('editSaveBtn').addEventListener('click', async () => {
+    const msg = document.getElementById('editMsg');
+    msg.classList.remove('show','err','ok');
+    const description = document.getElementById('editDesc').value.trim();
+    if(!description){ msg.textContent = 'Item description is required.'; msg.classList.add('show','err'); return; }
+    const valueRaw = document.getElementById('editValue').value;
+    const editValueCents = parseDollarsToCents(valueRaw);
+    if(Number.isNaN(editValueCents)){ msg.textContent = 'Insured value must be a non-negative number.'; msg.classList.add('show','err'); return; }
+    const editRateCents = parseDollarsToCents(document.getElementById('editMonthlyRate').value);
+    if(Number.isNaN(editRateCents)){ msg.textContent = 'Monthly storage rate must be a non-negative number.'; msg.classList.add('show','err'); return; }
+    const btn = document.getElementById('editSaveBtn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+    const { error } = await sb.from('vault_items').update({
+      description,
+      insured_value_cents: editValueCents,
+      vault_location: document.getElementById('editLocation').value.trim() || null,
+      condition_report: document.getElementById('editCondition').value.trim() || null,
+      status: document.getElementById('editStatus').value,
+      climate_controlled: document.getElementById('editClimate').checked,
+      monthly_rate_cents: editRateCents,
+      billing_start_date: document.getElementById('editBillingStartDate').value || null,
+      updated_at: new Date().toISOString()
+    }).eq('id', editCurrentId);
+    btn.disabled = false; btn.textContent = 'Save';
+    if(error){ msg.textContent = 'Could not save: ' + error.message; msg.classList.add('show','err'); return; }
+    document.getElementById('editItemModal').classList.remove('show');
+    loadItems();
+  });
+
+  document.getElementById('editDeleteBtn').addEventListener('click', async () => {
+    const delBtn = document.getElementById('editDeleteBtn');
+    if(!editDeleteArmed){
+      editDeleteArmed = true;
+      delBtn.textContent = 'Click Again to Confirm Delete';
+      return;
+    }
+    editDeleteArmed = false;
+    delBtn.disabled = true;
+    delBtn.textContent = 'Deleting...';
+    const { error } = await sb.from('vault_items').delete().eq('id', editCurrentId);
+    delBtn.disabled = false;
+    delBtn.textContent = 'Delete Item';
+    const msg = document.getElementById('editMsg');
+    if(error){ msg.textContent = 'Could not delete: ' + error.message; msg.classList.add('show','err'); return; }
+    document.getElementById('editItemModal').classList.remove('show');
+    loadItems();
+  });
+
+  let dashboardStarted = false;
+  function startDashboard(){
+    if(dashboardStarted) return;
+    dashboardStarted = true;
+    loadJobs();
+    loadItems();
+    setInterval(loadItems, 15000);
+  }
+
+  let currentStaffEmail = null;
+  async function checkStaffSession(){
+    const { data: { session } } = await sb.auth.getSession();
+    if(session){
+      currentStaffEmail = session.user?.email || null;
+      document.getElementById('staffLoginGate').style.display = 'none';
+      startDashboard();
+    } else {
+      document.getElementById('staffLoginGate').style.display = 'flex';
+    }
+  }
+
+  document.getElementById('loginBtn').addEventListener('click', async () => {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errEl = document.getElementById('loginErr');
+    errEl.classList.remove('show');
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){ errEl.classList.add('show'); return; }
+    document.getElementById('staffLoginGate').style.display = 'none';
+    startDashboard();
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await sb.auth.signOut();
+    window.location.reload();
+  });
+
+  checkStaffSession();
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js', { scope: '/vault.html' }).catch(()=>{});
+    });
+  }
+</script>
+</body>
+</html>

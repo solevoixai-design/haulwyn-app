@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blue Provenance Transport | Claim Your Move Date</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --navy:#0a1f44; --red:#b22234; --gold:#c9a227; --ink:#0b1230; --steel:#5b6478; --off:#f6f5f1; --green:#1fb26b;}
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',sans-serif; background:var(--off); color:var(--ink);}
+  header{background:var(--navy); color:#fff; padding:22px 28px; text-align:center;}
+  header h1{font-family:'Oswald',sans-serif; font-size:19px; text-transform:uppercase; letter-spacing:.03em;}
+  header .sub{font-size:12.5px; color:rgba(255,255,255,.65); margin-top:2px;}
+  main{max-width:520px; margin:0 auto; padding:28px;}
+  .card{background:#fff; border-radius:12px; padding:26px; border:1px solid rgba(11,18,48,.08); margin-bottom:20px;}
+  .card h2{font-family:'Oswald',sans-serif; font-size:13.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--navy); margin-bottom:16px;}
+  label{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--steel); display:block; margin-bottom:6px; margin-top:14px;}
+  label:first-of-type{margin-top:0;}
+  input{width:100%; padding:13px 14px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14.5px; font-family:'Inter',sans-serif; background:#fff;}
+  .offer{background:var(--navy); color:#fff; border-radius:12px; padding:26px; text-align:center; margin-bottom:20px;}
+  .offer .amt{font-family:'Playfair Display',serif; font-size:34px; font-weight:700;}
+  .offer .orig{font-size:14px; color:rgba(255,255,255,.55); text-decoration:line-through; margin-top:2px;}
+  .offer .note{font-size:12.5px; color:rgba(255,255,255,.65); margin-top:8px;}
+  .offer .expiry{font-size:11.5px; color:#f0c98a; margin-top:10px; font-weight:600;}
+  button{width:100%; padding:15px; border-radius:8px; border:none; background:var(--red); color:#fff; font-weight:700; text-transform:uppercase; letter-spacing:.03em; font-family:'Oswald',sans-serif; cursor:pointer; font-size:14px;}
+  button:hover{background:#8f1c2a;}
+  button:disabled{background:#c8ccd6; cursor:default;}
+  .success{background:#e3f7ec; color:var(--green); border-radius:10px; padding:18px; text-align:center; font-weight:600; font-size:14px; margin-top:16px; display:none;}
+  .error{background:#fbe9ea; color:var(--red); border-radius:10px; padding:16px; text-align:center; font-weight:600; font-size:14px; margin-top:16px; display:none;}
+  .success.show{display:block;}
+  .error.show{display:block;}
+  .gone{background:#fff; border-radius:10px; padding:22px; text-align:center; color:var(--steel); font-size:14px;}
+  .disclaimer{font-size:11.5px; color:var(--steel); margin-top:12px; text-align:center;}
+  [hidden]{display:none !important;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Blue Provenance Transport</h1>
+  <div class="sub">Claim This Move Date</div>
+</header>
+
+<main>
+  <div id="loadingState" class="card" style="text-align:center; color:var(--steel);">Loading your offer&hellip;</div>
+
+  <div id="offerState" hidden>
+    <div class="offer">
+      <div class="note">A MOVING SLOT JUST OPENED</div>
+      <div id="offerDate" class="amt">&mdash;</div>
+      <div id="offerPrice"></div>
+      <div id="offerExpiry" class="expiry"></div>
+    </div>
+    <div class="card">
+      <h2>Claim It — Tell Us Where You're Moving</h2>
+      <div style="font-size:12px; color:var(--steel); margin-bottom:6px;">First to submit gets this date and price locked in. A relocation director will confirm the details within one business day.</div>
+      <label for="originAddress">Origin Address</label>
+      <input id="originAddress" placeholder="Where we're picking up from">
+      <label for="destinationAddress">Destination Address</label>
+      <input id="destinationAddress" placeholder="Where you're moving to">
+      <div style="margin-top:18px;">
+        <button id="claimBtn">Claim This Date</button>
+      </div>
+      <div class="success" id="successMsg"></div>
+      <div class="error" id="errorMsg"></div>
+      <div class="disclaimer">This offer is exclusive to you until it's claimed or expires — first tap wins. By claiming, a relocation director will reach out to confirm your booking.</div>
+    </div>
+  </div>
+
+  <div id="goneState" hidden>
+    <div class="gone" id="goneMessage">This offer is no longer available.</div>
+  </div>
+</main>
+
+<script>
+  const SUPABASE_URL = 'https://izafyooegkvstynejaxh.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6YWZ5b29lZ2t2c3R5bmVqYXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1MzQwNzcsImV4cCI6MjEwNDExMDA3N30.nKaTP_t5TrzJE0xbFb7SUX_QLRKIEGIiYTnbb8QcwYY';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+
+  const dollars = c => c == null ? null : '$' + (c/100).toLocaleString(undefined,{maximumFractionDigits:0});
+
+  function showGone(message){
+    document.getElementById('loadingState').hidden = true;
+    document.getElementById('offerState').hidden = true;
+    document.getElementById('goneState').hidden = false;
+    document.getElementById('goneMessage').textContent = message;
+  }
+
+  async function loadOffer(){
+    if(!token){ showGone('No claim link found — check the link in your text or email.'); return; }
+    const { data, error } = await sb.rpc('get_slot_offer', { p_token: token });
+    const offer = Array.isArray(data) ? data[0] : data;
+    if(error || !offer){ showGone('This claim link isn\'t valid.'); return; }
+    if(offer.status === 'expired'){ showGone('This offer has expired — the window to claim it has passed.'); return; }
+    if(offer.status === 'claimed'){ showGone('This date has already been claimed by someone else.'); return; }
+    if(offer.status === 'superseded'){ showGone('This offer is no longer available — the slot was claimed by another candidate.'); return; }
+    document.getElementById('loadingState').hidden = true;
+    document.getElementById('offerState').hidden = false;
+    const d = new Date(offer.scheduled_date + 'T00:00:00');
+    const timeSlotLabel = offer.time_slot ? ` (${offer.time_slot})` : '';
+    document.getElementById('offerDate').textContent = d.toLocaleDateString(undefined,{weekday:'long', month:'long', day:'numeric'}) + timeSlotLabel;
+    const priceEl = document.getElementById('offerPrice');
+    if(offer.discounted_price_cents != null){
+      priceEl.innerHTML = `<div class="amt" style="font-size:26px;">${dollars(offer.discounted_price_cents)}</div>` +
+        (offer.original_price_cents && offer.original_price_cents > offer.discounted_price_cents ? `<div class="orig">${dollars(offer.original_price_cents)}</div>` : '');
+    } else {
+      priceEl.innerHTML = `<div class="note">Pricing to be confirmed by your relocation director</div>`;
+    }
+    document.getElementById('offerExpiry').textContent = `Offer expires ${new Date(offer.expires_at).toLocaleString()}`;
+  }
+
+  document.getElementById('claimBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('claimBtn');
+    const successEl = document.getElementById('successMsg');
+    const errorEl = document.getElementById('errorMsg');
+    successEl.classList.remove('show');
+    errorEl.classList.remove('show');
+    const origin = document.getElementById('originAddress').value.trim();
+    const destination = document.getElementById('destinationAddress').value.trim();
+    if(!origin || !destination){
+      errorEl.textContent = 'Please enter both an origin and destination address.';
+      errorEl.classList.add('show');
+      return;
+    }
+    btn.disabled = true; btn.textContent = 'Claiming...';
+    const { data, error } = await sb.rpc('claim_open_slot', { p_token: token, p_origin_address: origin, p_destination_address: destination });
+    if(error){
+      errorEl.textContent = error.message || 'Something went wrong — this offer may have just been claimed by someone else.';
+      errorEl.classList.add('show');
+      btn.disabled = false; btn.textContent = 'Claim This Date';
+      return;
+    }
+    const result = Array.isArray(data) ? data[0] : data;
+    document.getElementById('originAddress').disabled = true;
+    document.getElementById('destinationAddress').disabled = true;
+    btn.hidden = true;
+    successEl.textContent = 'You\'ve claimed this date! A relocation director will call to confirm the details shortly.' + (result?.new_job_id && result?.new_access_token ? ' You can track your move at the link we\'ll text you.' : '');
+    successEl.classList.add('show');
+  });
+
+  loadOffer();
+</script>
+</body>
+</html>

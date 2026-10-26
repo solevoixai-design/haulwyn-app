@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Haulwyn OS | Broker Portal</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --navy:#0a1f44; --red:#b22234; --gold:#c9a227; --ink:#0b1230; --steel:#5b6478; --off:#f6f5f1; --green:#1fb26b; --amber:#e0a30a;}
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',sans-serif; background:var(--off); color:var(--ink);}
+  header{background:var(--navy); color:#fff; padding:22px 28px;}
+  header h1{font-family:'Oswald',sans-serif; font-size:18px; text-transform:uppercase; letter-spacing:.03em;}
+  header .sub{font-size:12.5px; color:rgba(255,255,255,.65); margin-top:2px;}
+  main{max-width:900px; margin:0 auto; padding:28px;}
+  .card{background:#fff; border-radius:12px; padding:26px; border:1px solid rgba(11,18,48,.08); margin-bottom:22px;}
+  .card h2{font-family:'Oswald',sans-serif; font-size:14px; text-transform:uppercase; letter-spacing:.04em; color:var(--navy); margin-bottom:16px;}
+  label{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--steel); display:block; margin-bottom:6px; margin-top:14px;}
+  label:first-of-type{margin-top:0;}
+  input{width:100%; padding:13px 14px; border-radius:8px; border:1.5px solid rgba(11,18,48,.15); font-size:14.5px; font-family:'Inter',sans-serif;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  button{padding:14px 22px; border-radius:8px; border:none; background:var(--red); color:#fff; font-weight:700; text-transform:uppercase; letter-spacing:.03em; font-family:'Oswald',sans-serif; cursor:pointer; font-size:13.5px; margin-top:18px;}
+  button:hover{background:#8f1c2a;}
+  button:disabled{background:#c8ccd6;}
+  table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  th{text-align:left; padding:10px 0; font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:var(--steel); border-bottom:1px solid rgba(11,18,48,.08);}
+  td{padding:12px 0; border-bottom:1px solid rgba(11,18,48,.06);}
+  .pill{display:inline-block; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700; text-transform:uppercase;}
+  .pill-submitted{background:#eef0f4; color:var(--steel);}
+  .pill-converted{background:#fff4d9; color:var(--amber);}
+  .pill-paid{background:#e3f7ec; color:var(--green);}
+  .summary{display:flex; gap:14px; margin-bottom:20px;}
+  .summary div{flex:1; background:#fff; border-radius:10px; padding:16px; text-align:center; border:1px solid rgba(11,18,48,.08);}
+  .summary .num{font-family:'Oswald',sans-serif; font-weight:700; font-size:22px; color:var(--navy);}
+  .summary .lbl{font-size:10.5px; color:var(--steel); text-transform:uppercase; margin-top:3px;}
+  .empty{color:var(--steel); font-size:13.5px; padding:16px 0;}
+  .success{background:#e3f7ec; color:var(--green); border-radius:10px; padding:14px; font-size:13.5px; font-weight:600; margin-top:14px; display:none;}
+  .success.show{display:block;}
+  .error{background:#fbe9ea; color:var(--red); border-radius:10px; padding:14px; font-size:13.5px; font-weight:600; margin-top:14px; display:none;}
+  .error.show{display:block;}
+  .codebox{background:#fff4d9; color:#8a6d1f; border-radius:10px; padding:14px; font-size:13.5px; font-weight:700; margin-top:14px; display:none; letter-spacing:.03em;}
+  .codebox.show{display:block;}
+  .hint{font-size:11.5px; color:var(--steel); margin-top:8px;}
+  .tier-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+  .tier-badge{display:inline-block; padding:6px 16px; border-radius:20px; font-family:'Oswald',sans-serif; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;}
+  .tier-Bronze{background:#f0e4d8; color:#8a5a2c;}
+  .tier-Silver{background:#e9edf3; color:#5b6478;}
+  .tier-Gold{background:#fff4d9; color:#8a6d1f;}
+  .tier-Platinum{background:#e3f0ff; color:#0a1f44;}
+  .tier-revenue{font-family:'Oswald',sans-serif; font-size:24px; font-weight:700; color:var(--navy);}
+  .tier-revenue-lbl{font-size:10.5px; color:var(--steel); text-transform:uppercase; letter-spacing:.03em;}
+  .progress-track{background:rgba(11,18,48,.08); border-radius:20px; height:10px; overflow:hidden; margin-top:12px;}
+  .progress-fill{background:var(--gold); height:100%; border-radius:20px; transition:width .4s ease;}
+  .progress-lbl{font-size:11.5px; color:var(--steel); margin-top:8px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Haulwyn OS &middot; Broker &amp; Referral Portal</h1>
+  <div class="sub">Submit clients, track conversion &amp; commission automatically</div>
+</header>
+
+<main>
+  <div class="card">
+    <h2>Look Up Your Referrals</h2>
+    <div class="row2">
+      <div>
+        <label for="orgLookup">Your Organization Name</label>
+        <input id="orgLookup" placeholder="e.g. Manhattan Realty Group">
+      </div>
+      <div>
+        <label for="accessCode">Your Access Code</label>
+        <input id="accessCode" placeholder="e.g. e2819448">
+      </div>
+    </div>
+    <div class="hint">Your access code was given to you when you submitted your first referral. Contact your Blue Provenance partner account manager if you've lost it.</div>
+    <button id="lookupBtn">Show My Referrals</button>
+    <div class="error" id="lookupError">Organization name and access code don't match our records. Please check and try again.</div>
+  </div>
+
+  <div class="card" id="standingCard" style="display:none;">
+    <div class="tier-head">
+      <div>
+        <div class="tier-revenue-lbl">Lifetime Revenue Referred</div>
+        <div class="tier-revenue" id="tierRevenue">$0</div>
+      </div>
+      <span class="tier-badge" id="tierBadge">Bronze</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="tierProgressFill" style="width:0%;"></div></div>
+    <div class="progress-lbl" id="tierProgressLbl"></div>
+  </div>
+
+  <div class="summary" id="summaryRow" style="display:none;">
+    <div><div class="num" id="sumTotal">0</div><div class="lbl">Total Referrals</div></div>
+    <div><div class="num" id="sumConverted">0</div><div class="lbl">Converted</div></div>
+    <div><div class="num" id="sumCommission">$0</div><div class="lbl">Commission Earned</div></div>
+  </div>
+
+  <div class="card" id="referralsCard" style="display:none;">
+    <h2>Your Referral History</h2>
+    <table>
+      <thead><tr><th>Submitted</th><th>Status</th><th>Commission</th></tr></thead>
+      <tbody id="referralsBody"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Submit a New Client Referral</h2>
+    <div class="row2">
+      <div>
+        <label for="partnerName">Your Name</label>
+        <input id="partnerName" placeholder="Alex Rivera">
+      </div>
+      <div>
+        <label for="partnerOrg">Your Organization</label>
+        <input id="partnerOrg" placeholder="Manhattan Realty Group">
+      </div>
+    </div>
+    <div class="row2">
+      <div>
+        <label for="partnerEmail">Your Email (optional)</label>
+        <input id="partnerEmail" type="email" placeholder="alex@manhattanrealty.com">
+      </div>
+      <div>
+        <label for="partnerPhone">Your Phone (optional)</label>
+        <input id="partnerPhone" placeholder="(555) 555-5555">
+      </div>
+    </div>
+    <div class="hint" style="margin-top:-8px; margin-bottom:14px;">Add these once and we'll text or email you directly when a referral converts and when your commission is paid — no need to keep checking back here.</div>
+    <div class="row2">
+      <div>
+        <label for="clientName">Client Full Name</label>
+        <input id="clientName" placeholder="Jordan Smith">
+      </div>
+      <div>
+        <label for="clientEmail">Client Email</label>
+        <input id="clientEmail" type="email" placeholder="jordan@example.com">
+      </div>
+    </div>
+    <label for="clientPhone">Client Phone</label>
+    <input id="clientPhone" placeholder="(555) 555-5555">
+    <button id="submitBtn">Submit Referral</button>
+    <div class="success" id="successMsg">Referral submitted. Once the move closes, your commission is calculated automatically (shown as "Converted" below) — Blue Provenance then pays it out and marks it "Paid" here once that's done.</div>
+    <div class="error" id="submitError">Something went wrong submitting this referral. Please try again.</div>
+    <div class="codebox" id="codeBox"></div>
+  </div>
+</main>
+
+<script>
+  const SUPABASE_URL = 'https://izafyooegkvstynejaxh.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6YWZ5b29lZ2t2c3R5bmVqYXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1MzQwNzcsImV4cCI6MjEwNDExMDA3N30.nKaTP_t5TrzJE0xbFb7SUX_QLRKIEGIiYTnbb8QcwYY';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const esc = s => (s ?? '').toString().replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const dollars = c => '$' + ((c||0)/100).toLocaleString(undefined,{maximumFractionDigits:0});
+  // No form on this page uses a real <form> element, so the browser's own type="email"
+  // validation never runs. A manual check closes that gap for the client email field below.
+  const isValidEmail = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s||'').trim());
+  // Phone is optional everywhere it appears on this platform. A garbage value degrades
+  // real data and (now that SMS automation is live) can cause a send attempt to just fail
+  // quietly, logged but unnoticed. Permissive on purpose: accepts any real format (dashes,
+  // parens, spaces, a leading +1) by just counting digits, 7-15 of them.
+  const isValidPhone = s => { const trimmed = (s||'').trim(); if(!trimmed) return true; const digits = trimmed.replace(/\D/g,''); return digits.length >= 7 && digits.length <= 15; };
+
+  document.getElementById('lookupBtn').addEventListener('click', async () => {
+    const org = document.getElementById('orgLookup').value.trim();
+    const code = document.getElementById('accessCode').value.trim();
+    const errEl = document.getElementById('lookupError');
+    errEl.classList.remove('show');
+    if(!org || !code){ errEl.textContent = "Enter both your organization name and access code."; errEl.classList.add('show'); return; }
+
+    const { data, error } = await sb.rpc('broker_lookup', { p_org: org, p_code: code });
+    if(error){
+      errEl.textContent = "Something went wrong looking up your referrals. Please try again — this isn't a problem with your organization name or access code.";
+      errEl.classList.add('show');
+      document.getElementById('summaryRow').style.display = 'none';
+      document.getElementById('referralsCard').style.display = 'none';
+      document.getElementById('standingCard').style.display = 'none';
+      return;
+    }
+    if(!data || !data.length){
+      errEl.textContent = "Organization name and access code don't match our records. Please check and try again.";
+      errEl.classList.add('show');
+      document.getElementById('summaryRow').style.display = 'none';
+      document.getElementById('referralsCard').style.display = 'none';
+      document.getElementById('standingCard').style.display = 'none';
+      return;
+    }
+
+    // Lifetime-revenue tier standing — a separate RPC from broker_lookup because it
+    // aggregates across referrals (sum of quoted job value for converted/paid ones)
+    // rather than listing them. A failure here shouldn't block the referral list the
+    // partner actually asked to see, so it fails silently and just hides the card.
+    const { data: statsData, error: statsError } = await sb.rpc('get_partner_stats', { p_org: org, p_code: code });
+    const stats = statsData && statsData[0];
+    if(!statsError && stats){
+      document.getElementById('standingCard').style.display = 'block';
+      document.getElementById('tierRevenue').textContent = dollars(stats.lifetime_revenue_cents);
+      const badge = document.getElementById('tierBadge');
+      badge.textContent = stats.tier;
+      badge.className = 'tier-badge tier-' + stats.tier;
+      const fill = document.getElementById('tierProgressFill');
+      const progressLbl = document.getElementById('tierProgressLbl');
+      if(stats.next_tier){
+        fill.style.width = stats.progress_pct + '%';
+        const remaining = Math.max(0, (stats.next_tier_threshold_cents||0) - (stats.lifetime_revenue_cents||0));
+        progressLbl.textContent = dollars(remaining) + ' more in referred revenue to reach ' + stats.next_tier + ' status.';
+      } else {
+        fill.style.width = '100%';
+        progressLbl.textContent = "You've reached our top partner tier — thank you for your business.";
+      }
+    } else {
+      document.getElementById('standingCard').style.display = 'none';
+    }
+
+    document.getElementById('summaryRow').style.display = 'flex';
+    document.getElementById('referralsCard').style.display = 'block';
+    const rows = data || [];
+    document.getElementById('sumTotal').textContent = rows.length;
+    document.getElementById('sumConverted').textContent = rows.filter(r=>r.status!=='submitted').length;
+    document.getElementById('sumCommission').textContent = dollars(rows.reduce((s,r)=>s+(r.commission_cents||0),0));
+    const body = document.getElementById('referralsBody');
+    body.innerHTML = rows.length ? rows.map(r => `
+      <tr>
+        <td>${new Date(r.created_at).toLocaleDateString()}</td>
+        <td><span class="pill pill-${r.status}">${r.status}</span></td>
+        <td>${r.commission_cents ? dollars(r.commission_cents) : '–'}</td>
+      </tr>`).join('') : '<tr><td colspan="3" class="empty">No referrals found for this organization yet.</td></tr>';
+  });
+
+  document.getElementById('submitBtn').addEventListener('click', async () => {
+    const partner_name = document.getElementById('partnerName').value.trim();
+    const partner_org = document.getElementById('partnerOrg').value.trim();
+    const partner_email = document.getElementById('partnerEmail').value.trim();
+    const partner_phone = document.getElementById('partnerPhone').value.trim();
+    const full_name = document.getElementById('clientName').value.trim();
+    const email = document.getElementById('clientEmail').value.trim();
+    const phone = document.getElementById('clientPhone').value.trim();
+    const btn = document.getElementById('submitBtn');
+    const successEl = document.getElementById('successMsg');
+    const errorEl = document.getElementById('submitError');
+    successEl.classList.remove('show');
+    errorEl.classList.remove('show');
+    // Inline error messaging (not a native alert()) so a form-filling agent driving this
+    // page can read the failure state straight off the DOM instead of getting stuck on a
+    // blocking browser dialog it can't see or dismiss.
+    if(!partner_name || !partner_org || !full_name || !email){ errorEl.textContent = 'Please fill in your name, org, and the client name and email.'; errorEl.classList.add('show'); return; }
+    if(!isValidEmail(email)){ errorEl.textContent = 'Please enter a valid email address for the client.'; errorEl.classList.add('show'); return; }
+    if(!isValidPhone(phone)){ errorEl.textContent = 'Please enter a valid phone number for the client.'; errorEl.classList.add('show'); return; }
+    if(partner_email && !isValidEmail(partner_email)){ errorEl.textContent = 'Please enter a valid email address for yourself, or leave it blank.'; errorEl.classList.add('show'); return; }
+    if(!isValidPhone(partner_phone)){ errorEl.textContent = 'Please enter a valid phone number for yourself, or leave it blank.'; errorEl.classList.add('show'); return; }
+    errorEl.textContent = 'Something went wrong submitting this referral. Please try again.';
+    btn.disabled = true; btn.textContent = 'Submitting...';
+
+    const { data: result, error } = await sb.rpc('submit_referral', {
+      p_partner_name: partner_name, p_partner_org: partner_org,
+      p_full_name: full_name, p_email: email, p_phone: phone,
+      p_partner_email: partner_email || null, p_partner_phone: partner_phone || null
+    });
+
+    if(error){
+      errorEl.classList.add('show');
+      btn.disabled = false;
+      btn.textContent = 'Submit Referral';
+      return;
+    }
+
+    successEl.classList.add('show');
+    const accessCode = result && result[0] && result[0].access_code;
+    if(accessCode){
+      const codeBox = document.getElementById('codeBox');
+      codeBox.textContent = 'Your access code for looking up referrals is: ' + accessCode + ' (save this, you will need it with "' + partner_org + '" to check your referral status).';
+      codeBox.classList.add('show');
+    }
+    btn.textContent = 'Referral Submitted';
+  });
+</script>
+</body>
+</html>
