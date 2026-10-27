@@ -106,6 +106,30 @@
   .toast.show{display:block;}
   .toast.err{background:#fbe1e1; color:var(--danger);}
   .toast.ok{background:#e3f7ec; color:var(--green);}
+
+  /* Rebuilt ops panels: local table scrolling and phone-sized controls. */
+  [hidden]{display:none!important}
+  .ops-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px}
+  .ops-controls input,.ops-controls select{padding:8px;max-width:100%;min-width:0}
+  .ops-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;padding:12px}
+  .ops-kpis .kpi{text-align:left;font-family:inherit;cursor:pointer;min-width:0}
+  .ops-kpis .label,.ops-kpis .num{display:block}
+  .ops-critical{background:#fbe1e1;color:#a0192b;border-color:#a0192b}
+  .ops-warning{background:#fff4d9;color:#805b00;padding:10px;border-radius:6px}
+  .ops-error{color:var(--red)}
+  .ops-scroll{overflow-x:auto;max-width:100%;min-width:0}
+  .ops-calendar-table{min-width:1250px;table-layout:fixed}
+  .ops-calendar-table th,.ops-calendar-table td{padding:8px;vertical-align:top;border:1px solid #e1e4e9}
+  .ops-job{padding:10px;margin:5px 0;border:1px solid #b9c6da;border-radius:7px;background:#f5f8fe;overflow-wrap:anywhere}
+  .ops-job button{padding:6px;font-size:10px;margin-top:8px}
+  .ops-inbox-item{padding:16px;border-bottom:1px solid #e1e4e9;overflow-wrap:anywhere}
+  .ops-inbox-item p{margin-top:10px}.ops-inbox-item small{display:inline-block;color:var(--steel)}
+  .ops-cost-grid{display:grid;grid-template-columns:1fr auto;gap:10px;padding:14px;font-size:13px}
+  .ops-voided{text-decoration:line-through;color:var(--steel)}
+  .ops-price{width:110px;padding:7px}
+  #opsMoveModal{z-index:1100}
+  main,.grid2>*{min-width:0}.panel-head{flex-wrap:wrap;gap:10px}
+  @media(max-width:650px){main{padding:12px}.grid2{grid-template-columns:1fr}.kpi-row{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi{padding:12px}.modal-overlay{padding:12px}.modal-card{padding:16px;min-width:0}.modal-card .field-row{grid-template-columns:1fr}.modal-actions{flex-wrap:wrap}.toast{right:12px;left:12px;max-width:none}.panel-head{padding:12px}input,select{max-width:100%}}
 </style>
 </head>
 <body>
@@ -137,6 +161,13 @@
 </header>
 
 <main>
+  <!-- A. Daily Briefing -->
+  <section class="panel" id="opsBriefPanel"><div class="panel-head"><h2>Daily Briefing</h2><label>Date <input type="date" id="opsBriefDate"></label></div><div class="ops-kpis" id="opsBriefKpis"></div></section>
+  <!-- B. Ops Inbox -->
+  <section class="panel" id="opsInboxPanel"><div class="panel-head"><h2>Ops Inbox · <span id="opsInboxCount">0</span> need action</h2></div><div class="ops-controls"><label>Show <select id="opsInboxMode"><option value="needs">Needs action</option><option value="all">All</option><option value="handled">Handled</option></select></label><label>Kind <select id="opsInboxKind"><option value="">All kinds</option></select></label></div><div id="opsInboxList"></div></section>
+  <!-- C. Weekly Dispatch Calendar -->
+  <section class="panel" id="opsCalendarPanel"><div class="panel-head"><h2>Weekly Dispatch Calendar</h2><span id="opsWeekLabel"></span></div><div class="ops-controls"><button class="btn-secondary" id="opsWeekPrev">Previous week</button><button class="btn-secondary" id="opsWeekToday">Today</button><button class="btn-secondary" id="opsWeekNext">Next week</button></div><p id="opsDispatchNotice" role="status"></p><div class="ops-scroll" id="opsCalendar"></div></section>
+
   <div id="actionItemsBar" style="display:none; margin-bottom:16px; padding:12px 16px; background:#fff; border-radius:10px; border:1px solid rgba(11,18,48,.08); flex-wrap:wrap; align-items:center; gap:10px;">
     <strong style="font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--steel);">Needs Attention:</strong>
     <span id="actionItemsList" style="display:flex; flex-wrap:wrap; gap:8px;"></span>
@@ -661,8 +692,8 @@
       </div>
     </div>
     <table>
-      <thead><tr><th>Item</th><th>On Hand</th><th>Reorder At</th><th>Status</th><th>Notes</th><th>Adjust</th><th></th></tr></thead>
-      <tbody id="supplyInventoryBody"><tr><td class="empty" colspan="7">Loading&hellip;</td></tr></tbody>
+      <thead><tr><th>Item</th><th>On Hand</th><th>Reorder At</th><th>Status</th><th>Notes</th><th>Unit cost</th><th>Customer price</th><th>Adjust</th><th></th></tr></thead>
+      <tbody id="supplyInventoryBody"><tr><td class="empty" colspan="9">Loading&hellip;</td></tr></tbody>
     </table>
     <div class="refresh-note">This is the warehouse's own stock of moving supplies — dollies, blankets, tape, boxes, shrink wrap — separate from the Crew Supply Requests panel above, which is a crew's reactive, mid-move ask for more of something. This panel is the proactive side: a running count of what's actually on the shelf, so a shortage gets caught and restocked before a crew has to file a request for something the warehouse should have had. "Restock" logs a delivery arriving; "Use" logs stock going out onto a truck or a job outside the normal supply-request flow — either way, the reason is recorded so the current count is always explainable later.</div>
   </div>
@@ -1106,6 +1137,9 @@
 
   <div class="panel" id="reportsPanel">
     <h2>Reports &amp; Analytics</h2>
+    <!-- G. Full job profitability (managers only) -->
+    <section class="panel" id="opsProfitPanel" hidden><h2>Job Profitability</h2><div class="ops-controls"><label>From <input type="date" id="opsProfitFrom"></label><label>To <input type="date" id="opsProfitTo"></label><button class="btn-primary" id="opsProfitLoad">Run report</button><button class="btn-secondary" id="opsProfitCsv" disabled>Export CSV</button></div><p class="ops-warning" id="opsProfitWarning"></p><div class="ops-kpis" id="opsProfitKpis"></div><div class="ops-scroll"><table><thead><tr><th>Customer</th><th>Date</th><th>Crew</th><th>Revenue</th><th>Total cost</th><th>Margin</th><th>Margin %</th><th>Data gaps</th></tr></thead><tbody id="opsProfitRows"></tbody></table></div></section>
+
     <div id="revenueTrendWrap" style="margin-bottom:22px;">
       <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--steel); margin-bottom:8px;">Revenue Booked &middot; Last 14 Days</div>
       <div id="revenueTrendChart">Loading&hellip;</div>
@@ -1141,7 +1175,7 @@
       <div class="refresh-note">Built entirely from data this platform already tracks. "On-Time %" compares each job's actual delivery-completion timestamp to its scheduled date. Exceptions, claims, and tips are each counted per job delivered by that crew, so a crew handling more jobs isn't penalized (or inflated) for a higher raw count. "Avg Customer Rating" is pulled from the private post-move feedback survey customers fill out on their tracking portal (1–5 stars) and only shows once a crew has at least one rated job in the window — it's a separate signal from any public reviews that land on Google/Yelp.</div>
     </div>
 
-    <div style="margin-top:26px; padding-top:18px; border-top:1px solid rgba(11,18,48,.08);">
+    <div id="legacyProfitPanel" hidden style="margin-top:26px; padding-top:18px; border-top:1px solid rgba(11,18,48,.08);">
       <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--steel); margin-bottom:8px;">Job Profitability &middot; Last 90 Days</div>
       <div class="kpi-row" id="profitabilitySummaryRow" style="margin-bottom:16px;">
         <div class="kpi"><div class="num" id="profitRevenue">&ndash;</div><div class="label">Revenue</div></div>
@@ -1175,6 +1209,8 @@
   </div>
 </main>
 
+
+<div class="modal-overlay" id="opsMoveModal" role="dialog" aria-modal="true" aria-labelledby="opsMoveTitle"><div class="modal-card"><h2 id="opsMoveTitle">Move job</h2><label for="opsMoveDate">Date</label><input type="date" id="opsMoveDate"><label for="opsMoveTruck">Truck</label><select id="opsMoveTruck"></select><label for="opsMoveCrew">Crew</label><select id="opsMoveCrew"></select><label><input type="checkbox" id="opsCrewConfirm" style="width:auto"> I confirm the crew change. Assigning a crew automatically texts the crew lead.</label><p id="opsMoveError" class="ops-error" role="status"></p><div class="modal-actions"><button class="btn-secondary" id="opsMoveCancel">Cancel</button><button class="btn-primary" id="opsMoveSave">Save</button></div></div></div>
 <div class="modal-overlay" id="newJobModal">
   <div class="modal-card">
     <h2>Book a New Job</h2>
@@ -1284,6 +1320,11 @@
 <div class="modal-overlay" id="jobDetailModal">
   <div class="modal-card" style="max-width:640px;">
     <h2>Job Details</h2>
+    <!-- D. Job costing (managers only) -->
+    <section class="panel" id="opsJobCosting" hidden></section>
+    <!-- E. Supplies used (all staff) -->
+    <section class="panel" id="opsJobSupplies"><h2>Supplies used</h2><div class="ops-scroll"><table><thead><tr><th>Item</th><th>Quantity</th><th>Cost</th><th>Billed</th><th>Recorded by</th><th>Recorded at</th><th></th></tr></thead><tbody id="opsUsageRows"></tbody></table></div><div class="ops-controls"><label>Item <select id="opsSupplyItem"></select></label><label>Quantity <input type="number" min="1" step="1" value="1" id="opsSupplyQty"></label><label><input type="checkbox" id="opsSupplyBill" style="width:auto"> Bill to customer</label><button class="btn-primary" id="opsSupplyAdd">Add supplies</button></div></section>
+
     <div class="modal-sub">Customer contact info below is editable — correcting it here fixes it everywhere the platform uses it, including automated emails.</div>
 
     <div class="field-row">
@@ -2713,7 +2754,7 @@
     box.focus();
     box.select();
   }
-  const esc = s => (s ?? '').toString().replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const esc = s => (s ?? '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   // Five different risk signals now live scattered across this dashboard (building
   // requirements, truck compliance, outstanding balances, stale leads, unpaid referral
@@ -4203,14 +4244,14 @@
   async function loadSupplyInventory(){
     const body = document.getElementById('supplyInventoryBody');
     const { data, error } = await sb.from('supply_inventory')
-      .select('id, item_name, unit, quantity_on_hand, reorder_threshold, notes')
+      .select('id, item_name, unit, quantity_on_hand, reorder_threshold, notes, unit_cost_cents, unit_price_cents')
       .order('item_name', {ascending:true});
     if(error){
-      body.innerHTML = '<tr><td class="empty" colspan="7" style="color:var(--red);">Couldn\'t load supply inventory — try refreshing the page.</td></tr>';
+      body.innerHTML = '<tr><td class="empty" colspan="9" style="color:var(--red);">Couldn\'t load supply inventory — try refreshing the page.</td></tr>';
       actionItemCounts.lowSupplyInventory = 0; renderActionItemsBar(); return;
     }
     if(!data || !data.length){
-      body.innerHTML = '<tr><td class="empty" colspan="7">No supply items tracked yet — add one above.</td></tr>';
+      body.innerHTML = '<tr><td class="empty" colspan="9">No supply items tracked yet — add one above.</td></tr>';
       actionItemCounts.lowSupplyInventory = 0; renderActionItemsBar(); return;
     }
     actionItemCounts.lowSupplyInventory = data.filter(r => r.quantity_on_hand <= r.reorder_threshold).length;
@@ -4227,6 +4268,7 @@
         <td>${r.reorder_threshold} ${esc(r.unit)}</td>
         <td>${statusHtml}</td>
         <td style="max-width:220px; overflow-wrap:break-word;">${esc(r.notes || '–')}</td>
+        ${opsPriceCell(r,'unit_cost_cents')}${opsPriceCell(r,'unit_price_cents')}
         <td style="white-space:nowrap;">
           <button class="btn-secondary supply-restock-btn" data-id="${esc(r.id)}" style="padding:4px 9px; font-size:10.5px;">+ Restock</button>
           <button class="btn-secondary supply-use-btn" data-id="${esc(r.id)}" style="padding:4px 9px; font-size:10.5px;">&minus; Use</button>
@@ -4234,7 +4276,7 @@
         <td><button class="btn-secondary supply-delete-btn" data-id="${esc(r.id)}" style="padding:4px 9px; font-size:10.5px;">Delete</button></td>
       </tr>
       <tr class="supply-adjust-row" data-supply-adjust-for="${esc(r.id)}" style="display:none;">
-        <td colspan="7" style="padding-top:0;">
+        <td colspan="9" style="padding-top:0;">
           <div style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; padding:8px 0;">
             <div><label style="font-size:10.5px;">Quantity</label><br><input type="number" min="1" step="1" class="supply-adjust-qty" style="width:90px;" placeholder="e.g. 10"></div>
             <div style="flex:1; min-width:180px;"><label style="font-size:10.5px;">Reason</label><br><input class="supply-adjust-reason" style="width:100%;" placeholder="e.g. weekly supplier delivery"></div>
@@ -7214,6 +7256,8 @@
 
   async function openJobDetail(jobId){
     jdCurrentJobId = jobId;
+    void loadOpsCosting(jobId);
+    void loadOpsSupplies(jobId);
     jdConflictConfirmed = false;
     jdCertConfirmed = false;
     jdTimeOffConfirmed = false;
@@ -10376,6 +10420,7 @@
   // no rate on file is excluded entirely from both the totals and the table, never treated as a
   // free $0 labor cost — a silent zero would flatter exactly the jobs missing real cost data.
   async function loadJobProfitability(sinceIso){
+    if(!opsManager()) return;
     const body = document.getElementById('profitabilityBody');
     const [{ data: jobRows, error: jobsErr }, { data: crewRows }] = await Promise.all([
       sb.from('jobs').select('id, quoted_price_cents, crew_id, customers(full_name)').in('status', ['delivered','closed']).not('crew_id', 'is', null).not('quoted_price_cents', 'is', null).gte('scheduled_date', sinceIso.slice(0,10)),
@@ -10496,6 +10541,8 @@
   }
 
   async function loadAll(){
+    if(dispatchDragging || dispatchSaving || document.activeElement?.matches('.ops-price')) return;
+    void refreshOpsExtensions();
     await Promise.all([loadKPIs(), loadJobs(), loadBuildingRiskPanel(), loadOutstandingBalancePanel(), loadTipPayoutAlert(), loadTrucks(), loadFuelMileage(), loadCOIDocuments(), loadDrivers(), loadDriverTestRecords(), loadHiringCandidates(), loadLeads(), loadCrews(), loadCrewHours(), loadCrewOvertimeAlert(), loadMealBreakCompliance(), loadSpreadOfHoursAlert(), loadCrewFatigueAlert(), loadCrewGpsAlert(), loadPartners(), loadCommercialClients(), loadReferrals(), loadCustomerReferrals(), loadSafetyIncidents(), loadPostMoveFeedback(), loadTiers(), loadPricing(), loadCompetitors(), loadTaxJurisdictions(), loadItemVolumeEstimates(), loadSmsOptOuts(), loadCommsDeliveryLog(), loadAlerts(), loadReviewRequests(), loadExceptions(), loadSignatures(), loadClaims(), loadRescheduleRequestsPanel(), loadSupplyOrdersPanel(), loadRedeliveryRequestsPanel(), loadSupplyRequestsPanel(), loadSupplyInventory(), loadCrewTimeOffPanel(), loadStorageDirectory(), loadBoxDirectory(), loadBuildingIntelDirectory(), loadUnreadMessagesAlert(), loadLostFoundPanel(), loadCrewDebriefsPanel(), loadNoShowIncidentsPanel(), loadWeatherAdvisoryAlert(), loadDelayNoticeAlert(), loadTipIntentAlert(), loadDonationAlert(), loadDocCompletenessPanel(), loadPrepChecklistAlert(), loadAuditLog(), loadReports()]);
   }
   // Loaded once at startup, not on every 15s poll — refreshing it continuously would
@@ -10646,10 +10693,201 @@
   document.getElementById('jdDate').addEventListener('change', updateCancellationFeeHint);
   document.getElementById('jdPrice').addEventListener('input', updateCancellationFeeHint);
 
+  // Shared frontend state. Role is read once per authenticated dashboard session.
+  let opsRole = null, opsRolePromise, opsRefreshBusy = false;
+  const opsEl = id => document.getElementById(id);
+  const opsManager = () => ['owner','admin','dispatcher'].includes(opsRole);
+  const opsDay = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const opsAddDays = (s,n) => { const d = new Date(s+'T12:00:00'); d.setDate(d.getDate()+n); return opsDay(d); };
+  const opsMonday = s => { const d = new Date(s+'T12:00:00'); return opsAddDays(s,-((d.getDay()+6)%7)); };
+  const opsError = e => ['P0001','42501'].includes(e?.code) ? e.message : 'Something went wrong. Please try again.';
+  async function opsCall(name,args){ const {data,error} = await sb.rpc(name,args); if(error) throw error; return data; }
+  function opsFailure(el,e){ el.textContent = opsError(e); el.classList.add('ops-error'); }
+  async function loadOpsRole(){
+    if(!opsRolePromise) opsRolePromise = (async()=>{
+      try {
+        const {data:{session}} = await sb.auth.getSession();
+        if(!session) return;
+        const {data,error} = await sb.from('staff_users').select('role').eq('user_id',session.user.id).single();
+        if(error) throw error;
+        opsRole = data?.role || null;
+        opsEl('opsProfitPanel').hidden = !opsManager();
+        opsEl('legacyProfitPanel').hidden = !opsManager();
+      } catch(e){ showToast(opsError(e),true); }
+    })();
+    return opsRolePromise;
+  }
+  function opsKpi(label,value,kind='',target=''){
+    return `<button type="button" class="kpi ${kind}" ${target ? `data-scroll="${esc(target)}"` : ''}><span class="num">${esc(value)}</span><span class="label">${esc(label)}</span></button>`;
+  }
+  // A. Daily Briefing.
+  let briefingRequest = 0;
+  async function loadOpsBriefing(){
+    const request = ++briefingRequest;
+    try {
+      const r = await opsCall('get_ops_briefing',{p_day:opsEl('opsBriefDate').value});
+      if(request !== briefingRequest) return;
+      const fields = [['jobs','Jobs','opsCalendarPanel'],['first_slot','First slot','opsCalendarPanel'],['trucks_out','Trucks out','opsCalendarPanel'],['trucks_available','Trucks available','opsCalendarPanel'],['no_truck','No truck','opsCalendarPanel'],['no_crew','No crew','opsCalendarPanel'],['crews_active','Active crews','opsCalendarPanel'],['weather_open','Weather advisories','weatherAdvisoryAlertPanel'],['delays_open','Delays','delayNoticeAlertPanel'],['claims_open','Claims','claimsBody'],['leads_followup','Lead follow-ups','leadsBody'],['next7_jobs','Next 7 days','opsCalendarPanel']];
+      opsEl('opsBriefKpis').classList.remove('ops-error');
+      opsEl('opsBriefKpis').innerHTML = fields.map(([key,label,target])=>opsKpi(label,key==='first_slot' ? ({1:'Morning',2:'Afternoon',3:'Evening'}[r[key]] || 'None') : r[key]??0,Number(r[key])>0 && ['no_truck','no_crew','claims_open'].includes(key) ? 'ops-critical' : Number(r[key])>0 && ['weather_open','delays_open'].includes(key) ? 'ops-warning' : '',target)).join('');
+    }catch(e){ if(request===briefingRequest) opsFailure(opsEl('opsBriefKpis'),e); }
+  }
+  opsEl('opsBriefDate').value = opsDay();
+  opsEl('opsBriefDate').addEventListener('change',loadOpsBriefing);
+  opsEl('opsBriefKpis').addEventListener('click',e=>{ const b=e.target.closest('[data-scroll]'); if(b) opsEl(b.dataset.scroll)?.scrollIntoView({behavior:'smooth',block:'center'}); });
+  // B. Ops Inbox.
+  let opsInbox = [], inboxRequest=0;
+  function opsAgo(s){ const m=Math.max(0,Math.floor((Date.now()-new Date(s).getTime())/60000)); return !Number.isFinite(m)?'Unknown time':m<1?'Just now':m<60?`${m}m ago`:m<1440?`${Math.floor(m/60)}h ago`:`${Math.floor(m/1440)}d ago`; }
+  function renderOpsInbox(){
+    opsEl('opsInboxCount').textContent = opsInbox.filter(r=>r.needs_action&&!r.handled).length;
+    const mode=opsEl('opsInboxMode').value, kind=opsEl('opsInboxKind').value;
+    const rows=opsInbox.filter(r=>(!kind||r.kind===kind)&&(mode==='all'||(mode==='handled'?r.handled:r.needs_action&&!r.handled)));
+    opsEl('opsInboxList').innerHTML=rows.map(r=>{
+      const phone=String(r.phone||'').replace(/[^+0-9]/g,'');
+      const contact=(phone?`<a href="tel:${esc(phone)}">Call</a> <a href="sms:${esc(phone)}">Text</a>`:'')+(r.email?` <a href="mailto:${esc(encodeURIComponent(r.email))}">Email</a>`:'');
+      const severity={high:'ops-critical',medium:'ops-warning',low:'pill-ok'}[r.severity]||'pill-idle';
+      return `<article class="ops-inbox-item"><div><span class="pill ${severity}">${esc(r.severity||'Neutral')}</span> <strong>${esc(r.customer_name||'Customer')}</strong> <small>${esc(r.kind)} · ${esc(opsAgo(r.occurred_at))}</small></div><p>${esc(r.summary)}</p><div class="ops-controls">${contact}${r.job_id?`<button class="btn-secondary" data-job="${esc(r.job_id)}">Open job</button>`:''}<button class="btn-secondary" data-handle="${esc(r.item_key)}">${r.handled?'Undo':'Mark handled'}</button></div></article>`;
+    }).join('')||'<p class="empty">No matching inbox items.</p>';
+  }
+  async function loadOpsInbox(){ const request=++inboxRequest; try {
+    const rows=await opsCall('get_ops_inbox',{p_since:new Date(Date.now()-14*86400000).toISOString(),p_limit:200});
+    if(request!==inboxRequest)return;
+    opsInbox=(rows||[]).sort((a,b)=>new Date(b.occurred_at)-new Date(a.occurred_at));
+    const kind=opsEl('opsInboxKind').value;
+    opsEl('opsInboxKind').innerHTML='<option value="">All kinds</option>'+[...new Set(opsInbox.map(r=>r.kind))].sort().map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join('');
+    opsEl('opsInboxKind').value=kind; renderOpsInbox();
+  }catch(e){ if(request===inboxRequest) opsFailure(opsEl('opsInboxList'),e); } }
+  ['opsInboxMode','opsInboxKind'].forEach(id=>opsEl(id).addEventListener('change',renderOpsInbox));
+  opsEl('opsInboxList').addEventListener('click',async e=>{
+    const job=e.target.closest('[data-job]'); if(job){openJobDetail(job.dataset.job);return;}
+    const b=e.target.closest('[data-handle]'); if(!b)return;
+    const r=opsInbox.find(r=>r.item_key===b.dataset.handle); b.disabled=true;
+    try{ const ok=await opsCall('mark_ops_inbox_handled',{p_item_key:r.item_key,p_handled:!r.handled}); if(ok!==true)throw {}; await loadOpsInbox(); }catch(err){showToast(opsError(err),true);}finally{b.disabled=false;}
+  });
+  // C. Weekly dispatch calendar. No calendar DOM replacement while dragging or saving.
+  let opsWeek=opsMonday(opsDay()), dispatchJobs=[], dispatchTrucks=[], dispatchCrews=[], dispatchDragging=false, dispatchSaving=false, dispatchRequest=0, dispatchEditId=null;
+  async function loadOpsCalendar(){
+    if(dispatchDragging||dispatchSaving)return;
+    const request=++dispatchRequest, week=opsWeek;
+    try{
+      const results=await Promise.all([
+        sb.from('jobs').select('id,scheduled_date,time_slot,status,truck_id,crew_id,customers(full_name)').gte('scheduled_date',week).lte('scheduled_date',opsAddDays(week,6)),
+        sb.from('trucks').select('id,label,status').order('label'),sb.from('crews').select('id,name').order('name')]);
+      const error=results.find(r=>r.error)?.error; if(error)throw error;
+      if(request!==dispatchRequest||week!==opsWeek||dispatchDragging||dispatchSaving)return;
+      [dispatchJobs,dispatchTrucks,dispatchCrews]=results.map(r=>r.data||[]); renderOpsCalendar();
+    }catch(e){if(request===dispatchRequest&&!dispatchDragging&&!dispatchSaving)opsFailure(opsEl('opsCalendar'),e);}
+  }
+  function renderOpsCalendar(){
+    if(dispatchDragging||dispatchSaving)return;
+    opsEl('opsWeekLabel').textContent=`${opsWeek} to ${opsAddDays(opsWeek,6)}`;
+    const days=Array.from({length:7},(_,i)=>opsAddDays(opsWeek,i));
+    opsEl('opsCalendar').innerHTML=`<table class="ops-calendar-table"><thead><tr><th>Truck</th>${days.map((d,i)=>`<th>${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i]}<br>${esc(d)}</th>`).join('')}</tr></thead><tbody>${[...dispatchTrucks,{id:null,label:'Unassigned truck'}].map(t=>`<tr><th>${esc(t.label)}</th>${days.map(d=>`<td data-drop-day="${d}" data-truck="${esc(t.id||'')}">${dispatchJobs.filter(j=>j.scheduled_date===d&&(j.truck_id||null)===t.id).map(j=>`<article class="ops-job" draggable="true" data-drag-job="${esc(j.id)}"><strong>${esc(j.customers?.full_name||'Customer')}</strong><div>${esc({1:'Morning',2:'Afternoon',3:'Evening'}[j.time_slot]||'Time not set')}</div><span class="pill pill-idle">${esc(j.status)}</span><div>${j.crew_id?esc(dispatchCrews.find(c=>c.id===j.crew_id)?.name||'Crew unavailable'):'<span class="ops-error">No crew</span>'}</div><button class="btn-secondary" data-move="${esc(j.id)}">Move</button> <button class="btn-secondary" data-job="${esc(j.id)}">Details</button></article>`).join('')}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  }
+  function dispatchNotice(message,warning=false){ const el=opsEl('opsDispatchNotice');el.textContent=message;el.className=warning?'ops-warning':'ops-error'; }
+  async function dispatchResult(name,args){ const r=await opsCall(name,args); if(!r?.ok){dispatchNotice(r?.message||'Something went wrong. Please try again.',!!r?.conflict);return false;}return true; }
+  async function moveDispatchJob(id,day,truck){
+    if(dispatchSaving)return; dispatchSaving=true; opsEl('opsDispatchNotice').textContent='';
+    try{await dispatchResult('dispatch_move_job',{p_job_id:id,p_truck_id:truck||null,p_move_date:day});}catch(e){dispatchNotice(opsError(e));}finally{dispatchSaving=false;await refreshOpsDispatch();}
+  }
+  async function refreshOpsDispatch(){await Promise.all([loadOpsCalendar(),loadOpsBriefing(),loadJobs()]);}
+  opsEl('opsCalendar').addEventListener('dragstart',e=>{const card=e.target.closest('[data-drag-job]');if(!card||dispatchSaving){e.preventDefault();return;}dispatchDragging=true;++dispatchRequest;e.dataTransfer.setData('text/plain',card.dataset.dragJob);e.dataTransfer.effectAllowed='move';});
+  opsEl('opsCalendar').addEventListener('dragover',e=>{if(e.target.closest('[data-drop-day]'))e.preventDefault();});
+  opsEl('opsCalendar').addEventListener('drop',e=>{const cell=e.target.closest('[data-drop-day]');if(!cell)return;e.preventDefault();const id=e.dataTransfer.getData('text/plain');dispatchDragging=false;if(dispatchJobs.some(j=>j.id===id))void moveDispatchJob(id,cell.dataset.dropDay,cell.dataset.truck);});
+  opsEl('opsCalendar').addEventListener('dragend',()=>{dispatchDragging=false;if(!dispatchSaving)void loadOpsCalendar();});
+  opsEl('opsCalendar').addEventListener('click',e=>{
+    const job=e.target.closest('[data-job]');if(job){openJobDetail(job.dataset.job);return;}
+    const b=e.target.closest('[data-move]');if(!b)return;
+    const j=dispatchJobs.find(j=>j.id===b.dataset.move);dispatchEditId=j.id;
+    opsEl('opsMoveDate').value=j.scheduled_date;
+    opsEl('opsMoveTruck').innerHTML='<option value="">Unassigned truck</option>'+dispatchTrucks.map(t=>`<option value="${esc(t.id)}">${esc(t.label)}${t.status==='out_of_service'?' (out of service)':''}</option>`).join('');
+    opsEl('opsMoveCrew').innerHTML='<option value="">No crew</option>'+dispatchCrews.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+    opsEl('opsMoveTruck').value=j.truck_id||'';opsEl('opsMoveCrew').value=j.crew_id||'';
+    opsEl('opsCrewConfirm').checked=false;opsEl('opsMoveError').textContent='';opsEl('opsMoveError').className='ops-error';opsEl('opsMoveModal').classList.add('show');
+  });
+  opsEl('opsMoveCancel').onclick=()=>{if(!dispatchSaving)opsEl('opsMoveModal').classList.remove('show');};
+  opsEl('opsMoveSave').onclick=async()=>{
+    if(dispatchSaving)return;
+    const j=dispatchJobs.find(j=>j.id===dispatchEditId), day=opsEl('opsMoveDate').value,truck=opsEl('opsMoveTruck').value||null,crew=opsEl('opsMoveCrew').value||null;
+    const crewChanged=crew!==(j.crew_id||null), moveChanged=day!==j.scheduled_date||truck!==(j.truck_id||null);
+    if(!day){opsEl('opsMoveError').textContent='Choose a date.';return;}
+    if(crewChanged&&!opsEl('opsCrewConfirm').checked){opsEl('opsMoveError').textContent='Confirm the crew change. Assigning a crew automatically texts the crew lead.';return;}
+    dispatchSaving=true;opsEl('opsMoveSave').disabled=true;let moved=false;
+    try{
+      if(moveChanged){if(!await dispatchResult('dispatch_move_job',{p_job_id:j.id,p_truck_id:truck,p_move_date:day})){opsEl('opsMoveError').textContent=opsEl('opsDispatchNotice').textContent;opsEl('opsMoveError').className=opsEl('opsDispatchNotice').className;return;}moved=true;}
+      if(crewChanged&&!await dispatchResult('dispatch_set_crew',{p_job_id:j.id,p_crew_id:crew})){opsEl('opsMoveError').textContent=(moved?'Date and truck saved. Crew was not changed. ':'')+opsEl('opsDispatchNotice').textContent;return;}
+      opsEl('opsMoveModal').classList.remove('show');showToast('Dispatch saved.');
+    }catch(e){opsEl('opsMoveError').textContent=(moved?'Date and truck saved. Crew was not changed. ':'')+opsError(e);}finally{dispatchSaving=false;opsEl('opsMoveSave').disabled=false;await refreshOpsDispatch();}
+  };
+  ['Prev','Next','Today'].forEach(action=>opsEl('opsWeek'+action).onclick=()=>{if(dispatchDragging||dispatchSaving)return;opsWeek=action==='Today'?opsMonday(opsDay()):opsAddDays(opsWeek,action==='Prev'?-7:7);void loadOpsCalendar();});
+  // D. Manager-only job costing, with explicit provisional margins.
+  const opsGapLabels={no_quoted_price:'No quoted price is recorded, so revenue is incomplete.',no_crew_hours_logged:'No crew hours are logged, so labor is missing from this margin.',crew_still_clocked_in:'Crew is still clocked in, so labor cost is not final.',crew_hourly_cost_missing:'Crew hourly cost is not set, so labor is missing from this margin.',supply_unit_cost_missing:'A supply unit cost is missing, so supply cost is incomplete.'};
+  const opsGaps = r => (r.data_gaps||[]).map(g=>opsGapLabels[g]||`Cost data needs review: ${g}`);
+  const opsPct = p => p==null?'N/A':Number(p).toFixed(1)+'%';
+  async function loadOpsCosting(jobId){
+    const card=opsEl('opsJobCosting');card.hidden=!opsManager();if(!opsManager())return;
+    card.innerHTML='<h2>Job costing</h2><p class="empty">Loading...</p>';
+    try{const r=await opsCall('get_job_costing',{p_job_id:jobId});if(jdCurrentJobId!==jobId)return;
+      card.innerHTML=`<h2>Job costing${opsGaps(r).length?' (provisional)':''}</h2><dl class="ops-cost-grid">${[['Quoted',dollars(r.quoted_cents)],['Extra charges',dollars(r.extra_charges_cents)],['Revenue',dollars(r.revenue_cents)],['Labor ('+Number(r.labor_hours||0).toFixed(1)+' hours)',dollars(r.labor_cost_cents)],['Supplies',dollars(r.supplies_cost_cents)],['Fuel',dollars(r.fuel_cost_cents)],['Claims paid',dollars(r.claims_paid_cents)],['Referral commission',dollars(r.referral_commission_cents)],['Total cost',dollars(r.total_cost_cents)],['Margin',dollars(r.margin_cents)],['Margin %',opsPct(r.margin_pct)]].map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>${opsGaps(r).map(g=>`<p class="ops-warning">${esc(g)}</p>`).join('')}`;
+    }catch(e){if(jdCurrentJobId===jobId)opsFailure(card,e);}
+  }
+  // E. Job supply usage. Stock and billing changes are RPC-only.
+  let opsSupplyItems=[];
+  async function loadOpsSupplies(jobId){
+    opsEl('opsUsageRows').innerHTML='<tr><td colspan="7">Loading...</td></tr>';
+    try{
+      const [rows,inventory]=await Promise.all([opsCall('get_job_supply_usage',{p_job_id:jobId}),sb.from('supply_inventory').select('id,item_name,unit,quantity_on_hand,reorder_threshold,unit_cost_cents,unit_price_cents').order('item_name')]);
+      if(inventory.error)throw inventory.error;if(jdCurrentJobId!==jobId)return;opsSupplyItems=inventory.data||[];
+      opsEl('opsUsageRows').innerHTML=(rows||[]).map(r=>`<tr class="${r.voided?'ops-voided':''}"><td>${esc(r.item_name)}</td><td>${esc(r.quantity)} ${esc(r.unit)}</td><td>${esc(dollars(r.cost_cents))}</td><td>${esc(dollars(r.billed_cents))}</td><td>${esc(r.recorded_by||'Unknown')}</td><td>${esc(r.recorded_at)}</td><td>${r.voided?'Voided':opsManager()?`<button class="btn-secondary" data-void="${esc(r.usage_id)}">Undo</button>`:''}</td></tr>`).join('')||'<tr><td colspan="7">No supplies recorded.</td></tr>';
+      const selected=opsEl('opsSupplyItem').value;
+      opsEl('opsSupplyItem').innerHTML=opsSupplyItems.map(r=>`<option value="${esc(r.id)}">${esc(r.item_name)} (${esc(r.quantity_on_hand)} ${esc(r.unit)} on hand)</option>`).join('');
+      if(opsSupplyItems.some(r=>r.id===selected))opsEl('opsSupplyItem').value=selected;
+      updateOpsBill();
+    }catch(e){if(jdCurrentJobId===jobId)opsEl('opsUsageRows').innerHTML=`<tr><td colspan="7" class="ops-error">${esc(opsError(e))}</td></tr>`;}
+  }
+  function updateOpsBill(){const item=opsSupplyItems.find(r=>r.id===opsEl('opsSupplyItem').value);opsEl('opsSupplyBill').disabled=!item||item.unit_price_cents==null;if(opsEl('opsSupplyBill').disabled)opsEl('opsSupplyBill').checked=false;}
+  opsEl('opsSupplyItem').onchange=updateOpsBill;
+  opsEl('opsSupplyAdd').onclick=async()=>{
+    const b=opsEl('opsSupplyAdd'),quantity=Number(opsEl('opsSupplyQty').value),jobId=jdCurrentJobId;
+    if(!Number.isSafeInteger(quantity)||quantity<1||!opsEl('opsSupplyItem').value){showToast('Choose an item and a positive whole quantity.',true);return;}
+    b.disabled=true;try{const r=await opsCall('record_job_supply_usage',{p_job_id:jobId,p_item_id:opsEl('opsSupplyItem').value,p_quantity:quantity,p_bill_customer:opsEl('opsSupplyBill').checked});await Promise.all([loadOpsSupplies(jobId),loadOpsCosting(jobId),loadSupplyInventory()]);showToast(r.below_reorder?'Supplies recorded. Stock is below the reorder threshold.':'Supplies recorded.');}catch(e){showToast(opsError(e),true);}finally{b.disabled=false;}
+  };
+  opsEl('opsUsageRows').addEventListener('click',async e=>{const b=e.target.closest('[data-void]');if(!b||!opsManager())return;const jobId=jdCurrentJobId;b.disabled=true;try{await opsCall('void_job_supply_usage',{p_usage_id:b.dataset.void});await Promise.all([loadOpsSupplies(jobId),loadOpsCosting(jobId),loadSupplyInventory()]);showToast('Supply usage reversed. Stock returned and any billed charge removed.');}catch(err){showToast(opsError(err),true);}finally{b.disabled=false;}});
+  // F. Inline inventory unit cost and customer price. This is the only new direct write.
+  function opsPriceCell(r,key){return `<td>${opsManager()?`<label>${key==='unit_cost_cents'?'Unit cost':'Customer price'} ($)<input class="ops-price" aria-label="${key==='unit_cost_cents'?'Unit cost':'Customer price'} for ${esc(r.item_name)}" data-price-id="${esc(r.id)}" data-price-key="${key}" type="number" min="0" step="0.01" value="${r[key]==null?'':(r[key]/100).toFixed(2)}"></label>`:esc(r[key]==null?'Not set':dollars(r[key]))}</td>`;}
+  opsEl('supplyInventoryBody').addEventListener('change',async e=>{const input=e.target.closest('[data-price-id]');if(!input||!opsManager())return;const text=input.value.trim(),v=text===''?null:Number(text);if(v!==null&&(!Number.isFinite(v)||v<0||!/^\d+(\.\d{1,2})?$/.test(text))){showToast('Enter a nonnegative price with up to two decimal places.',true);return;}input.disabled=true;try{const {data,error}=await sb.from('supply_inventory').update({[input.dataset.priceKey]:v==null?null:Math.round(v*100)}).eq('id',input.dataset.priceId).select('id');if(error)throw error;if(!data?.length)throw {};showToast('Supply price saved.');}catch(err){showToast(opsError(err),true);}finally{input.disabled=false;}});
+  // G. Full job profitability report and formula-safe CSV export.
+  let opsProfitRows=[],profitRequest=0;
+  opsEl('opsProfitFrom').value=opsAddDays(opsDay(),-90);opsEl('opsProfitTo').value=opsDay();
+  async function loadOpsProfit(){
+    if(!opsManager())return;const request=++profitRequest,from=opsEl('opsProfitFrom').value,to=opsEl('opsProfitTo').value;
+    const limit=new Date(from+'T12:00:00');limit.setFullYear(limit.getFullYear()+2);
+    opsProfitRows=[];opsEl('opsProfitCsv').disabled=true;opsEl('opsProfitKpis').innerHTML='';opsEl('opsProfitWarning').textContent='';
+    if(!from||!to||from>to||to>opsDay(limit)){opsEl('opsProfitRows').innerHTML='<tr><td colspan="8">Choose an ordered date range of up to two years.</td></tr>';return;}
+    try{const rows=await opsCall('get_job_profitability_report',{p_from:from,p_to:to});if(request!==profitRequest)return;
+      opsProfitRows=(rows||[]).sort((a,b)=>Number(a.margin_cents)-Number(b.margin_cents));
+      const sum=key=>opsProfitRows.reduce((n,r)=>n+Number(r[key]||0),0),revenue=sum('revenue_cents'),margin=sum('margin_cents'),gaps=opsProfitRows.filter(r=>opsGaps(r).length).length;
+      opsEl('opsProfitKpis').innerHTML=[['Revenue',dollars(revenue)],['Total cost',dollars(sum('total_cost_cents'))],['Margin',dollars(margin)],['Margin %',opsPct(revenue?margin/revenue*100:null)],['Jobs with data gaps',gaps]].map(([k,v])=>opsKpi(k,v)).join('');
+      opsEl('opsProfitWarning').textContent=gaps?'Provisional margins: one or more jobs have incomplete cost or revenue data.':'';
+      opsEl('opsProfitRows').innerHTML=opsProfitRows.map(r=>`<tr><td>${esc(r.customer_name)}</td><td>${esc(r.scheduled_date)}</td><td>${esc(r.crew_name)}</td><td>${esc(dollars(r.revenue_cents))}</td><td>${esc(dollars(r.total_cost_cents))}</td><td>${esc(dollars(r.margin_cents))}</td><td>${esc(opsPct(r.margin_pct))}</td><td>${opsGaps(r).length?`<span class="pill ops-warning">Provisional</span> ${opsGaps(r).map(esc).join(' ')}`:'Complete'}</td></tr>`).join('')||'<tr><td colspan="8">No completed jobs in this range.</td></tr>';
+      opsEl('opsProfitCsv').disabled=false;
+    }catch(e){if(request===profitRequest)opsEl('opsProfitRows').innerHTML=`<tr><td colspan="8">${esc(opsError(e))}</td></tr>`;}
+  }
+  opsEl('opsProfitLoad').onclick=loadOpsProfit;
+  function opsCsvCell(v){let s=String(v??'');if(/^[\s]*[=+\-@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
+  opsEl('opsProfitCsv').onclick=()=>{
+    if(!opsManager())return;const keys=['job_id','customer_name','scheduled_date','status','crew_name','quoted_cents','extra_charges_cents','revenue_cents','labor_hours','labor_cost_cents','supplies_cost_cents','fuel_cost_cents','claims_paid_cents','referral_commission_cents','total_cost_cents','margin_cents','margin_pct','data_gaps'];
+    const csv=[keys,...opsProfitRows.map(r=>keys.map(k=>k==='data_gaps'?opsGaps(r).join('; '):r[k]))].map(row=>row.map(opsCsvCell).join(',')).join('\r\n');
+    const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=`job-profitability-${opsEl('opsProfitFrom').value}-${opsEl('opsProfitTo').value}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  };
+  async function refreshOpsExtensions(){if(opsRefreshBusy)return;opsRefreshBusy=true;try{await Promise.all([loadOpsBriefing(),loadOpsInbox(),loadOpsCalendar()]);}finally{opsRefreshBusy=false;}}
+
   let dashboardStarted = false;
-  function startDashboard(){
+  async function startDashboard(){
     if(dashboardStarted) return;
     dashboardStarted = true;
+    await loadOpsRole();
+    void loadOpsProfit();
     loadAll();
     loadDispatchAlertPhone();
     loadValuationPremiumPct();
@@ -10657,6 +10895,7 @@
     setInterval(loadAll, 15000);
   }
 
+  document.querySelectorAll('table').forEach(table=>{if(!table.parentElement.classList.contains('ops-scroll')){const wrap=document.createElement('div');wrap.className='ops-scroll';table.before(wrap);wrap.appendChild(table);}});
   checkStaffSession();
 
   if('serviceWorker' in navigator){

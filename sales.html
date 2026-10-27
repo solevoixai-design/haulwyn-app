@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Haulwyn OS | Sales</title>
+<meta name="theme-color" content="#0a1f44">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="robots" content="noindex, nofollow">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0a1f44; --navy-800:#0f2a5c; --red:#b22234; --gold:#c9a227;
+    --ink:#0b1230; --steel:#5b6478; --off:#f6f5f1; --green:#1fb26b; --amber:#e0a30a; --danger:#d9481f;
+    --line:rgba(11,18,48,.08); --line2:rgba(11,18,48,.15);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{overflow-x:hidden;}
+  body{font-family:'Inter',sans-serif; background:var(--off); color:var(--ink); font-size:14px;}
+  button,input,select,textarea{font-family:'Inter',sans-serif;}
+  header{background:var(--navy); color:#fff; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;}
+  header h1{font-family:'Oswald',sans-serif; font-size:19px; text-transform:uppercase; letter-spacing:.03em;}
+  header .sub{font-size:12px; color:rgba(255,255,255,.65); margin-top:2px;}
+  header a{color:rgba(255,255,255,.8); font-size:12px; text-decoration:none;}
+  header a:hover{color:#fff;}
+  .hdr-right{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .who{font-size:12px; color:rgba(255,255,255,.75);}
+  .logout-btn{background:none; border:1px solid rgba(255,255,255,.3); color:#fff; font-size:11px; padding:6px 12px; border-radius:6px; cursor:pointer;}
+  nav.tabs{background:#fff; border-bottom:1px solid var(--line); display:flex; gap:2px; padding:0 16px; overflow-x:auto; position:sticky; top:0; z-index:50;}
+  nav.tabs button{background:none; border:none; border-bottom:3px solid transparent; padding:14px 14px 11px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--steel); cursor:pointer; white-space:nowrap;}
+  nav.tabs button.active{color:var(--navy); border-bottom-color:var(--red);}
+  nav.tabs .count{display:inline-block; min-width:18px; padding:1px 6px; border-radius:10px; background:var(--red); color:#fff; font-size:10px; margin-left:5px;}
+  nav.tabs .count:empty{display:none;}
+  main{max-width:1500px; margin:0 auto; padding:20px 16px 60px;}
+  .view{display:none;} .view.active{display:block;}
+  .toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:16px;}
+  .toolbar input[type=search], .toolbar input[type=date], .toolbar select{padding:9px 12px; border:1.5px solid var(--line2); border-radius:8px; font-size:13px; background:#fff;}
+  .toolbar input[type=search]{min-width:220px; flex:1; max-width:360px;}
+  .toolbar label.chk{display:flex; gap:6px; align-items:center; font-size:12.5px; color:var(--steel);}
+  .spacer{flex:1;}
+  .kpi-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:18px;}
+  .kpi{background:#fff; border-radius:10px; padding:16px; border:1px solid var(--line);}
+  .kpi .num{font-family:'Oswald',sans-serif; font-size:24px; font-weight:700; color:var(--navy);}
+  .kpi .label{font-size:11px; color:var(--steel); text-transform:uppercase; letter-spacing:.03em; margin-top:4px; font-weight:600;}
+  .panel{background:#fff; border-radius:10px; border:1px solid var(--line); margin-bottom:20px; overflow:hidden;}
+  .panel-head{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; padding:14px 18px; border-bottom:1px solid var(--line); background:var(--off);}
+  .panel-head h2{font-family:'Oswald',sans-serif; font-size:14px; text-transform:uppercase; letter-spacing:.04em;}
+  .panel-body{padding:16px 18px;}
+  .table-wrap{overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th{text-align:left; padding:9px 14px; font-size:10.5px; text-transform:uppercase; letter-spacing:.03em; color:var(--steel); border-bottom:1px solid var(--line); white-space:nowrap;}
+  td{padding:10px 14px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  td.num, th.num{text-align:right; font-variant-numeric:tabular-nums;}
+  .empty{padding:22px 18px; color:var(--steel); font-size:13px;}
+  .note{font-size:11.5px; color:var(--steel); line-height:1.5;}
+  .pill{display:inline-block; padding:3px 9px; border-radius:20px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; white-space:nowrap;}
+  .p-grey{background:#eef0f4; color:var(--steel);} .p-blue{background:#e9eefb; color:var(--navy);}
+  .p-amber{background:#fff4d9; color:#9a6c00;} .p-green{background:#e3f7ec; color:#127a48;} .p-red{background:#fbe1e1; color:var(--danger);}
+  .btn{border:none; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; padding:9px 15px; border-radius:7px; cursor:pointer; white-space:nowrap;}
+  .btn-primary{background:var(--navy); color:#fff;} .btn-primary:hover{background:var(--navy-800);}
+  .btn-red{background:var(--red); color:#fff;}
+  .btn-secondary{background:#fff; color:var(--steel); border:1.5px solid var(--line2);}
+  .btn-sm{padding:6px 10px; font-size:11px;}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .link{background:none; border:none; color:var(--navy); font-weight:600; cursor:pointer; text-decoration:underline; font-size:inherit; padding:0;}
+
+  /* Kanban */
+  .board{display:grid; grid-auto-flow:column; grid-auto-columns:minmax(230px,1fr); gap:12px; overflow-x:auto; padding-bottom:10px; align-items:start;}
+  @media (min-width:1100px){ .board{grid-auto-columns:minmax(136px,1fr); gap:8px;} .card .nm{font-size:13px;} }
+  .col{background:#eceae3; border-radius:10px; padding:8px; min-height:140px;}
+  .col.drag-over{outline:2px dashed var(--navy); outline-offset:-2px;}
+  .col-head{display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:2px 8px; padding:6px 6px 10px;}
+  .col-head h3{font-family:'Oswald',sans-serif; font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--navy);}
+  .col-head .meta{font-size:11px; color:var(--steel);}
+  .card{background:#fff; border-radius:8px; padding:10px 11px; margin-bottom:8px; border:1px solid var(--line); cursor:pointer; box-shadow:0 1px 2px rgba(11,18,48,.04);}
+  .card:hover{border-color:var(--line2);}
+  .card.dragging{opacity:.45;}
+  .card .nm{font-weight:700; font-size:13.5px; margin-bottom:3px; overflow-wrap:anywhere;}
+  .card .sub{font-size:11.5px; color:var(--steel); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .card .tags .pill{max-width:100%; overflow:hidden; text-overflow:ellipsis;}
+  .card .tags{display:flex; flex-wrap:wrap; gap:4px; margin-top:7px;}
+  .card .due{font-size:11px; font-weight:700; margin-top:6px;}
+  .due.over{color:var(--danger);} .due.today{color:#9a6c00;} .due.later{color:var(--steel);}
+
+  /* Tasks */
+  .task{display:flex; gap:10px; align-items:flex-start; padding:10px 14px; border-bottom:1px solid var(--line);}
+  .task:last-child{border-bottom:none;}
+  .task input[type=checkbox]{width:18px; height:18px; margin-top:2px; flex:none; cursor:pointer;}
+  .task .body{flex:1; min-width:0;}
+  .task .t1{font-size:13px; font-weight:600; overflow-wrap:anywhere;}
+  .task .t2{font-size:11.5px; color:var(--steel); margin-top:2px;}
+  .task.done .t1{text-decoration:line-through; color:var(--steel); font-weight:500;}
+  .group-title{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:10px 14px; background:var(--off); border-bottom:1px solid var(--line);}
+
+  /* Bars */
+  .bar-row{display:grid; grid-template-columns:150px 1fr 60px; gap:10px; align-items:center; font-size:12.5px; margin-bottom:7px;}
+  .bar-track{background:#eef0f4; border-radius:4px; height:12px; overflow:hidden;}
+  .bar-fill{height:100%; background:var(--navy); border-radius:4px;}
+
+  /* Modal */
+  .modal-overlay{position:fixed; inset:0; background:rgba(11,18,48,.55); z-index:1000; display:none; align-items:flex-start; justify-content:center; padding:30px 12px; overflow-y:auto;}
+  .modal-overlay.show{display:flex;}
+  .modal-card{background:#fff; border-radius:12px; padding:22px; width:100%; max-width:640px;}
+  .modal-card.wide{max-width:980px;}
+  .modal-card h2{font-family:'Oswald',sans-serif; font-size:16px; text-transform:uppercase; letter-spacing:.03em; color:var(--navy); margin-bottom:4px;}
+  .modal-sub{font-size:12.5px; color:var(--steel); margin-bottom:16px; overflow-wrap:anywhere;}
+  .modal-card label{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--steel); display:block; margin:12px 0 5px;}
+  .modal-card input, .modal-card select, .modal-card textarea{width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid var(--line2); font-size:14px; background:#fff;}
+  .modal-card textarea{min-height:70px; resize:vertical;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
+  .modal-actions{display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; margin-top:18px;}
+  .section-title{font-family:'Oswald',sans-serif; font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--navy); margin:22px 0 8px; padding-top:14px; border-top:1px solid var(--line);}
+  .msg{font-size:12.5px; margin-top:10px; display:none;} .msg.show{display:block;} .msg.err{color:var(--danger);} .msg.ok{color:#127a48;}
+  .kv{display:grid; grid-template-columns:130px 1fr; gap:4px 10px; font-size:12.5px;}
+  .kv dt{color:var(--steel);} .kv dd{overflow-wrap:anywhere;}
+  .lines td{padding:6px 6px;} .lines input, .lines select{padding:7px 8px; font-size:13px; border-radius:6px; border:1.5px solid var(--line2); width:100%;}
+  .lines .x{background:none; border:none; color:var(--danger); font-size:18px; cursor:pointer; padding:0 6px;}
+  .totals{margin-left:auto; max-width:300px; font-size:13px;}
+  .totals div{display:flex; justify-content:space-between; padding:4px 0;}
+  .totals .grand{font-family:'Oswald',sans-serif; font-size:17px; color:var(--navy); border-top:1px solid var(--line); padding-top:8px; margin-top:4px;}
+  .helper{background:var(--off); border-radius:8px; padding:12px; margin-top:10px;}
+  .helper .rooms{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px;}
+  .helper .room{display:flex; justify-content:space-between; align-items:center; gap:6px; background:#fff; border:1px solid var(--line); border-radius:6px; padding:6px 8px; font-size:12px;}
+  .helper .room input{width:52px; padding:5px 6px; font-size:12.5px;}
+  .spend input{width:96px; padding:6px 8px; border:1.5px solid var(--line2); border-radius:6px; font-size:13px; text-align:right;}
+  .spend input.saved{border-color:var(--green);} .spend input.bad{border-color:var(--danger);}
+
+  #loginGate{position:fixed; inset:0; background:var(--off); z-index:2000; display:flex; align-items:center; justify-content:center; padding:16px;}
+  .login-card{background:#fff; border-radius:12px; padding:30px; border:1px solid var(--line); width:100%; max-width:360px; box-shadow:0 4px 24px rgba(11,18,48,.08);}
+  .login-card h2{font-family:'Oswald',sans-serif; font-size:15px; text-transform:uppercase; color:var(--navy); margin-bottom:6px;}
+  .login-card p{font-size:12.5px; color:var(--steel); margin-bottom:14px; line-height:1.5;}
+  .login-card label{font-size:11px; font-weight:700; text-transform:uppercase; color:var(--steel); display:block; margin:12px 0 6px;}
+  .login-card input{width:100%; padding:11px 12px; border-radius:8px; border:1.5px solid var(--line2); font-size:14px;}
+  .login-card button{width:100%; margin-top:16px; padding:12px; border-radius:8px; border:none; background:var(--red); color:#fff; font-weight:700; text-transform:uppercase; cursor:pointer; font-family:'Oswald',sans-serif; letter-spacing:.03em;}
+  .login-card .err{color:var(--danger); font-size:12.5px; margin-top:10px; display:none;}
+  .toast{position:fixed; bottom:20px; right:20px; left:auto; max-width:360px; padding:13px 16px; border-radius:8px; font-size:13px; font-weight:600; box-shadow:0 6px 20px rgba(11,18,48,.18); z-index:3000; display:none;}
+  .toast.show{display:block;} .toast.err{background:#fbe1e1; color:var(--danger);} .toast.ok{background:#e3f7ec; color:#127a48;}
+  @media (max-width:720px){
+    header{padding:14px 16px;}
+    main{padding:14px 12px 60px;}
+    .row2,.row3{grid-template-columns:1fr;}
+    .bar-row{grid-template-columns:100px 1fr 48px;}
+    .kv{grid-template-columns:100px 1fr;}
+    .toolbar input[type=search]{min-width:0; max-width:none; width:100%;}
+    .toast{left:12px; right:12px; max-width:none;}
+    .modal-card{padding:16px;}
+  }
+  @media print{
+    header, nav.tabs, main, .toast{display:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div id="loginGate">
+  <div class="login-card">
+    <h2>Staff Sign-In</h2>
+    <p>The sales workspace shows customer contact details and pricing. Sign in with your staff account.</p>
+    <label for="loginEmail">Email</label>
+    <input id="loginEmail" type="email" autocomplete="username">
+    <label for="loginPassword">Password</label>
+    <input id="loginPassword" type="password" autocomplete="current-password">
+    <button id="loginBtn">Sign In</button>
+    <div class="err" id="loginErr">Incorrect email or password.</div>
+  </div>
+</div>
+
+<header>
+  <div>
+    <h1>Haulwyn OS &middot; Sales</h1>
+    <div class="sub">Pipeline, follow-ups, estimates and marketing ROI</div>
+  </div>
+  <div class="hdr-right">
+    <a href="/ops">Ops</a>
+    <a href="/internal">All tools</a>
+    <span class="who" id="whoAmI"></span>
+    <button class="logout-btn" id="logoutBtn">Sign Out</button>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-view="pipeline" class="active">Pipeline</button>
+  <button data-view="tasks">Follow-ups<span class="count" id="tasksDueCount"></span></button>
+  <button data-view="estimates">Estimates</button>
+  <button data-view="surveys">Surveys<span class="count" id="surveysNewCount"></span></button>
+  <button data-view="reports">Reports</button>
+  <button data-view="roi">Marketing ROI</button>
+</nav>
+
+<main>
+  <!-- PIPELINE -->
+  <section class="view active" id="view-pipeline">
+    <div class="toolbar">
+      <input type="search" id="pipeSearch" placeholder="Search name, email, phone">
+      <select id="pipeChannel"><option value="">All channels</option></select>
+      <label class="chk"><input type="checkbox" id="pipeShowAbandoned"> Show unsubmitted quote forms</label>
+      <label class="chk"><input type="checkbox" id="pipeShowClosed" checked> Show won / lost (last 30 days)</label>
+      <span class="spacer"></span>
+      <button class="btn btn-primary" id="addLeadBtn">+ New Lead</button>
+    </div>
+    <div class="board" id="board"><div class="empty">Loading&hellip;</div></div>
+    <p class="note" style="margin-top:8px;">Drag a card to change its stage, or open it to edit. Moving a lead to Lost asks for a reason. New leads get two follow-up tasks automatically (15 minutes and day 2); a sent estimate adds day-2 and day-5 follow-ups; won or lost closes open tasks.</p>
+  </section>
+
+  <!-- TASKS -->
+  <section class="view" id="view-tasks">
+    <div class="toolbar">
+      <select id="taskWho"><option value="all">Everyone's tasks</option><option value="mine">Assigned to me</option><option value="unassigned">Unassigned</option></select>
+      <label class="chk"><input type="checkbox" id="taskShowDone"> Show completed (last 7 days)</label>
+    </div>
+    <div class="panel"><div id="taskList"><div class="empty">Loading&hellip;</div></div></div>
+  </section>
+
+  <!-- ESTIMATES -->
+  <section class="view" id="view-estimates">
+    <div class="toolbar">
+      <select id="estStatus">
+        <option value="">All statuses</option><option value="draft">Draft</option><option value="sent">Sent</option>
+        <option value="accepted">Accepted</option><option value="declined">Declined</option><option value="expired">Expired</option>
+      </select>
+      <span class="spacer"></span>
+    </div>
+    <div class="kpi-row" id="estKpis"></div>
+    <div class="panel"><div class="table-wrap"><table>
+      <thead><tr><th>Customer</th><th>Status</th><th class="num">Total</th><th class="num">Deposit</th><th>Valid until</th><th>Sent</th><th>Job</th><th></th></tr></thead>
+      <tbody id="estBody"><tr><td colspan="8" class="empty">Loading&hellip;</td></tr></tbody>
+    </table></div></div>
+    <p class="note">Open a lead to start a new estimate. A customer sees an estimate in their portal once it is linked to a job and marked Sent; accepted and declined estimates are locked.</p>
+  </section>
+
+  <!-- SURVEYS -->
+  <section class="view" id="view-surveys">
+    <div class="toolbar">
+      <select id="surveyStatus"><option value="open">Open (requested + scheduled)</option><option value="">All</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select>
+    </div>
+    <div class="panel"><div class="table-wrap"><table>
+      <thead><tr><th>Customer</th><th>Contact</th><th>Preferred date</th><th>Window</th><th>Method</th><th>Status</th><th></th></tr></thead>
+      <tbody id="surveyBody"><tr><td colspan="7" class="empty">Loading&hellip;</td></tr></tbody>
+    </table></div></div>
+    <p class="note">Virtual survey requests come from the quote page. Confirm a time with the customer, then mark it Scheduled; mark Completed once the walkthrough is done and build the estimate from it.</p>
+  </section>
+
+  <!-- REPORTS -->
+  <section class="view" id="view-reports">
+    <div class="toolbar">
+      <label class="chk">From <input type="date" id="repFrom"></label>
+      <label class="chk">To <input type="date" id="repTo"></label>
+      <span class="spacer"></span>
+      <button class="btn btn-secondary btn-sm" id="repCsv">Export leads CSV</button>
+    </div>
+    <div class="kpi-row" id="repKpis"></div>
+    <div class="panel">
+      <div class="panel-head"><h2>Win / loss by channel</h2></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Channel</th><th class="num">Leads</th><th class="num">Open</th><th class="num">Won</th><th class="num">Lost</th><th class="num">Win rate</th><th class="num">Median first contact</th></tr></thead>
+        <tbody id="repChannelBody"></tbody>
+      </table></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Why we lost</h2></div>
+      <div class="panel-body" id="repLost"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Leads by capture path</h2></div>
+      <div class="panel-body" id="repSource"></div>
+    </div>
+    <p class="note">Leads are counted by the date they arrived. Win rate is won / (won + lost). First contact is the time from a lead arriving to the first follow-up task someone marked done by hand (automatic acknowledgements do not count). Unsubmitted quote forms are excluded.</p>
+  </section>
+
+  <!-- ROI -->
+  <section class="view" id="view-roi">
+    <div id="roiDenied" class="panel" style="display:none;"><div class="empty">Marketing ROI and spend are visible to owners, admins and dispatchers only.</div></div>
+    <div id="roiWrap">
+      <div class="toolbar">
+        <label class="chk">From <input type="date" id="roiFrom"></label>
+        <label class="chk">To <input type="date" id="roiTo"></label>
+        <button class="btn btn-secondary btn-sm" data-roi-range="month">This month</button>
+        <button class="btn btn-secondary btn-sm" data-roi-range="90">Last 90 days</button>
+        <button class="btn btn-secondary btn-sm" data-roi-range="ytd">Year to date</button>
+      </div>
+      <div class="kpi-row" id="roiKpis"></div>
+      <div class="panel">
+        <div class="panel-head"><h2>Return by channel</h2></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Channel</th><th class="num">Spend</th><th class="num">Leads</th><th class="num">Cost / lead</th><th class="num">Booked</th><th class="num">Close rate</th><th class="num">Cost / booking</th><th class="num">Booked revenue</th><th class="num">ROAS</th></tr></thead>
+          <tbody id="roiBody"><tr><td colspan="9" class="empty">Loading&hellip;</td></tr></tbody>
+        </table></div>
+        <div class="panel-body note">Leads are grouped by the channel they came from (ad tracking tags and the referring site, or a channel a staff member set on the lead). Booked revenue is the quoted price of jobs booked from those leads. Spend for a month only partly inside the range is prorated by day. ROAS is booked revenue divided by spend.</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Monthly marketing spend</h2>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <select id="spendAddChannel"></select>
+            <button class="btn btn-secondary btn-sm" id="spendAddBtn">Add channel</button>
+          </div>
+        </div>
+        <div class="table-wrap spend"><table>
+          <thead id="spendHead"></thead>
+          <tbody id="spendBody"></tbody>
+        </table></div>
+        <div class="panel-body note">Type what you spent per channel per month in dollars; it saves when you leave the box. Clear a box to remove that month's figure. Include agency and contractor fees in the channel they belong to so cost per booking is the real number.</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- LEAD MODAL -->
+<div class="modal-overlay" id="leadModal">
+  <div class="modal-card wide">
+    <h2 id="leadTitle">Lead</h2>
+    <div class="modal-sub" id="leadSub"></div>
+    <div class="row3">
+      <div><label for="lName">Full name</label><input id="lName" maxlength="200"></div>
+      <div><label for="lEmail">Email</label><input id="lEmail" type="email" maxlength="320"></div>
+      <div><label for="lPhone">Phone</label><input id="lPhone" type="tel" maxlength="40"></div>
+    </div>
+    <div class="row3">
+      <div><label for="lStatus">Stage</label><select id="lStatus"></select></div>
+      <div><label for="lChannel">Marketing channel</label><select id="lChannel"></select></div>
+      <div id="lChannelCustomWrap" style="display:none;"><label for="lChannelCustom">Custom channel</label><input id="lChannelCustom" maxlength="40" placeholder="e.g. truck_wrap"></div>
+    </div>
+    <div class="row2" id="lLostWrap" style="display:none;">
+      <div><label for="lLostCat">Lost reason</label><select id="lLostCat"></select></div>
+      <div><label for="lLostDetail">Details</label><input id="lLostDetail" maxlength="4000"></div>
+    </div>
+    <label for="lMoveSize">Move details</label>
+    <textarea id="lMoveSize" maxlength="5000"></textarea>
+    <div class="msg" id="leadMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" data-close="leadModal">Close</button>
+      <button class="btn btn-primary" id="leadSaveBtn">Save lead</button>
+    </div>
+
+    <div id="leadExtra">
+      <div class="section-title">Follow-up tasks</div>
+      <div id="lTasks" class="panel" style="margin-bottom:10px;"></div>
+      <div class="row3">
+        <div><label for="tKind">Type</label><select id="tKind"><option value="call">Call</option><option value="text">Text</option><option value="email">Email</option><option value="survey">Survey</option><option value="other">Other</option></select></div>
+        <div><label for="tDue">Due</label><input id="tDue" type="datetime-local"></div>
+        <div><label for="tAssign">Assign to</label><select id="tAssign"></select></div>
+      </div>
+      <label for="tNote">Note</label>
+      <input id="tNote" maxlength="4000" placeholder="What needs to happen">
+      <div class="modal-actions" style="margin-top:10px;"><button class="btn btn-secondary btn-sm" id="taskAddBtn">Add task</button></div>
+
+      <div class="section-title">Estimates</div>
+      <div id="lEstimates"></div>
+      <div class="modal-actions" style="margin-top:10px;"><button class="btn btn-primary btn-sm" id="estNewBtn">+ New estimate</button></div>
+
+      <div class="section-title">Survey requests</div>
+      <div id="lSurveys" class="note"></div>
+
+      <div class="section-title">Where this lead came from</div>
+      <dl class="kv" id="lAttr"></dl>
+    </div>
+  </div>
+</div>
+
+<!-- LOST REASON MODAL -->
+<div class="modal-overlay" id="lostModal">
+  <div class="modal-card">
+    <h2>Mark as lost</h2>
+    <div class="modal-sub" id="lostSub"></div>
+    <label for="lostCat">Reason</label><select id="lostCat"></select>
+    <label for="lostDetail">Details (optional)</label><input id="lostDetail" maxlength="4000">
+    <div class="msg" id="lostMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" data-close="lostModal">Cancel</button>
+      <button class="btn btn-red" id="lostSaveBtn">Mark lost</button>
+    </div>
+  </div>
+</div>
+
+<!-- ESTIMATE BUILDER -->
+<div class="modal-overlay" id="estModal">
+  <div class="modal-card wide">
+    <h2 id="estTitle">Estimate</h2>
+    <div class="modal-sub" id="estSub"></div>
+    <div id="estLockedNote" class="msg show ok" style="display:none;"></div>
+    <div class="row3">
+      <div><label for="eJob">Linked job (portal)</label><select id="eJob"></select></div>
+      <div><label for="eValid">Valid until</label><input id="eValid" type="date"></div>
+      <div><label for="eDeposit">Deposit ($)</label><input id="eDeposit" type="number" min="0" step="0.01"></div>
+    </div>
+    <div class="row3">
+      <div><label for="eTaxRate">Tax rate (%)</label><input id="eTaxRate" type="number" min="0" max="25" step="0.001"></div>
+      <div><label for="eTaxLabel">Tax label</label><input id="eTaxLabel" maxlength="200" placeholder="e.g. NY sales tax"></div>
+      <div><label>&nbsp;</label><button class="btn btn-secondary btn-sm" id="eHelperToggle" style="width:100%;">Size the move (cubic feet)</button></div>
+    </div>
+
+    <div class="helper" id="eHelper" style="display:none;">
+      <div class="note" style="margin-bottom:8px;">Count rooms by size. The helper estimates volume, weight, crew size and hours, then adds a labor line at the hourly rate you set.</div>
+      <div class="rooms" id="eRooms"></div>
+      <div class="row3" style="margin-top:10px;">
+        <div><label for="eBoxes">Boxes</label><input id="eBoxes" type="number" min="0" step="1" value="0"></div>
+        <div><label for="eDrive">Drive time (hrs)</label><input id="eDrive" type="number" min="0" step="0.25" value="0.5"></div>
+        <div><label for="eRate">Hourly rate, whole crew ($)</label><input id="eRate" type="number" min="0" step="1"></div>
+      </div>
+      <div class="note" id="eHelperOut" style="margin-top:10px; font-weight:600; color:var(--ink);"></div>
+      <div class="modal-actions" style="margin-top:8px;"><button class="btn btn-secondary btn-sm" id="eHelperAdd">Add labor line</button></div>
+    </div>
+
+    <div class="section-title">Line items</div>
+    <div class="table-wrap"><table class="lines">
+      <thead><tr><th style="width:130px;">Type</th><th>Description</th><th style="width:80px;" class="num">Qty</th><th style="width:110px;" class="num">Unit $</th><th style="width:100px;" class="num">Amount</th><th style="width:30px;"></th></tr></thead>
+      <tbody id="eLines"></tbody>
+    </table></div>
+    <div class="modal-actions" style="justify-content:flex-start; margin-top:8px;"><button class="btn btn-secondary btn-sm" id="eAddLine">+ Add line</button></div>
+    <div class="totals" id="eTotals"></div>
+    <label for="eNotes">Notes for the customer</label>
+    <textarea id="eNotes" maxlength="4000"></textarea>
+    <div class="msg" id="estMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" data-close="estModal">Close</button>
+      <button class="btn btn-secondary" id="ePrint">Print / PDF</button>
+      <button class="btn btn-secondary" id="eCopyLink" style="display:none;">Copy portal link</button>
+      <button class="btn btn-secondary" id="eToDraft" style="display:none;">Back to draft</button>
+      <button class="btn btn-primary" id="eSave">Save draft</button>
+      <button class="btn btn-red" id="eSend">Save &amp; mark sent</button>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+  'use strict';
+  const SUPABASE_URL = 'https://izafyooegkvstynejaxh.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6YWZ5b29lZ2t2c3R5bmVqYXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1MzQwNzcsImV4cCI6MjEwNDExMDA3N30.nKaTP_t5TrzJE0xbFb7SUX_QLRKIEGIiYTnbb8QcwYY';
+  const sb = (window.__HAULWYN_SB__) || supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ---------- vocabularies ----------
+  const STAGES = [
+    { key:'new', label:'New' }, { key:'acknowledged', label:'Acknowledged' }, { key:'contacted', label:'Contacted' },
+    { key:'survey_scheduled', label:'Survey' }, { key:'quoted', label:'Quoted' }, { key:'estimate_sent', label:'Estimate sent' },
+    { key:'won', label:'Won' }, { key:'lost', label:'Lost' }
+  ];
+  const STAGE_LABEL = Object.fromEntries(STAGES.map(s => [s.key, s.label]));
+  const LOST_REASONS = { price:'Price', timing:'Timing', competitor:'Went with a competitor', no_response:'No response', no_longer_moving:'No longer moving', other:'Other' };
+  const CHANNELS = {
+    google_ads:'Google Ads', google_organic:'Google search', google_business:'Google Business Profile',
+    bing_ads:'Bing Ads', bing_organic:'Bing search', meta_ads:'Facebook / Instagram ads', social_organic:'Social (organic)',
+    tiktok_ads:'TikTok ads', yelp:'Yelp', nextdoor:'Nextdoor', thumbtack:'Thumbtack', angi:'Angi / HomeAdvisor',
+    email:'Email', meta_muse:'Meta Muse (AI assistant)', referral:'Referral', realtor_partner:'Realtor / partner', repeat_customer:'Repeat customer',
+    direct:'Direct / walk-in', referring_site:'Other website', other_paid:'Other paid', other:'Other', unattributed:'Unattributed'
+  };
+  const SOURCE_LABEL = { web_form:'Website contact form', instant_quote_calculator:'Quote calculator', quote_form_abandoned:'Unsubmitted quote form', referral:'Partner referral', online_booking:'Online booking', meta_muse:'Meta Muse (AI assistant)', staff_entry:'Entered by staff' };
+  const SURVEY_STATUS = { requested:'Requested', scheduled:'Scheduled', completed:'Completed', cancelled:'Cancelled' };
+  const EST_KIND = { labor:'Labor', truck:'Truck', materials:'Materials', packing:'Packing', stairs:'Stairs', long_carry:'Long carry', storage:'Storage', fee:'Fee', discount:'Discount', other:'Other' };
+  const ROOMS = [
+    { key:'studio', label:'Studio', cuft:300 }, { key:'bed_s', label:'Bedroom (small)', cuft:150 },
+    { key:'bed_m', label:'Bedroom (medium)', cuft:250 }, { key:'bed_l', label:'Bedroom (primary)', cuft:350 },
+    { key:'living', label:'Living room', cuft:300 }, { key:'dining', label:'Dining room', cuft:150 },
+    { key:'kitchen', label:'Kitchen', cuft:120 }, { key:'office', label:'Office', cuft:150 },
+    { key:'garage', label:'Garage / storage', cuft:300 }, { key:'patio', label:'Patio / outdoor', cuft:80 }
+  ];
+
+  // ---------- helpers ----------
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const dollars = c => (c == null || isNaN(c)) ? '–' : (c < 0 ? '−' : '') + '$' + (Math.abs(c)/100).toLocaleString('en-US', { minimumFractionDigits: Math.abs(c) % 100 ? 2 : 0, maximumFractionDigits: 2 });
+  const toCents = v => { const n = parseFloat(v); return isNaN(n) ? null : Math.round(n * 100); };
+  const isValidEmail = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s||'').trim());
+  const isValidPhone = s => { const t = (s||'').trim(); if(!t) return true; const d = t.replace(/\D/g,''); return d.length >= 7 && d.length <= 15; };
+  const fmtDate = d => d ? new Date(d.length === 10 ? d + 'T12:00:00' : d).toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '–';
+  const fmtDateTime = d => d ? new Date(d).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : '–';
+  const ymd = d => { const x = new Date(d); return x.getFullYear() + '-' + String(x.getMonth()+1).padStart(2,'0') + '-' + String(x.getDate()).padStart(2,'0'); };
+  const ago = d => { const m = Math.round((Date.now() - new Date(d)) / 60000); if(m < 60) return m + 'm'; const h = Math.round(m/60); if(h < 48) return h + 'h'; return Math.round(h/24) + 'd'; };
+  const durLabel = mins => mins == null ? '–' : mins < 60 ? Math.round(mins) + ' min' : mins < 2880 ? (mins/60).toFixed(1) + ' h' : (mins/1440).toFixed(1) + ' days';
+  const median = arr => { if(!arr.length) return null; const s = [...arr].sort((a,b)=>a-b); const m = Math.floor(s.length/2); return s.length % 2 ? s[m] : (s[m-1]+s[m])/2; };
+  const channelLabel = c => CHANNELS[c] || (c ? c.replace(/_/g,' ') : 'Unattributed');
+  function toast(text, kind='ok'){ const t = $('toast'); t.textContent = text; t.className = 'toast show ' + kind; clearTimeout(toast._t); toast._t = setTimeout(() => t.className = 'toast', 3800); }
+  function showMsg(id, text, kind){ const m = $(id); m.textContent = text; m.className = 'msg show ' + kind; }
+  function clearMsg(id){ $(id).className = 'msg'; }
+  function openModal(id){ $(id).classList.add('show'); }
+  function closeModal(id){ $(id).classList.remove('show'); }
+  document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => closeModal(b.dataset.close)));
+  document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('mousedown', e => { if(e.target === o) closeModal(o.id); }));
+  const friendlyErr = e => (e && e.code === 'P0001' && e.message) ? e.message
+    : (e && (e.code === '42501' || /row-level security|permission denied/i.test(e.message || ''))) ? 'Your account is not allowed to do that.'
+    : (e && e.code === '23514') ? 'One of the values is not valid. Check the fields and try again.'
+    : 'Something went wrong. Please try again.';
+
+  // Same derivation as public.lead_channel_from() in the database, for display only.
+  function deriveChannel(l){
+    const s = (l.utm_source || '').trim().toLowerCase(), m = (l.utm_medium || '').trim().toLowerCase();
+    const h = (l.referrer_host || '').trim().toLowerCase().replace(/^www\./,'');
+    const paid = ['cpc','ppc','paid','paid_search','paidsearch','paid_social','paidsocial','ads','ad','display','cpm','sem'].includes(m);
+    if(s){
+      if(/(gbp|gmb|google_business|googlebusiness|maps)/.test(s)) return 'google_business';
+      if(/(google|adwords)/.test(s)) return paid ? 'google_ads' : 'google_organic';
+      if(/(bing|microsoft)/.test(s)) return paid ? 'bing_ads' : 'bing_organic';
+      if(/(facebook|instagram|meta)/.test(s) || s === 'fb' || s === 'ig') return paid ? 'meta_ads' : 'social_organic';
+      if(/tiktok/.test(s)) return paid ? 'tiktok_ads' : 'social_organic';
+      if(/yelp/.test(s)) return 'yelp';
+      if(/nextdoor/.test(s)) return 'nextdoor';
+      if(/thumbtack/.test(s)) return 'thumbtack';
+      if(/(angi|homeadvisor)/.test(s)) return 'angi';
+      if(m === 'email' || /email|newsletter/.test(s)) return 'email';
+      return paid ? 'other_paid' : 'other';
+    }
+    if(h){
+      if(/(^|\.)google\./.test(h)) return 'google_organic';
+      if(/(^|\.)bing\./.test(h)) return 'bing_organic';
+      if(/(^|\.)yelp\./.test(h)) return 'yelp';
+      if(/(^|\.)(facebook|instagram|tiktok)\.com$/.test(h) || ['t.co','l.facebook.com','lm.facebook.com'].includes(h)) return 'social_organic';
+      if(/(^|\.)nextdoor\./.test(h)) return 'nextdoor';
+      if(/(^|\.)thumbtack\./.test(h)) return 'thumbtack';
+      if(/(^|\.)(angi|homeadvisor)\./.test(h)) return 'angi';
+      return 'referring_site';
+    }
+    if(l.source === 'referral') return 'referral';
+    return null;
+  }
+  const effChannel = l => l.channel || deriveChannel(l) || 'unattributed';
+
+  // ---------- state ----------
+  const S = { me:null, staff:[], leads:[], tasks:[], estimates:[], surveys:[], jobs:[], tiers:[], spend:[], openLeadId:null, est:null, dragId:null, loaded:false };
+  const isManager = () => S.me && ['owner','admin','dispatcher'].includes(S.me.role);
+  const leadById = id => S.leads.find(l => l.id === id);
+  const staffName = id => (S.staff.find(s => s.user_id === id) || {}).full_name || '';
+
+  // ---------- auth ----------
+  async function boot(){
+    const { data: { session } } = await sb.auth.getSession();
+    if(session) return start(session);
+    $('loginGate').style.display = 'flex';
+  }
+  $('loginBtn').addEventListener('click', async () => {
+    $('loginErr').style.display = 'none';
+    const { data, error } = await sb.auth.signInWithPassword({ email: $('loginEmail').value.trim(), password: $('loginPassword').value });
+    if(error){ $('loginErr').style.display = 'block'; return; }
+    start(data.session);
+  });
+  $('loginPassword').addEventListener('keydown', e => { if(e.key === 'Enter') $('loginBtn').click(); });
+  $('logoutBtn').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
+
+  async function start(session){
+    const { data: me, error } = await sb.from('staff_users').select('user_id, full_name, role, company_id').eq('user_id', session.user.id).maybeSingle();
+    if(error || !me){
+      $('loginGate').style.display = 'flex';
+      $('loginErr').textContent = 'This account is not a staff account.'; $('loginErr').style.display = 'block';
+      await sb.auth.signOut(); return;
+    }
+    S.me = me;
+    $('loginGate').style.display = 'none';
+    $('whoAmI').textContent = (me.full_name || 'Staff') + ' · ' + me.role;
+    if(!isManager()){ $('roiDenied').style.display = 'block'; $('roiWrap').style.display = 'none'; }
+    initStatic();
+    await loadAll();
+    setInterval(() => { if(document.visibilityState === 'visible' && !document.querySelector('.modal-overlay.show')) loadAll(); }, 30000);
+  }
+
+  // ---------- data ----------
+  async function loadAll(){
+    const since = new Date(Date.now() - 400*86400000).toISOString();
+    const doneSince = new Date(Date.now() - 30*86400000).toISOString();
+    const [leads, tasks, ests, surveys, staff, jobs, tiers] = await Promise.all([
+      sb.from('leads').select('id, full_name, email, phone, source, status, channel, utm_source, utm_medium, utm_campaign, referrer_host, move_size, created_at, acknowledged_at, quoted_at, lost_reason_category, lost_reason_detail, flexible_dates').gte('created_at', since).order('created_at', { ascending:false }).limit(2000),
+      sb.from('lead_tasks').select('id, lead_id, due_at, kind, note, done_at, auto_closed, assigned_to, created_at').or('done_at.is.null,done_at.gte.' + doneSince).order('due_at').limit(3000),
+      sb.from('estimates').select('id, lead_id, job_id, status, valid_until, deposit_cents, tax_rate_pct, tax_label, subtotal_cents, tax_cents, total_cents, notes, sent_at, customer_signed_name, customer_signed_at, decline_reason, created_at, updated_at').order('created_at', { ascending:false }).limit(1000),
+      sb.from('survey_requests').select('id, lead_id, preferred_date, time_window, method, status, created_at').order('preferred_date').limit(1000),
+      sb.from('staff_users').select('user_id, full_name, role'),
+      sb.from('jobs').select('id, lead_id, status, scheduled_date, access_token, quoted_price_cents, customers(full_name, email)').in('status', ['quoted','booked']).order('scheduled_date', { ascending:false }).limit(500),
+      S.tiers.length ? Promise.resolve({ data: S.tiers }) : sb.from('tier_pricing').select('tier, label, price_type, hourly_rate_cents, minimum_hours')
+    ]);
+    const firstErr = [leads, tasks, ests, surveys].find(r => r.error);
+    if(firstErr){ toast('Could not load sales data. ' + friendlyErr(firstErr.error), 'err'); }
+    S.leads = leads.data || []; S.tasks = tasks.data || []; S.estimates = ests.data || []; S.surveys = surveys.data || [];
+    S.staff = staff.data || []; S.jobs = jobs.data || []; S.tiers = tiers.data || [];
+    S.loaded = true;
+    renderAll();
+  }
+
+  function renderAll(){
+    renderChannelFilter(); renderBoard(); renderTasks(); renderEstimates(); renderSurveys();
+    if($('view-reports').classList.contains('active')) renderReports();
+    const now = Date.now(), endToday = new Date(); endToday.setHours(23,59,59,999);
+    $('tasksDueCount').textContent = S.tasks.filter(t => !t.done_at && new Date(t.due_at) <= endToday).length || '';
+    $('surveysNewCount').textContent = S.surveys.filter(s => s.status === 'requested').length || '';
+  }
+
+  // ---------- tabs ----------
+  function initStatic(){
+    $('tabs').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+      $('tabs').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+      document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + b.dataset.view));
+      if(b.dataset.view === 'reports') renderReports();
+      if(b.dataset.view === 'roi' && isManager()) loadRoi();
+    }));
+    $('lStatus').innerHTML = STAGES.map(s => `<option value="${s.key}">${s.label}</option>`).join('');
+    const lostOpts = Object.entries(LOST_REASONS).map(([k,v]) => `<option value="${k}">${v}</option>`).join('');
+    $('lLostCat').innerHTML = '<option value="">Choose a reason</option>' + lostOpts;
+    $('lostCat').innerHTML = '<option value="">Choose a reason</option>' + lostOpts;
+    $('lChannel').innerHTML = '<option value="">Automatic (from tracking)</option>' +
+      Object.entries(CHANNELS).filter(([k]) => k !== 'unattributed').map(([k,v]) => `<option value="${k}">${v}</option>`).join('') +
+      '<option value="__custom">Custom…</option>';
+    $('eRooms').innerHTML = ROOMS.map(r => `<div class="room"><span>${r.label}</span><input type="number" min="0" step="1" value="0" data-room="${r.key}" aria-label="${r.label} count"></div>`).join('');
+    ['pipeSearch','pipeChannel','pipeShowAbandoned','pipeShowClosed'].forEach(id => $(id).addEventListener('input', renderBoard));
+    ['taskWho','taskShowDone'].forEach(id => $(id).addEventListener('input', renderTasks));
+    $('estStatus').addEventListener('input', renderEstimates);
+    $('surveyStatus').addEventListener('input', renderSurveys);
+    const today = new Date();
+    $('repTo').value = ymd(today); $('repFrom').value = ymd(new Date(Date.now() - 89*86400000));
+    ['repFrom','repTo'].forEach(id => $(id).addEventListener('change', renderReports));
+    $('roiTo').value = ymd(today); $('roiFrom').value = ymd(new Date(today.getFullYear(), today.getMonth(), 1));
+    ['roiFrom','roiTo'].forEach(id => $(id).addEventListener('change', loadRoi));
+    document.querySelectorAll('[data-roi-range]').forEach(b => b.addEventListener('click', () => {
+      const t = new Date(), r = b.dataset.roiRange;
+      $('roiTo').value = ymd(t);
+      $('roiFrom').value = r === 'month' ? ymd(new Date(t.getFullYear(), t.getMonth(), 1)) : r === 'ytd' ? ymd(new Date(t.getFullYear(), 0, 1)) : ymd(new Date(Date.now() - 89*86400000));
+      loadRoi();
+    }));
+  }
+
+  // ---------- pipeline ----------
+  function renderChannelFilter(){
+    const sel = $('pipeChannel'), cur = sel.value;
+    const chans = [...new Set(S.leads.map(effChannel))].sort((a,b) => channelLabel(a).localeCompare(channelLabel(b)));
+    sel.innerHTML = '<option value="">All channels</option>' + chans.map(c => `<option value="${esc(c)}">${esc(channelLabel(c))}</option>`).join('');
+    sel.value = chans.includes(cur) ? cur : '';
+  }
+
+  function openTaskInfo(leadId){
+    const open = S.tasks.filter(t => t.lead_id === leadId && !t.done_at).sort((a,b) => new Date(a.due_at) - new Date(b.due_at));
+    if(!open.length) return null;
+    const t = open[0], due = new Date(t.due_at), now = new Date(), end = new Date(); end.setHours(23,59,59,999);
+    const cls = due < now ? 'over' : due <= end ? 'today' : 'later';
+    const when = cls === 'over' ? (now - due < 60000 ? 'Due now' : 'Overdue ' + ago(t.due_at)) : cls === 'today' ? 'Due today ' + due.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : 'Next ' + fmtDate(t.due_at);
+    return { cls, text: when + ': ' + (t.note || t.kind), count: open.length };
+  }
+
+  function filteredLeads(){
+    const q = $('pipeSearch').value.trim().toLowerCase();
+    const ch = $('pipeChannel').value;
+    const showAb = $('pipeShowAbandoned').checked, showClosed = $('pipeShowClosed').checked;
+    const cutoff = Date.now() - 30*86400000;
+    return S.leads.filter(l => {
+      if(!showAb && l.source === 'quote_form_abandoned') return false;
+      if(['won','lost'].includes(l.status) && (!showClosed || new Date(l.created_at) < cutoff)) return false;
+      if(ch && effChannel(l) !== ch) return false;
+      if(q && ![l.full_name, l.email, l.phone].some(v => (v || '').toLowerCase().includes(q))) return false;
+      return true;
+    });
+  }
+
+  function renderBoard(){
+    const leads = filteredLeads();
+    const estByLead = {};
+    S.estimates.forEach(e => { if(e.lead_id && !['declined','expired'].includes(e.status)) (estByLead[e.lead_id] ||= []).push(e); });
+    $('board').innerHTML = STAGES.map(st => {
+      const items = leads.filter(l => l.status === st.key);
+      const value = items.reduce((s,l) => s + ((estByLead[l.id] || [])[0]?.total_cents || 0), 0);
+      return `<div class="col" data-stage="${st.key}">
+        <div class="col-head"><h3>${st.label}</h3><span class="meta">${items.length}${value ? ' · ' + dollars(value) : ''}</span></div>
+        ${items.map(l => {
+          const ti = openTaskInfo(l.id), est = (estByLead[l.id] || [])[0];
+          const ch = effChannel(l);
+          return `<div class="card" draggable="true" data-id="${l.id}" tabindex="0" role="button" aria-label="Open ${esc(l.full_name || 'lead')}">
+            <div class="nm">${esc(l.full_name || '(no name)')}</div>
+            <div class="sub" title="${esc(l.phone || l.email || '')}">${esc(l.phone || l.email || 'No contact info')}</div><div class="sub">${ago(l.created_at)} ago</div>
+            <div class="tags">
+              <span class="pill ${ch === 'unattributed' ? 'p-grey' : 'p-blue'}">${esc(channelLabel(ch))}</span>
+              ${l.source === 'quote_form_abandoned' ? '<span class="pill p-amber">Not submitted</span>' : ''}
+              ${est ? `<span class="pill ${est.status === 'accepted' ? 'p-green' : est.status === 'sent' ? 'p-amber' : 'p-grey'}">Est. ${dollars(est.total_cents)} ${est.status}</span>` : ''}
+              ${l.status === 'lost' && l.lost_reason_category ? `<span class="pill p-grey">${esc(LOST_REASONS[l.lost_reason_category] || l.lost_reason_category)}</span>` : ''}
+            </div>
+            ${ti ? `<div class="due ${ti.cls}">${esc(ti.text)}${ti.count > 1 ? ' (+' + (ti.count-1) + ')' : ''}</div>` : ''}
+          </div>`;
+        }).join('') || '<div class="note" style="padding:4px 6px 10px;">Empty</div>'}
+      </div>`;
+    }).join('');
+    $('board').querySelectorAll('.card').forEach(c => {
+      c.addEventListener('click', () => openLead(c.dataset.id));
+      c.addEventListener('keydown', e => { if(e.key === 'Enter') openLead(c.dataset.id); });
+      c.addEventListener('dragstart', e => { S.dragId = c.dataset.id; c.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', c.dataset.id); });
+      c.addEventListener('dragend', () => { c.classList.remove('dragging'); S.dragId = null; });
+    });
+    $('board').querySelectorAll('.col').forEach(col => {
+      col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drag-over'); });
+      col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+      col.addEventListener('drop', e => {
+        e.preventDefault(); col.classList.remove('drag-over');
+        const id = e.dataTransfer.getData('text/plain') || S.dragId;
+        if(id){ const stage = col.dataset.stage; setTimeout(() => moveLead(id, stage), 0); }
+      });
+    });
+  }
+
+  async function moveLead(id, stage){
+    const l = leadById(id); if(!l || l.status === stage) return;
+    if(stage === 'lost'){ return askLost(id); }
+    const prev = l.status; l.status = stage; renderBoard();
+    const { error } = await sb.from('leads').update({ status: stage }).eq('id', id);
+    if(error){ l.status = prev; renderBoard(); toast(friendlyErr(error), 'err'); return; }
+    toast((l.full_name || 'Lead') + ' moved to ' + STAGE_LABEL[stage]);
+    loadAll();
+  }
+
+  function askLost(id){
+    const l = leadById(id);
+    $('lostSub').textContent = l.full_name || '';
+    $('lostCat').value = ''; $('lostDetail').value = ''; clearMsg('lostMsg');
+    $('lostSaveBtn').onclick = async () => {
+      const cat = $('lostCat').value;
+      if(!cat){ showMsg('lostMsg', 'Choose a reason so the loss report stays useful.', 'err'); return; }
+      $('lostSaveBtn').disabled = true;
+      const { error } = await sb.from('leads').update({ status:'lost', lost_reason_category: cat, lost_reason_detail: $('lostDetail').value.trim() || null }).eq('id', id);
+      $('lostSaveBtn').disabled = false;
+      if(error){ showMsg('lostMsg', friendlyErr(error), 'err'); return; }
+      closeModal('lostModal'); toast('Marked lost'); loadAll();
+    };
+    openModal('lostModal');
+  }
+
+  // ---------- lead modal ----------
+  $('addLeadBtn').addEventListener('click', () => openLead(null));
+  $('lChannel').addEventListener('input', () => { $('lChannelCustomWrap').style.display = $('lChannel').value === '__custom' ? '' : 'none'; });
+  $('lStatus').addEventListener('input', () => { $('lLostWrap').style.display = $('lStatus').value === 'lost' ? '' : 'none'; });
+
+  function openLead(id){
+    S.openLeadId = id;
+    const l = id ? leadById(id) : { status:'new', source:'staff_entry' };
+    if(!l) return;
+    clearMsg('leadMsg');
+    $('leadTitle').textContent = id ? (l.full_name || 'Lead') : 'New lead';
+    $('leadSub').textContent = id ? `Arrived ${fmtDateTime(l.created_at)} via ${SOURCE_LABEL[l.source] || l.source || 'unknown'}${l.acknowledged_at ? ' · acknowledged ' + fmtDateTime(l.acknowledged_at) : ''}` : 'Phone call, walk-in or anything that did not come through the website. Like a web lead, they get the standard acknowledgement text or email, and two follow-up tasks are created.';
+    $('lName').value = l.full_name || ''; $('lEmail').value = l.email || ''; $('lPhone').value = l.phone || '';
+    $('lStatus').value = l.status || 'new';
+    const known = l.channel && CHANNELS[l.channel];
+    $('lChannel').value = !l.channel ? '' : known ? l.channel : '__custom';
+    $('lChannelCustom').value = l.channel && !known ? l.channel : '';
+    $('lChannelCustomWrap').style.display = $('lChannel').value === '__custom' ? '' : 'none';
+    $('lLostCat').value = l.lost_reason_category || ''; $('lLostDetail').value = l.lost_reason_detail || '';
+    $('lLostWrap').style.display = l.status === 'lost' ? '' : 'none';
+    $('lMoveSize').value = l.move_size || '';
+    $('leadExtra').style.display = id ? '' : 'none';
+    if(id) renderLeadExtras(l);
+    openModal('leadModal');
+  }
+
+  function renderLeadExtras(l){
+    const tasks = S.tasks.filter(t => t.lead_id === l.id).sort((a,b) => (!!a.done_at - !!b.done_at) || new Date(a.due_at) - new Date(b.due_at));
+    $('lTasks').innerHTML = tasks.length ? tasks.map(taskRow).join('') : '<div class="empty">No tasks.</div>';
+    bindTaskChecks($('lTasks'));
+    $('tAssign').innerHTML = '<option value="">Unassigned</option>' + S.staff.map(s => `<option value="${s.user_id}" ${s.user_id === S.me.user_id ? 'selected' : ''}>${esc(s.full_name || s.role)}</option>`).join('');
+    const d = new Date(Date.now() + 3600000); d.setMinutes(0,0,0);
+    $('tDue').value = ymd(d) + 'T' + String(d.getHours()).padStart(2,'0') + ':00';
+    $('tNote').value = '';
+    const ests = S.estimates.filter(e => e.lead_id === l.id);
+    $('lEstimates').innerHTML = ests.length ? `<div class="table-wrap"><table><thead><tr><th>Status</th><th class="num">Total</th><th>Valid until</th><th>Updated</th><th></th></tr></thead><tbody>${
+      ests.map(e => `<tr><td>${estPill(e)}</td><td class="num">${dollars(e.total_cents)}</td><td>${fmtDate(e.valid_until)}</td><td>${fmtDate(e.updated_at)}</td><td><button class="link" data-open-est="${e.id}">Open</button></td></tr>`).join('')
+    }</tbody></table></div>` : '<div class="note">No estimates yet.</div>';
+    $('lEstimates').querySelectorAll('[data-open-est]').forEach(b => b.addEventListener('click', () => openEstimate(b.dataset.openEst)));
+    const sv = S.surveys.filter(s => s.lead_id === l.id);
+    $('lSurveys').innerHTML = sv.length ? sv.map(s => `${fmtDate(s.preferred_date)}, ${esc(s.time_window)} via ${esc(s.method)}: <strong>${esc(SURVEY_STATUS[s.status])}</strong>`).join('<br>') : 'None.';
+    const derived = deriveChannel(l);
+    $('lAttr').innerHTML = [
+      ['Channel', esc(channelLabel(effChannel(l))) + (l.channel ? ' (set by staff)' : derived ? ' (from tracking)' : '')],
+      ['Capture path', esc(SOURCE_LABEL[l.source] || l.source || '–')],
+      ['Ad source', esc(l.utm_source || '–')], ['Ad medium', esc(l.utm_medium || '–')],
+      ['Campaign', esc(l.utm_campaign || '–')], ['Referring site', esc(l.referrer_host || '–')]
+    ].map(([k,v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+  }
+
+  $('leadSaveBtn').addEventListener('click', async () => {
+    const id = S.openLeadId;
+    const name = $('lName').value.trim(), email = $('lEmail').value.trim(), phone = $('lPhone').value.trim();
+    if(!name){ return showMsg('leadMsg', 'Enter a name.', 'err'); }
+    if(!email && !phone){ return showMsg('leadMsg', 'Enter an email or a phone number.', 'err'); }
+    if(email && !isValidEmail(email)){ return showMsg('leadMsg', 'That email address does not look right.', 'err'); }
+    if(!isValidPhone(phone)){ return showMsg('leadMsg', 'Enter a valid phone number (7 to 15 digits).', 'err'); }
+    let channel = $('lChannel').value;
+    if(channel === '__custom'){
+      channel = $('lChannelCustom').value.trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40);
+      if(!channel) return showMsg('leadMsg', 'Type a custom channel name, or pick one from the list.', 'err');
+    }
+    const status = $('lStatus').value;
+    const lostCat = $('lLostCat').value;
+    if(status === 'lost' && !lostCat) return showMsg('leadMsg', 'Choose a lost reason.', 'err');
+    const row = { full_name: name, email: email || null, phone: phone || null, status, channel: channel || null,
+      move_size: $('lMoveSize').value.trim() || null,
+      lost_reason_category: status === 'lost' ? lostCat : null, lost_reason_detail: status === 'lost' ? ($('lLostDetail').value.trim() || null) : null };
+    $('leadSaveBtn').disabled = true;
+    let error, data;
+    if(id){ ({ error } = await sb.from('leads').update(row).eq('id', id)); }
+    else { ({ data, error } = await sb.from('leads').insert({ ...row, source: 'staff_entry' }).select('id').single()); }
+    $('leadSaveBtn').disabled = false;
+    if(error) return showMsg('leadMsg', friendlyErr(error), 'err');
+    toast(id ? 'Lead saved' : 'Lead added');
+    await loadAll();
+    if(!id && data) openLead(data.id); else if(id) openLead(id);
+  });
+
+  // ---------- tasks ----------
+  function taskRow(t){
+    const l = leadById(t.lead_id) || {};
+    const due = new Date(t.due_at);
+    const late = !t.done_at && due < new Date();
+    return `<div class="task ${t.done_at ? 'done' : ''}">
+      <input type="checkbox" data-task="${t.id}" ${t.done_at ? 'checked' : ''} aria-label="Mark done">
+      <div class="body">
+        <div class="t1">${esc(t.note || t.kind)}</div>
+        <div class="t2"><span class="pill p-grey">${esc(t.kind)}</span> ${t.done_at ? 'Done ' + fmtDateTime(t.done_at) + (t.auto_closed ? ' (auto)' : '') : `<span style="${late ? 'color:var(--danger); font-weight:700;' : ''}">Due ${fmtDateTime(t.due_at)}</span>`}
+          ${S.openLeadId === t.lead_id ? '' : ` · <button class="link" data-lead="${t.lead_id}">${esc(l.full_name || 'lead')}</button>${l.phone ? ` · <a href="tel:${esc(l.phone)}">${esc(l.phone)}</a>` : ''}`}
+          ${t.assigned_to ? ' · ' + esc(staffName(t.assigned_to)) : ''}</div>
+      </div>
+    </div>`;
+  }
+  function bindTaskChecks(root){
+    root.querySelectorAll('[data-task]').forEach(cb => cb.addEventListener('change', async () => {
+      const t = S.tasks.find(x => x.id === cb.dataset.task);
+      const done_at = cb.checked ? new Date().toISOString() : null;
+      const { error } = await sb.from('lead_tasks').update({ done_at, auto_closed: false }).eq('id', cb.dataset.task);
+      if(error){ cb.checked = !cb.checked; return toast(friendlyErr(error), 'err'); }
+      if(t){ t.done_at = done_at; t.auto_closed = false; }
+      renderTasks(); renderBoard();
+      if(S.openLeadId){ const l = leadById(S.openLeadId); if(l) renderLeadExtras(l); }
+      renderAll();
+    }));
+    root.querySelectorAll('[data-lead]').forEach(b => b.addEventListener('click', () => openLead(b.dataset.lead)));
+  }
+  $('taskAddBtn').addEventListener('click', async () => {
+    const note = $('tNote').value.trim(), due = $('tDue').value;
+    if(!note) return toast('Write what the task is.', 'err');
+    if(!due) return toast('Pick a due time.', 'err');
+    const { error } = await sb.from('lead_tasks').insert({ lead_id: S.openLeadId, kind: $('tKind').value, due_at: new Date(due).toISOString(), note, assigned_to: $('tAssign').value || null });
+    if(error) return toast(friendlyErr(error), 'err');
+    toast('Task added'); await loadAll(); const l = leadById(S.openLeadId); if(l) renderLeadExtras(l);
+  });
+
+  function renderTasks(){
+    const who = $('taskWho').value, showDone = $('taskShowDone').checked;
+    const weekAgo = Date.now() - 7*86400000;
+    const leadsOk = new Set(S.leads.map(l => l.id));
+    let list = S.tasks.filter(t => leadsOk.has(t.lead_id) && (!t.done_at || (showDone && new Date(t.done_at) >= weekAgo)));
+    if(who === 'mine') list = list.filter(t => t.assigned_to === S.me.user_id);
+    if(who === 'unassigned') list = list.filter(t => !t.assigned_to);
+    const now = new Date(), end = new Date(); end.setHours(23,59,59,999);
+    const groups = [
+      ['Overdue', list.filter(t => !t.done_at && new Date(t.due_at) < now)],
+      ['Due today', list.filter(t => !t.done_at && new Date(t.due_at) >= now && new Date(t.due_at) <= end)],
+      ['Upcoming', list.filter(t => !t.done_at && new Date(t.due_at) > end)],
+      ['Completed', list.filter(t => t.done_at).sort((a,b) => new Date(b.done_at) - new Date(a.done_at))]
+    ].filter(g => g[1].length);
+    const prevOpen = S.openLeadId; S.openLeadId = null;
+    $('taskList').innerHTML = groups.length ? groups.map(([title, items]) => `<div class="group-title">${title} (${items.length})</div>${items.map(taskRow).join('')}`).join('') : '<div class="empty">Nothing to follow up on. New leads create their own tasks.</div>';
+    S.openLeadId = prevOpen;
+    bindTaskChecks($('taskList'));
+  }
+
+  // ---------- estimates ----------
+  const todayYmd = () => ymd(new Date());
+  const estShownStatus = e => (e.status === 'sent' && e.valid_until < todayYmd()) ? 'expired' : e.status;
+  function estPill(e){
+    const s = estShownStatus(e);
+    const cls = { draft:'p-grey', sent:'p-amber', accepted:'p-green', declined:'p-red', expired:'p-grey' }[s] || 'p-grey';
+    return `<span class="pill ${cls}">${s}</span>`;
+  }
+  function estCustomer(e){
+    const l = e.lead_id && leadById(e.lead_id);
+    if(l) return l.full_name || l.email || 'Lead';
+    const j = S.jobs.find(j => j.id === e.job_id);
+    return j?.customers?.full_name || 'Customer';
+  }
+  function renderEstimates(){
+    const f = $('estStatus').value;
+    const list = S.estimates.filter(e => !f || estShownStatus(e) === f);
+    const open = S.estimates.filter(e => estShownStatus(e) === 'sent');
+    const thirty = Date.now() - 30*86400000;
+    const acc30 = S.estimates.filter(e => e.status === 'accepted' && new Date(e.customer_signed_at || e.updated_at) >= thirty);
+    const decided = S.estimates.filter(e => ['accepted','declined'].includes(e.status));
+    $('estKpis').innerHTML = [
+      [open.length, 'Open estimates'], [dollars(open.reduce((s,e) => s + e.total_cents, 0)), 'Open value'],
+      [dollars(acc30.reduce((s,e) => s + e.total_cents, 0)), 'Accepted, last 30 days'],
+      [decided.length ? Math.round(decided.filter(e => e.status === 'accepted').length / decided.length * 100) + '%' : '–', 'Acceptance rate']
+    ].map(([n,l]) => `<div class="kpi"><div class="num">${n}</div><div class="label">${l}</div></div>`).join('');
+    $('estBody').innerHTML = list.length ? list.map(e => {
+      const j = S.jobs.find(j => j.id === e.job_id);
+      return `<tr><td>${esc(estCustomer(e))}</td><td>${estPill(e)}</td><td class="num">${dollars(e.total_cents)}</td><td class="num">${dollars(e.deposit_cents)}</td>
+        <td>${fmtDate(e.valid_until)}</td><td>${e.sent_at ? fmtDate(e.sent_at) : '–'}</td>
+        <td>${e.job_id ? (j ? fmtDate(j.scheduled_date) + ' · ' + esc(j.status) : 'Linked') : '<span class="note">Not linked</span>'}</td>
+        <td><button class="link" data-open-est="${e.id}">Open</button></td></tr>`;
+    }).join('') : '<tr><td colspan="8" class="empty">No estimates match.</td></tr>';
+    $('estBody').querySelectorAll('[data-open-est]').forEach(b => b.addEventListener('click', () => openEstimate(b.dataset.openEst)));
+  }
+
+  $('estNewBtn').addEventListener('click', () => {
+    const l = leadById(S.openLeadId); if(!l) return;
+    const valid = new Date(Date.now() + 14*86400000);
+    const jobs = jobsForLead(l);
+    S.est = { id:null, lead_id:l.id, job_id: jobs.length === 1 ? jobs[0].id : null, status:'draft', valid_until: ymd(valid), deposit_cents:0, tax_rate_pct:0, tax_label:'', notes:'', lines:[] };
+    closeModal('leadModal'); showEstimate();
+  });
+
+  function jobsForLead(l){
+    const em = (l?.email || '').trim().toLowerCase();
+    return S.jobs.filter(j => j.lead_id === l?.id || (em && (j.customers?.email || '').trim().toLowerCase() === em));
+  }
+
+  async function openEstimate(id){
+    const e = S.estimates.find(x => x.id === id); if(!e) return;
+    const { data: lines, error } = await sb.from('estimate_line_items').select('id, kind, description, quantity, unit_cents, amount_cents, sort').eq('estimate_id', id).order('sort').order('created_at');
+    if(error) return toast(friendlyErr(error), 'err');
+    S.est = { ...e, tax_label: e.tax_label || '', notes: e.notes || '', lines: (lines || []).map(x => ({ kind:x.kind, description:x.description, quantity:Number(x.quantity), unit_cents:x.unit_cents })) };
+    if(e.job_id && !S.jobs.find(j => j.id === e.job_id)){
+      const { data: j } = await sb.from('jobs').select('id, lead_id, status, scheduled_date, access_token, quoted_price_cents, customers(full_name, email)').eq('id', e.job_id).maybeSingle();
+      if(j) S.jobs.push(j);
+    }
+    closeModal('leadModal'); showEstimate();
+  }
+
+  const estLocked = () => S.est && ['accepted','declined'].includes(S.est.status);
+
+  function showEstimate(){
+    const e = S.est, l = leadById(e.lead_id);
+    clearMsg('estMsg');
+    $('estTitle').textContent = (e.id ? 'Estimate' : 'New estimate') + (l ? ' · ' + (l.full_name || '') : '');
+    $('estSub').innerHTML = `${estPill(e)} ${e.sent_at ? ' Sent ' + fmtDateTime(e.sent_at) : ''}${l?.email ? ' · ' + esc(l.email) : ''}${l?.phone ? ' · ' + esc(l.phone) : ''}`;
+    const jobs = jobsForLead(l);
+    if(e.job_id && !jobs.find(j => j.id === e.job_id)){ const j = S.jobs.find(j => j.id === e.job_id); if(j) jobs.push(j); }
+    $('eJob').innerHTML = '<option value="">Not linked yet</option>' + jobs.map(j => `<option value="${j.id}">${esc(j.customers?.full_name || 'Job')} · ${fmtDate(j.scheduled_date)} · ${esc(j.status)}</option>`).join('');
+    $('eJob').value = e.job_id || '';
+    $('eValid').value = e.valid_until || '';
+    $('eDeposit').value = e.deposit_cents ? (e.deposit_cents/100).toFixed(2) : '';
+    $('eTaxRate').value = e.tax_rate_pct || ''; $('eTaxLabel').value = e.tax_label || '';
+    $('eNotes').value = e.notes || '';
+    const hourly = S.tiers.find(t => t.price_type === 'hourly' && t.hourly_rate_cents);
+    if(!$('eRate').value && hourly) $('eRate').value = Math.round(hourly.hourly_rate_cents/100);
+    const locked = estLocked();
+    $('estModal').querySelectorAll('input, select, textarea').forEach(el => el.disabled = locked);
+    ['eAddLine','eSave','eSend','eHelperToggle'].forEach(id => $(id).style.display = locked ? 'none' : '');
+    $('eToDraft').style.display = (!locked && e.status === 'sent') ? '' : 'none';
+    $('eSend').textContent = e.status === 'sent' ? 'Save changes' : 'Save & mark sent';
+    $('eSave').style.display = (locked || e.status === 'sent') ? 'none' : '';
+    const job = S.jobs.find(j => j.id === e.job_id);
+    $('eCopyLink').style.display = (job && ['sent','accepted'].includes(e.status)) ? '' : 'none';
+    const ln = $('estLockedNote');
+    if(e.status === 'accepted'){ ln.style.display = 'block'; ln.className = 'msg show ok'; ln.textContent = `Accepted and signed by ${e.customer_signed_name || 'the customer'} on ${fmtDateTime(e.customer_signed_at)}. Locked.`; }
+    else if(e.status === 'declined'){ ln.style.display = 'block'; ln.className = 'msg show err'; ln.textContent = 'Declined by the customer' + (e.decline_reason ? ': ' + e.decline_reason : '.') + ' Locked; create a new estimate to revise.'; }
+    else ln.style.display = 'none';
+    $('eHelper').style.display = 'none';
+    renderLines(); openModal('estModal');
+  }
+
+  function renderLines(){
+    const locked = estLocked();
+    const L = S.est.lines;
+    $('eLines').innerHTML = L.length ? L.map((x,i) => {
+      const amt = Math.round(x.quantity * x.unit_cents) * (x.kind === 'discount' ? -1 : 1);
+      return `<tr data-i="${i}">
+        <td><select data-f="kind" ${locked?'disabled':''}>${Object.entries(EST_KIND).map(([k,v]) => `<option value="${k}" ${k===x.kind?'selected':''}>${v}</option>`).join('')}</select></td>
+        <td><input data-f="description" maxlength="500" value="${esc(x.description)}" ${locked?'disabled':''}></td>
+        <td><input data-f="quantity" type="number" min="0" step="0.25" value="${x.quantity}" style="text-align:right;" ${locked?'disabled':''}></td>
+        <td><input data-f="unit" type="number" min="0" step="0.01" value="${(x.unit_cents/100).toFixed(2)}" style="text-align:right;" ${locked?'disabled':''}></td>
+        <td class="num">${dollars(amt)}</td>
+        <td>${locked ? '' : `<button class="x" data-del="${i}" aria-label="Remove line">&times;</button>`}</td></tr>`;
+    }).join('') : '<tr><td colspan="6" class="empty">No lines yet. Add a line, or size the move to add labor.</td></tr>';
+    $('eLines').querySelectorAll('tr[data-i]').forEach(tr => {
+      const i = +tr.dataset.i;
+      tr.querySelectorAll('[data-f]').forEach(inp => inp.addEventListener('change', () => {
+        const x = S.est.lines[i], f = inp.dataset.f;
+        if(f === 'kind') x.kind = inp.value;
+        if(f === 'description') x.description = inp.value;
+        if(f === 'quantity') x.quantity = Math.max(0, parseFloat(inp.value) || 0);
+        if(f === 'unit') x.unit_cents = Math.max(0, toCents(inp.value) || 0);
+        // Update in place: rebuilding the rows here would remove the focused input mid-blur.
+        tr.querySelector('td.num').textContent = dollars(Math.round(x.quantity * x.unit_cents) * (x.kind === 'discount' ? -1 : 1));
+        renderTotals();
+      }));
+    });
+    $('eLines').querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => { S.est.lines.splice(+b.dataset.del, 1); renderLines(); }));
+    renderTotals();
+  }
+  function calcTotals(){
+    const sub = S.est.lines.reduce((s,x) => s + Math.round(x.quantity * x.unit_cents) * (x.kind === 'discount' ? -1 : 1), 0);
+    const rate = parseFloat($('eTaxRate').value) || 0;
+    const tax = Math.round(Math.max(sub,0) * rate / 100);
+    return { sub, tax, total: sub + tax };
+  }
+  function renderTotals(){
+    const t = calcTotals(), dep = toCents($('eDeposit').value) || 0;
+    $('eTotals').innerHTML = `<div><span>Subtotal</span><span>${dollars(t.sub)}</span></div>
+      <div><span>Tax${$('eTaxRate').value ? ' (' + esc($('eTaxRate').value) + '%)' : ''}</span><span>${dollars(t.tax)}</span></div>
+      <div class="grand"><span>Total</span><span>${dollars(t.total)}</span></div>
+      ${dep ? `<div><span>Deposit due to book</span><span>${dollars(dep)}</span></div>` : ''}`;
+  }
+  ['eTaxRate','eDeposit'].forEach(id => $(id).addEventListener('input', renderTotals));
+  $('eAddLine').addEventListener('click', () => { S.est.lines.push({ kind:'other', description:'', quantity:1, unit_cents:0 }); renderLines(); });
+
+  // Size-the-move helper
+  $('eHelperToggle').addEventListener('click', () => { const h = $('eHelper'); h.style.display = h.style.display === 'none' ? 'block' : 'none'; sizeMove(); });
+  $('eHelper').addEventListener('input', sizeMove);
+  function sizeMove(){
+    let cuft = 0;
+    $('eRooms').querySelectorAll('input').forEach(i => { const r = ROOMS.find(r => r.key === i.dataset.room); cuft += (parseInt(i.value) || 0) * r.cuft; });
+    cuft += (parseInt($('eBoxes').value) || 0) * 3;
+    const crew = cuft < 400 ? 2 : cuft < 900 ? 3 : cuft < 1500 ? 4 : 5;
+    const drive = parseFloat($('eDrive').value) || 0;
+    const hourly = S.tiers.find(t => t.price_type === 'hourly' && t.minimum_hours);
+    const minH = hourly ? Number(hourly.minimum_hours) : 2;
+    const hours = cuft ? Math.max(minH, Math.ceil((cuft / (crew * 55) + drive) * 2) / 2) : 0;
+    const truck = cuft < 600 ? '16 ft truck' : cuft < 1200 ? '20 ft truck' : cuft < 1800 ? '26 ft truck' : '26 ft truck plus a second truck';
+    sizeMove.out = { cuft, crew, hours, truck };
+    $('eHelperOut').textContent = cuft ? `About ${cuft.toLocaleString()} cu ft (≈ ${(cuft*7).toLocaleString()} lb). Suggest ${crew} movers, ${truck}, about ${hours} hours including drive time.` : 'Add rooms or boxes to size the move.';
+  }
+  $('eHelperAdd').addEventListener('click', () => {
+    sizeMove(); const o = sizeMove.out;
+    if(!o || !o.cuft) return toast('Add rooms or boxes first.', 'err');
+    const rate = toCents($('eRate').value);
+    if(!rate) return toast('Enter the crew hourly rate.', 'err');
+    S.est.lines.push({ kind:'labor', description:`${o.crew} movers and ${o.truck}, estimated ${o.hours} hours (about ${o.cuft.toLocaleString()} cu ft)`, quantity:o.hours, unit_cents:rate });
+    renderLines(); toast('Labor line added');
+  });
+
+  async function saveEstimate(markSent){
+    const e = S.est;
+    if(estLocked()) return;
+    clearMsg('estMsg');
+    const lines = e.lines.filter(x => (x.description || '').trim() || x.unit_cents);
+    if(lines.some(x => !(x.description || '').trim())) return showMsg('estMsg', 'Every line needs a description.', 'err');
+    const valid = $('eValid').value; if(!valid) return showMsg('estMsg', 'Set a valid-until date.', 'err');
+    const rate = parseFloat($('eTaxRate').value) || 0;
+    if(rate < 0 || rate > 25) return showMsg('estMsg', 'Tax rate must be between 0 and 25%.', 'err');
+    const dep = toCents($('eDeposit').value) || 0;
+    const job_id = $('eJob').value || null;
+    const t = calcTotals();
+    if(dep > Math.max(t.total, 0)) return showMsg('estMsg', 'The deposit is larger than the estimate total.', 'err');
+    const willSend = markSent || e.status === 'sent';
+    if(willSend && !job_id) return showMsg('estMsg', 'Link a job before sending. The customer sees the estimate in that job\'s portal.', 'err');
+    if(willSend && !lines.length) return showMsg('estMsg', 'Add at least one line before sending.', 'err');
+    if(markSent && valid < todayYmd()) return showMsg('estMsg', 'The valid-until date is in the past.', 'err');
+    const row = { lead_id: e.lead_id, job_id, valid_until: valid, deposit_cents: dep, tax_rate_pct: rate, tax_label: $('eTaxLabel').value.trim() || null, notes: $('eNotes').value.trim() || null };
+    if(markSent) row.status = 'sent';
+    $('eSave').disabled = $('eSend').disabled = true;
+    try{
+      let id = e.id;
+      if(id){
+        if(e.status === 'sent' && !markSent){ /* keep sent */ }
+        const { error } = await sb.from('estimates').update(row).eq('id', id); if(error) throw error;
+        const { error: dErr } = await sb.from('estimate_line_items').delete().eq('estimate_id', id); if(dErr) throw dErr;
+      } else {
+        const { data, error } = await sb.from('estimates').insert({ ...row, status: 'draft' }).select('id').single(); if(error) throw error;
+        id = data.id;
+      }
+      if(lines.length){
+        const { error } = await sb.from('estimate_line_items').insert(lines.map((x,i) => ({ estimate_id:id, sort:i, kind:x.kind, description:x.description.trim(), quantity:x.quantity, unit_cents:x.unit_cents })));
+        if(error) throw error;
+      }
+      if(markSent && !e.id){ const { error } = await sb.from('estimates').update({ status:'sent' }).eq('id', id); if(error) throw error; }
+      if(markSent){
+        const l = leadById(e.lead_id);
+        if(l && ['new','acknowledged','contacted','survey_scheduled','quoted'].includes(l.status)){
+          await sb.from('leads').update({ status:'estimate_sent' }).eq('id', l.id);
+        }
+      }
+      toast(markSent ? 'Estimate sent to the customer portal' : 'Estimate saved');
+      await loadAll();
+      await openEstimate(id);
+    } catch(err){ showMsg('estMsg', friendlyErr(err), 'err'); }
+    finally { $('eSave').disabled = $('eSend').disabled = false; }
+  }
+  $('eSave').addEventListener('click', () => saveEstimate(false));
+  $('eSend').addEventListener('click', () => saveEstimate(S.est.status !== 'sent'));
+  $('eToDraft').addEventListener('click', async () => {
+    const { error } = await sb.from('estimates').update({ status:'draft' }).eq('id', S.est.id);
+    if(error) return showMsg('estMsg', friendlyErr(error), 'err');
+    toast('Back to draft. The customer no longer sees it.'); await loadAll(); openEstimate(S.est.id);
+  });
+  $('eCopyLink').addEventListener('click', async () => {
+    const j = S.jobs.find(j => j.id === S.est.job_id); if(!j) return;
+    const link = `${location.origin}/portal?job=${j.id}&token=${j.access_token}`;
+    try{ await navigator.clipboard.writeText(link); toast('Portal link copied'); } catch { prompt('Copy this link', link); }
+  });
+  $('ePrint').addEventListener('click', async () => {
+    const e = S.est, l = leadById(e.lead_id) || {}, t = calcTotals();
+    let brand = 'Estimate';
+    const { data: co } = await sb.from('companies').select('brand_display_name, name').limit(1).maybeSingle();
+    if(co) brand = co.brand_display_name || co.name || brand;
+    const rows = e.lines.map(x => `<tr><td>${esc(EST_KIND[x.kind] || x.kind)}</td><td>${esc(x.description)}</td><td style="text-align:right">${x.quantity}</td><td style="text-align:right">${dollars(x.unit_cents)}</td><td style="text-align:right">${dollars(Math.round(x.quantity*x.unit_cents)*(x.kind==='discount'?-1:1))}</td></tr>`).join('');
+    const w = window.open('', '_blank');
+    if(!w) return toast('Allow pop-ups to print.', 'err');
+    w.document.write(`<!doctype html><html><head><title>Estimate</title><style>body{font-family:Arial,sans-serif;color:#0b1230;max-width:760px;margin:30px auto;padding:0 16px;font-size:13px}h1{font-size:22px;margin:0}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border-bottom:1px solid #ddd;padding:8px;text-align:left}.t{margin-left:auto;width:260px;margin-top:12px}.t div{display:flex;justify-content:space-between;padding:3px 0}.g{font-weight:bold;font-size:15px;border-top:2px solid #0b1230}</style></head><body>
+      <h1>${esc(brand)}</h1><p>Estimate for <strong>${esc(l.full_name || '')}</strong>${l.email ? ' · ' + esc(l.email) : ''}${l.phone ? ' · ' + esc(l.phone) : ''}<br>Valid until ${esc($('eValid').value)}</p>
+      <table><thead><tr><th>Type</th><th>Description</th><th style="text-align:right">Qty</th><th style="text-align:right">Unit</th><th style="text-align:right">Amount</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="t"><div><span>Subtotal</span><span>${dollars(t.sub)}</span></div><div><span>${esc($('eTaxLabel').value || 'Tax')}</span><span>${dollars(t.tax)}</span></div><div class="g"><span>Total</span><span>${dollars(t.total)}</span></div>${toCents($('eDeposit').value) ? `<div><span>Deposit to book</span><span>${dollars(toCents($('eDeposit').value))}</span></div>` : ''}</div>
+      ${$('eNotes').value ? `<p style="margin-top:20px;white-space:pre-wrap">${esc($('eNotes').value)}</p>` : ''}
+      <script>window.onload=()=>window.print();<\/script></body></html>`);
+    w.document.close();
+  });
+
+  // ---------- surveys ----------
+  function renderSurveys(){
+    const f = $('surveyStatus').value;
+    const list = S.surveys.filter(s => f === 'open' ? ['requested','scheduled'].includes(s.status) : !f || s.status === f);
+    $('surveyBody').innerHTML = list.length ? list.map(s => {
+      const l = leadById(s.lead_id) || {};
+      return `<tr><td><button class="link" data-lead="${s.lead_id}">${esc(l.full_name || 'Lead')}</button></td>
+        <td>${l.phone ? `<a href="tel:${esc(l.phone)}">${esc(l.phone)}</a>` : ''}${l.phone && l.email ? '<br>' : ''}${l.email ? `<a href="mailto:${esc(l.email)}">${esc(l.email)}</a>` : ''}</td>
+        <td>${fmtDate(s.preferred_date)}</td><td>${esc(s.time_window)}</td><td>${esc(s.method)}</td>
+        <td><select data-survey="${s.id}" aria-label="Survey status" style="padding:6px 8px; border-radius:6px; border:1.5px solid var(--line2);">${Object.entries(SURVEY_STATUS).map(([k,v]) => `<option value="${k}" ${k===s.status?'selected':''}>${v}</option>`).join('')}</select></td>
+        <td class="note">Requested ${fmtDate(s.created_at)}</td></tr>`;
+    }).join('') : '<tr><td colspan="7" class="empty">No survey requests.</td></tr>';
+    $('surveyBody').querySelectorAll('[data-lead]').forEach(b => b.addEventListener('click', () => openLead(b.dataset.lead)));
+    $('surveyBody').querySelectorAll('[data-survey]').forEach(sel => sel.addEventListener('change', async () => {
+      const { error } = await sb.from('survey_requests').update({ status: sel.value }).eq('id', sel.dataset.survey);
+      if(error){ toast(friendlyErr(error), 'err'); return loadAll(); }
+      const s = S.surveys.find(x => x.id === sel.dataset.survey); if(s) s.status = sel.value;
+      toast('Survey marked ' + SURVEY_STATUS[sel.value].toLowerCase()); renderAll();
+    }));
+  }
+
+  // ---------- reports ----------
+  function bars(el, items, fmt = v => v){
+    const max = Math.max(1, ...items.map(i => i.value));
+    $(el).innerHTML = items.length ? items.map(i => `<div class="bar-row"><span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(i.label)}">${esc(i.label)}</span><div class="bar-track"><div class="bar-fill" style="width:${(i.value/max*100).toFixed(1)}%; ${i.color ? 'background:' + i.color : ''}"></div></div><span class="num" style="text-align:right;">${fmt(i.value)}</span></div>`).join('') : '<div class="note">No data in this range.</div>';
+  }
+  function reportLeads(){
+    const from = $('repFrom').value, to = $('repTo').value;
+    return S.leads.filter(l => l.source !== 'quote_form_abandoned' && ymd(l.created_at) >= from && ymd(l.created_at) <= to);
+  }
+  let repSeq = 0;
+  async function renderReports(){
+    const seq = ++repSeq;
+    const leads = reportLeads();
+    const ids = leads.map(l => l.id);
+    const firstContact = {};
+    if(ids.length){
+      for(let i = 0; i < ids.length; i += 200){
+        const { data } = await sb.from('lead_tasks').select('lead_id, done_at').in('lead_id', ids.slice(i, i+200)).eq('auto_closed', false).not('done_at', 'is', null);
+        (data || []).forEach(t => { if(!firstContact[t.lead_id] || t.done_at < firstContact[t.lead_id]) firstContact[t.lead_id] = t.done_at; });
+      }
+    }
+    if(seq !== repSeq) return;
+    const won = leads.filter(l => l.status === 'won').length, lost = leads.filter(l => l.status === 'lost').length;
+    const mins = leads.filter(l => firstContact[l.id]).map(l => (new Date(firstContact[l.id]) - new Date(l.created_at)) / 60000).filter(m => m >= 0);
+    const acceptedInRange = S.estimates.filter(e => e.status === 'accepted' && e.customer_signed_at && ymd(e.customer_signed_at) >= $('repFrom').value && ymd(e.customer_signed_at) <= $('repTo').value);
+    $('repKpis').innerHTML = [
+      [leads.length, 'Leads'], [won, 'Won'], [lost, 'Lost'],
+      [won + lost ? Math.round(won/(won+lost)*100) + '%' : '–', 'Win rate'],
+      [durLabel(median(mins)), 'Median first contact'],
+      [dollars(acceptedInRange.reduce((s,e) => s + e.total_cents, 0)), 'Estimates accepted']
+    ].map(([n,l]) => `<div class="kpi"><div class="num">${n}</div><div class="label">${l}</div></div>`).join('');
+    const byCh = {};
+    leads.forEach(l => { const c = effChannel(l); (byCh[c] ||= []).push(l); });
+    const rows = Object.entries(byCh).sort((a,b) => b[1].length - a[1].length);
+    $('repChannelBody').innerHTML = rows.length ? rows.map(([c, ls]) => {
+      const w = ls.filter(l => l.status === 'won').length, lo = ls.filter(l => l.status === 'lost').length;
+      const m = ls.filter(l => firstContact[l.id]).map(l => (new Date(firstContact[l.id]) - new Date(l.created_at)) / 60000).filter(x => x >= 0);
+      return `<tr><td>${esc(channelLabel(c))}</td><td class="num">${ls.length}</td><td class="num">${ls.length - w - lo}</td><td class="num">${w}</td><td class="num">${lo}</td><td class="num">${w + lo ? Math.round(w/(w+lo)*100) + '%' : '–'}</td><td class="num">${durLabel(median(m))}</td></tr>`;
+    }).join('') : '<tr><td colspan="7" class="empty">No leads in this range.</td></tr>';
+    const lostC = {};
+    leads.filter(l => l.status === 'lost').forEach(l => { const k = l.lost_reason_category || 'unrecorded'; lostC[k] = (lostC[k] || 0) + 1; });
+    bars('repLost', Object.entries(lostC).sort((a,b) => b[1]-a[1]).map(([k,v]) => ({ label: LOST_REASONS[k] || 'No reason recorded', value: v, color: 'var(--red)' })));
+    const srcC = {};
+    leads.forEach(l => { const k = l.source || 'unknown'; srcC[k] = (srcC[k] || 0) + 1; });
+    bars('repSource', Object.entries(srcC).sort((a,b) => b[1]-a[1]).map(([k,v]) => ({ label: SOURCE_LABEL[k] || k.replace(/_/g,' '), value: v })));
+  }
+  $('repCsv').addEventListener('click', () => {
+    const leads = reportLeads();
+    const cols = ['created_at','full_name','email','phone','status','channel','source','utm_source','utm_medium','utm_campaign','referrer_host','lost_reason_category','lost_reason_detail'];
+    const cell = v => { let s = String(v ?? ''); if(/^[=+\-@\t\r]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g,'""') + '"'; };
+    const csv = [cols.join(',')].concat(leads.map(l => cols.map(c => cell(c === 'channel' ? effChannel(l) : l[c])).join(','))).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv' }));
+    a.download = `leads_${$('repFrom').value}_to_${$('repTo').value}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+
+  // ---------- marketing ROI ----------
+  const STARTER_CHANNELS = ['google_ads','meta_ads','yelp'];
+  S.spendExtra = new Set();
+  let roiSeq = 0;
+  async function loadRoi(opts = {}){
+    if(!isManager()) return;
+    const seq = ++roiSeq;
+    const from = $('roiFrom').value, to = $('roiTo').value;
+    if(!from || !to || to < from){ $('roiBody').innerHTML = '<tr><td colspan="9" class="empty">Pick a valid date range.</td></tr>'; return; }
+    const months = [];
+    const t = new Date(); for(let i = 5; i >= 0; i--){ const d = new Date(t.getFullYear(), t.getMonth() - i, 1); months.push(ymd(d)); }
+    const [roi, spend] = await Promise.all([
+      sb.rpc('get_source_roi', { p_from: from, p_to: to }),
+      sb.from('marketing_spend').select('id, channel, month, amount_cents').gte('month', months[0]).order('month')
+    ]);
+    if(seq !== roiSeq) return;
+    if(roi.error){ $('roiBody').innerHTML = `<tr><td colspan="9" class="empty" style="color:var(--danger);">${esc(friendlyErr(roi.error))}</td></tr>`; }
+    else {
+      const r = roi.data || [];
+      const tot = r.reduce((a,x) => ({ spend:a.spend + Number(x.spend_cents), leads:a.leads + Number(x.leads), won:a.won + Number(x.won_leads), rev:a.rev + Number(x.booked_revenue_cents) }), { spend:0, leads:0, won:0, rev:0 });
+      $('roiKpis').innerHTML = [
+        [dollars(tot.spend), 'Spend'], [tot.leads, 'Leads'], [tot.won, 'Booked'],
+        [tot.won && tot.spend ? dollars(Math.round(tot.spend / tot.won)) : '–', 'Cost per booking'],
+        [dollars(tot.rev), 'Booked revenue'], [tot.spend ? (tot.rev / tot.spend).toFixed(2) + 'x' : '–', 'ROAS']
+      ].map(([n,l]) => `<div class="kpi"><div class="num">${n}</div><div class="label">${l}</div></div>`).join('');
+      $('roiBody').innerHTML = r.length ? r.map(x => {
+        const roas = x.roas == null ? null : Number(x.roas);
+        return `<tr><td>${esc(channelLabel(x.channel))}</td><td class="num">${dollars(Number(x.spend_cents))}</td><td class="num">${x.leads}</td><td class="num">${x.cost_per_lead_cents == null ? '–' : dollars(Number(x.cost_per_lead_cents))}</td>
+          <td class="num">${x.won_leads}</td><td class="num">${x.close_rate_pct == null ? '–' : Number(x.close_rate_pct).toFixed(0) + '%'}</td>
+          <td class="num">${x.cost_per_booking_cents == null ? (Number(x.spend_cents) > 0 ? '<span style="color:var(--danger);">no bookings</span>' : '–') : dollars(Number(x.cost_per_booking_cents))}</td>
+          <td class="num">${dollars(Number(x.booked_revenue_cents))}</td>
+          <td class="num" style="${roas != null && roas < 1 ? 'color:var(--danger); font-weight:700;' : roas != null && roas >= 3 ? 'color:#127a48; font-weight:700;' : ''}">${roas == null ? '–' : roas.toFixed(2) + 'x'}</td></tr>`;
+      }).join('') : '<tr><td colspan="9" class="empty">No leads or spend in this range.</td></tr>';
+    }
+    S.spend = spend.data || [];
+    if(opts.keepGrid && S.spendMonths) updateSpendTotals(); else renderSpend(months);
+  }
+
+  function renderSpend(months){
+    S.spendMonths = months = months || S.spendMonths;
+    const chans = [...new Set([...S.spend.map(s => s.channel), ...S.spendExtra, ...(S.spend.length ? [] : STARTER_CHANNELS)])];
+    $('spendHead').innerHTML = `<tr><th>Channel</th>${months.map(m => `<th class="num">${new Date(m + 'T12:00:00').toLocaleDateString('en-US', { month:'short', year:'2-digit' })}</th>`).join('')}<th class="num">6-mo total</th></tr>`;
+    $('spendBody').innerHTML = chans.map(c => {
+      const total = S.spend.filter(s => s.channel === c).reduce((a,s) => a + s.amount_cents, 0);
+      return `<tr><td>${esc(channelLabel(c))}</td>${months.map(m => {
+        const row = S.spend.find(s => s.channel === c && s.month === m);
+        return `<td class="num"><input inputmode="decimal" data-ch="${esc(c)}" data-m="${m}" value="${row ? (row.amount_cents/100).toFixed(2).replace(/\.00$/,'') : ''}" placeholder="0" aria-label="${esc(channelLabel(c))} ${m}"></td>`;
+      }).join('')}<td class="num" data-total-ch="${esc(c)}">${dollars(total)}</td></tr>`;
+    }).join('');
+    $('spendAddChannel').innerHTML = Object.entries(CHANNELS).filter(([k]) => !chans.includes(k) && !['unattributed','referring_site','google_organic','bing_organic','direct','repeat_customer'].includes(k)).map(([k,v]) => `<option value="${k}">${v}</option>`).join('');
+    $('spendBody').querySelectorAll('input').forEach(inp => inp.addEventListener('change', () => saveSpendCell(inp)));
+  }
+  function updateSpendTotals(){
+    $('spendBody').querySelectorAll('[data-total-ch]').forEach(td => {
+      td.textContent = dollars(S.spend.filter(s => s.channel === td.dataset.totalCh).reduce((a,s) => a + s.amount_cents, 0));
+    });
+  }
+  async function saveSpendCell(inp){
+    const ch = inp.dataset.ch, m = inp.dataset.m, raw = inp.value.replace(/[$,\s]/g, '');
+    const existing = S.spend.find(s => s.channel === ch && s.month === m);
+    inp.classList.remove('saved','bad');
+    if(raw === ''){
+      if(!existing) return;
+      const { error } = await sb.from('marketing_spend').delete().eq('id', existing.id);
+      if(error){ inp.classList.add('bad'); return toast(friendlyErr(error), 'err'); }
+      S.spend = S.spend.filter(s => s !== existing); inp.classList.add('saved'); return loadRoi({ keepGrid: true });
+    }
+    const cents = toCents(raw);
+    if(cents == null || cents < 0 || cents > 100000000){ inp.classList.add('bad'); return toast('Enter a dollar amount between 0 and 1,000,000.', 'err'); }
+    const { error } = await sb.from('marketing_spend').upsert({ company_id: S.me.company_id, channel: ch, month: m, amount_cents: cents }, { onConflict: 'company_id,channel,month' });
+    if(error){ inp.classList.add('bad'); return toast(friendlyErr(error), 'err'); }
+    inp.classList.add('saved');
+    loadRoi({ keepGrid: true });
+  }
+  $('spendAddBtn').addEventListener('click', () => { const c = $('spendAddChannel').value; if(c){ S.spendExtra.add(c); renderSpend(); } });
+
+  boot();
+})();
+</script>
+</body>
+</html>
