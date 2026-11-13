@@ -80,7 +80,7 @@
 <body>
 
 <header>
-  <h1>Blue Provenance Transport</h1>
+  <h1 id="brandName">Your Move</h1>
   <div class="sub">Client Portal &middot; Live Move Tracking</div>
 </header>
 
@@ -419,6 +419,19 @@
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6YWZ5b29lZ2t2c3R5bmVqYXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1MzQwNzcsImV4cCI6MjEwNDExMDA3N30.nKaTP_t5TrzJE0xbFb7SUX_QLRKIEGIiYTnbb8QcwYY';
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   const esc = s => (s ?? '').toString().replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  // The moving company's own brand, loaded per job (one portal serves every company on Haulwyn).
+  let BRAND = 'Your mover';
+  async function loadBrand(jobId, tok){
+    try {
+      const { data } = await sb.rpc('get_job_brand', { p_job_id: jobId, p_token: tok });
+      const b = data && data[0];
+      if(b && b.brand_name){
+        BRAND = b.brand_name;
+        document.getElementById('brandName').textContent = BRAND;
+        document.title = BRAND + ' | Client Portal';
+      }
+    } catch(e){}
+  }
   const statusLabels = {
     quoted:'Quote Received', booked:'Move Booked', en_route_origin:'Crew En Route',
     loading:'Loading in Progress', in_transit:'In Transit', unloading:'Unloading in Progress',
@@ -698,6 +711,7 @@
     }
     currentJobId = job;
     currentToken = token;
+    loadBrand(job, token);
     document.getElementById('gateCard').style.display = 'none';
     document.getElementById('portalContent').style.display = 'block';
     loadDetail(currentJobId, currentToken);
@@ -1230,7 +1244,7 @@
         .sigrow{display:flex; gap:24px; margin-top:14px; flex-wrap:wrap;}
         @media print{ body{padding:12px;} }
       </style></head><body>
-        <h1>BLUE PROVENANCE TRANSPORT — Bill of Lading &amp; Inventory Record</h1>
+        <h1>${esc(BRAND.toUpperCase())} — Bill of Lading &amp; Inventory Record</h1>
         <div class="sub">Generated ${new Date().toLocaleString()} · Your Move Record</div>
 
         <h2>Move Details</h2>
@@ -1256,7 +1270,7 @@
 
         <h2>Valuation &amp; Claims Policy</h2>
         <div class="terms">
-          This move is performed under a binding written quote. Full replacement value protection is available on every move, backed by a photographed record from pickup to delivery. If an item is damaged or lost, Blue Provenance Transport acknowledges claims within 24 hours and issues a decision within 5 business days. This document reflects the inventory and signature record on file at the time it was generated and is not itself an insurance policy or a court filing — it is your own move record.
+          This move is performed under a binding written quote. Full replacement value protection is available on every move, backed by a photographed record from pickup to delivery. If an item is damaged or lost, ${esc(BRAND)} acknowledges claims within 24 hours and issues a decision within 5 business days. This document reflects the inventory and signature record on file at the time it was generated and is not itself an insurance policy or a court filing — it is your own move record.
         </div>
 
         <h2>Signatures</h2>
@@ -1353,7 +1367,7 @@
           .totals .final td{border-top:1.5px solid #333; font-weight:700; font-size:14px; padding-top:8px;}
           @media print{ body{padding:12px;} }
         </style></head><body>
-          <h1>BLUE PROVENANCE TRANSPORT — Invoice</h1>
+          <h1>${esc(BRAND.toUpperCase())} — Invoice</h1>
           <div class="sub">Invoice ${invoiceNumber} &middot; Generated ${new Date().toLocaleString()}</div>
 
           <div class="grid">
@@ -1856,7 +1870,7 @@
         .note{font-size:11.5px; color:#555; margin-top:16px; line-height:1.6;}
         @media print{ body{padding:12px;} }
       </style></head><body>
-        <h1>BLUE PROVENANCE TRANSPORT &mdash; Donation Record</h1>
+        <h1>${esc(BRAND.toUpperCase())} &mdash; Donation Record</h1>
         <div class="sub">Generated ${new Date().toLocaleString()}</div>
         <table>
           <thead><tr><th>#</th><th>Item</th><th>Organization</th><th>Date</th><th style="text-align:right;">Est. Value</th></tr></thead>

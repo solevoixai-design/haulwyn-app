@@ -12,6 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="EB Crew">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="tenant.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -75,7 +76,7 @@
 <div id="staffLoginGate">
   <div class="login-card">
     <h2>Crew Sign-In Required</h2>
-    <p>The Field App shows customer inventory and job details and is restricted to authenticated Blue Provenance crew.</p>
+    <p>The Field App shows customer inventory and job details and is restricted to signed-in company crew.</p>
     <label for="loginEmail">Email</label>
     <input id="loginEmail" type="email" placeholder="you@haulwynos.com" autocomplete="username">
     <label for="loginPassword">Password</label>
@@ -1018,8 +1019,8 @@
       const bits = [];
       if(req.flights_of_stairs_origin) bits.push(`${req.flights_of_stairs_origin} flight${req.flights_of_stairs_origin === 1 ? '' : 's'} of stairs at origin`);
       if(req.flights_of_stairs_destination) bits.push(`${req.flights_of_stairs_destination} flight${req.flights_of_stairs_destination === 1 ? '' : 's'} of stairs at destination`);
-      if(req.long_carry_origin) bits.push('long carry at origin (truck can\\'t park close)');
-      if(req.long_carry_destination) bits.push('long carry at destination (truck can\\'t park close)');
+      if(req.long_carry_origin) bits.push('long carry at origin (truck can\'t park close)');
+      if(req.long_carry_destination) bits.push('long carry at destination (truck can\'t park close)');
       lines.push(`<div style="font-weight:700; color:#2c4a86; margin-bottom:4px;">🚶 ${esc(bits.join(' &middot; '))}</div>`);
     }
     if(req.building_contact_name || req.building_contact_phone){
@@ -1175,7 +1176,7 @@
     const reportedBy = document.getElementById('delayNoticeReportedBy').value.trim();
     if(!reportedBy){ statusEl.textContent = 'Enter your name.'; statusEl.style.color = 'var(--danger)'; return; }
     const notes = document.getElementById('delayNoticeNotes').value.trim();
-    if(!notes){ statusEl.textContent = 'Describe what\\'s happening.'; statusEl.style.color = 'var(--danger)'; return; }
+    if(!notes){ statusEl.textContent = 'Describe what\'s happening.'; statusEl.style.color = 'var(--danger)'; return; }
     const btn = document.getElementById('delayNoticeSubmitBtn');
     btn.disabled = true; btn.textContent = 'Submitting…';
     const { error } = await sb.from('job_delay_notices').insert({
@@ -2806,6 +2807,7 @@
     const { data: { session } } = await sb.auth.getSession();
     if(session){
       document.getElementById('staffLoginGate').style.display = 'none';
+      HaulwynTenant.load(sb);
       loadJobs();
     } else {
       document.getElementById('staffLoginGate').style.display = 'flex';
@@ -2820,6 +2822,7 @@
     const { error } = await sb.auth.signInWithPassword({ email, password });
     if(error){ errEl.classList.add('show'); return; }
     document.getElementById('staffLoginGate').style.display = 'none';
+    HaulwynTenant.load(sb);
     loadJobs();
   });
 

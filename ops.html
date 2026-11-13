@@ -12,6 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="EB Ops">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="tenant.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -139,7 +140,7 @@
 <div id="staffLoginGate">
   <div class="login-card">
     <h2>Staff Sign-In Required</h2>
-    <p>The Ops Command Center shows live customer, revenue, and competitive data and is restricted to authenticated Blue Provenance staff.</p>
+    <p>The Ops Command Center shows live customer, revenue, and competitive data and is restricted to signed-in company staff.</p>
     <label for="loginEmail">Email</label>
     <input id="loginEmail" type="email" placeholder="you@haulwynos.com" autocomplete="username">
     <label for="loginPassword">Password</label>
@@ -2628,7 +2629,7 @@
         h2{font-size:14px; text-transform:uppercase; letter-spacing:.04em; border-bottom:1.5px solid #333; padding-bottom:4px; margin-top:0;}
         @media print{ body{padding:10px;} }
       </style></head><body>
-        <h1>BLUE PROVENANCE TRANSPORT &mdash; Daily Dispatch Schedule</h1>
+        <h1>${esc(HaulwynTenant.upper())} &mdash; Daily Dispatch Schedule</h1>
         <div class="sub">${new Date(dateVal + 'T00:00:00').toLocaleDateString(undefined,{weekday:'long', year:'numeric', month:'long', day:'numeric'})} &middot; Printed ${new Date().toLocaleString()} &middot; ${(jobs||[]).length} job${(jobs||[]).length===1?'':'s'}</div>
         ${(jobs && jobs.length) ? sections : '<div style="color:#777;">No jobs scheduled for this date.</div>'}
         <script>window.onload=()=>window.print();<\/script>
@@ -9066,7 +9067,7 @@
         .sigrow{display:flex; gap:24px; margin-top:14px; flex-wrap:wrap;}
         @media print{ body{padding:12px;} }
       </style></head><body>
-        <h1>BLUE PROVENANCE TRANSPORT — Bill of Lading &amp; Inventory Record</h1>
+        <h1>${esc(HaulwynTenant.upper())} — Bill of Lading &amp; Inventory Record</h1>
         <div class="sub">Generated ${new Date().toLocaleString()} · Job ID ${esc(job.id)}</div>
 
         <h2>Move Details</h2>
@@ -9093,9 +9094,9 @@
         <h2>Valuation &amp; Claims Policy</h2>
         <div class="terms">
           This move is performed under a binding written quote. ${job.coverage_type === 'full_value'
-            ? `This shipment is covered under <strong>Full Value Protection</strong>${job.declared_value_cents ? `, with a declared value of ${dollars(job.declared_value_cents)}` : ''}. Blue Provenance Transport is liable for the replacement value or repair cost of any item lost or damaged in this move, up to the declared value.`
+            ? `This shipment is covered under <strong>Full Value Protection</strong>${job.declared_value_cents ? `, with a declared value of ${dollars(job.declared_value_cents)}` : ''}. ${esc(HaulwynTenant.brand)} is liable for the replacement value or repair cost of any item lost or damaged in this move, up to the declared value.`
             : `This shipment is covered under the released-rate default, <strong>Released Value Protection</strong>, at no additional charge. Under this option, liability for loss or damage is limited to 60&cent; per pound per item, regardless of the item's actual value — this is a minimum coverage level, not full replacement coverage. Full Value Protection can be added by request before the move.`
-          } The move is backed by a photographed record from pickup to delivery. If an item is damaged or lost, Blue Provenance Transport acknowledges claims within 24 hours and issues a decision within 5 business days. This document reflects the inventory and signature record on file at the time it was generated and is not itself an insurance policy or a court filing — it is the platform's own move record.
+          } The move is backed by a photographed record from pickup to delivery. If an item is damaged or lost, ${esc(HaulwynTenant.brand)} acknowledges claims within 24 hours and issues a decision within 5 business days. This document reflects the inventory and signature record on file at the time it was generated and is not itself an insurance policy or a court filing — it is the platform's own move record.
         </div>
 
         <h2>Signatures</h2>
@@ -9186,7 +9187,7 @@
         .totals .final td{border-top:1.5px solid #333; font-weight:700; font-size:14px; padding-top:8px;}
         @media print{ body{padding:12px;} }
       </style></head><body>
-        <h1>BLUE PROVENANCE TRANSPORT — Invoice</h1>
+        <h1>${esc(HaulwynTenant.upper())} — Invoice</h1>
         <div class="sub">Invoice ${invoiceNumber} &middot; Generated ${new Date().toLocaleString()}</div>
 
         <div class="grid">
@@ -10886,6 +10887,7 @@
   async function startDashboard(){
     if(dashboardStarted) return;
     dashboardStarted = true;
+    await HaulwynTenant.load(sb);
     await loadOpsRole();
     void loadOpsProfit();
     loadAll();

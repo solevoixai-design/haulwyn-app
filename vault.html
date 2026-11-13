@@ -12,6 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="EB Vault">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="tenant.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{ --navy:#0a1f44; --red:#b22234; --gold:#c9a227; --ink:#0b1230; --steel:#5b6478; --off:#f6f5f1; --green:#1fb26b; --amber:#e0a30a;}
@@ -80,7 +81,7 @@
 <div id="staffLoginGate">
   <div class="login-card">
     <h2>Staff Sign-In Required</h2>
-    <p>Estate Vaulting shows high-value client inventory and is restricted to authenticated Blue Provenance staff.</p>
+    <p>Estate Vaulting shows high-value client inventory and is restricted to signed-in company staff.</p>
     <label for="loginEmail">Email</label>
     <input id="loginEmail" type="email" placeholder="you@haulwynos.com" autocomplete="username">
     <label for="loginPassword">Password</label>
@@ -762,6 +763,7 @@
   function startDashboard(){
     if(dashboardStarted) return;
     dashboardStarted = true;
+    HaulwynTenant.load(sb);
     loadJobs();
     loadItems();
     setInterval(loadItems, 15000);
